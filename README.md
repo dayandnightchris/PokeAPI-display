@@ -1,4 +1,4 @@
-# PokeAPI Display
+# PokéAPI Display
 
 A modern and clean Pokémon information website developed with React and Vite. It displays Pokémon data from PokéAPI.co, featuring an improved user interface and experience.
 
