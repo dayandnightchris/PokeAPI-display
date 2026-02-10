@@ -50,6 +50,8 @@ export function useEvolutionChain({ species, selectedVersion }) {
   useEffect(() => {
     if (!species?.evolution_chain?.url) return
 
+    let active = true
+
     const checkVersionAvailability = async (speciesName) => {
       try {
         const data = await fetchPokemonCached(speciesName)
@@ -71,6 +73,8 @@ export function useEvolutionChain({ species, selectedVersion }) {
         const seen = new Set()
 
         const traverse = async (chain) => {
+          if (!active) return
+
           // Add current species if not seen and available in version
           if (chain.species && !seen.has(chain.species.name)) {
             const isAvailable = await checkVersionAvailability(chain.species.name)
@@ -86,6 +90,8 @@ export function useEvolutionChain({ species, selectedVersion }) {
           // Process evolutions
           if (chain.evolves_to?.length > 0) {
             for (const evo of chain.evolves_to) {
+              if (!active) return
+
               const isEvoAvailable = await checkVersionAvailability(evo.species.name)
               if (isEvoAvailable) {
                 // Add trigger between current and next evolution
@@ -113,13 +119,20 @@ export function useEvolutionChain({ species, selectedVersion }) {
         }
 
         await traverse(data.chain)
-        setEvolutions(evolutionList)
+        
+        if (active) {
+          setEvolutions(evolutionList)
+        }
       } catch (err) {
         console.error('Failed to fetch evolution chain:', err)
       }
     }
 
     fetchEvolutionChain()
+
+    return () => {
+      active = false
+    }
   }, [species?.evolution_chain?.url, selectedVersion])
 
   return evolutions

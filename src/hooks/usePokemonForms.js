@@ -10,6 +10,8 @@ export function usePokemonForms({ species, pokemon, selectedVersion }) {
   useEffect(() => {
     if (!species?.varieties?.length || !pokemon) return
 
+    let active = true
+
     const getVersionAvailability = async (formName) => {
       try {
         const data = await fetchPokemonCached(formName)
@@ -37,17 +39,20 @@ export function usePokemonForms({ species, pokemon, selectedVersion }) {
       const filterByVersion = async () => {
         const availableForms = []
         for (const form of formList) {
+          if (!active) return
           const isAvailable = await getVersionAvailability(form)
           if (isAvailable) {
             availableForms.push(form)
           }
         }
-        setForms(availableForms)
+        if (active) {
+          setForms(availableForms)
 
-        // Auto-select the base form (without hyphen) or first form
-        const baseForm = availableForms.find(f => !f.includes('-')) || availableForms[0]
-        if (baseForm && baseForm !== selectedForm) {
-          setSelectedForm(baseForm)
+          // Auto-select the base form (without hyphen) or first form
+          const baseForm = availableForms.find(f => !f.includes('-')) || availableForms[0]
+          if (baseForm && baseForm !== selectedForm) {
+            setSelectedForm(baseForm)
+          }
         }
       }
       filterByVersion()
@@ -58,6 +63,10 @@ export function usePokemonForms({ species, pokemon, selectedVersion }) {
         setSelectedForm(baseForm)
       }
     }
+
+    return () => {
+      active = false
+    }
   }, [species?.varieties, pokemon, selectedVersion])
 
   // Fetch selected form's pokemon data
@@ -67,10 +76,18 @@ export function usePokemonForms({ species, pokemon, selectedVersion }) {
       return
     }
 
+    let active = true
+
     fetch(`https://pokeapi.co/api/v2/pokemon/${selectedForm}/`)
       .then(res => res.json())
-      .then(data => setFormPokemon(data))
+      .then(data => {
+        if (active) setFormPokemon(data)
+      })
       .catch(err => console.error('Failed to fetch form pokemon:', selectedForm, err))
+
+    return () => {
+      active = false
+    }
   }, [selectedForm, pokemon?.name])
 
   return { forms, selectedForm, setSelectedForm, formPokemon }

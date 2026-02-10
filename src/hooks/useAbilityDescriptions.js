@@ -6,6 +6,8 @@ export function useAbilityDescriptions(displayPokemon) {
   useEffect(() => {
     if (!displayPokemon?.abilities?.length) return
 
+    let active = true
+
     const fetchAbilityData = async () => {
       const descriptions = {}
       for (const ability of displayPokemon.abilities) {
@@ -19,10 +21,16 @@ export function useAbilityDescriptions(displayPokemon) {
           descriptions[ability.ability.name] = 'No description available.'
         }
       }
-      setAbilityDescriptions(descriptions)
+      if (active) {
+        setAbilityDescriptions(descriptions)
+      }
     }
 
     fetchAbilityData()
+
+    return () => {
+      active = false
+    }
   }, [displayPokemon?.abilities])
 
   return abilityDescriptions

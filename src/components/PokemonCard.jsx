@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import StatsCalculator from './StatsCalculator'
 import VersionSelector from './VersionSelector'
 import {
@@ -11,6 +11,9 @@ import {
 } from '../hooks'
 
 export default function PokemonCard({ pokemon, onEvolutionClick }) {
+  // UI state
+  const [hoveredType, setHoveredType] = useState(null)
+
   // Data fetching hooks
   const { species, selectedVersion, setSelectedVersion, allEncounters } = usePokemonSpecies(pokemon)
   const { forms, selectedForm, setSelectedForm, formPokemon } = usePokemonForms({ species, pokemon, selectedVersion })
@@ -19,11 +22,13 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
   const moves = useGroupedMoves(formPokemon || pokemon)
   const versionSprite = useVersionSprite(formPokemon || pokemon, selectedVersion)
 
-  // UI state
-  const [hoveredType, setHoveredType] = useState(null)
-
   // Derive display pokemon
   const displayPokemon = formPokemon || pokemon
+
+  // Clear form selection when pokemon changes
+  useEffect(() => {
+    setSelectedForm(null)
+  }, [pokemon?.id, setSelectedForm])
 
   const typeColors = {
     normal: '#A8A878',
