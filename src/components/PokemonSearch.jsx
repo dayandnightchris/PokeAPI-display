@@ -15,9 +15,10 @@ export default function PokemonSearch({ onSearch, loading, pokemonList }) {
     }
 
     // Filter Pokemon list for autocomplete
-    const filtered = pokemonList.filter(name =>
-      name.toLowerCase().startsWith(input.toLowerCase())
-    ).slice(0, 8) // Limit to 8 suggestions
+    const q = input.toLowerCase()
+    const filtered = pokemonList
+      .filter(name => name.includes(q))
+      .slice(0, 8) //limit to 8 suggestions
 
     setSuggestions(filtered)
     setShowSuggestions(filtered.length > 0)
@@ -40,6 +41,7 @@ export default function PokemonSearch({ onSearch, loading, pokemonList }) {
     e.preventDefault()
     if (input.trim()) {
       onSearch(input)
+      setInput(input.trim().toLowerCase())
       setShowSuggestions(false)
     }
   }
