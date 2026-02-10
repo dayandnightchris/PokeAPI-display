@@ -17,10 +17,10 @@ function App() {
   useEffect(() => {
     const fetchPokemonList = async () => {
       try {
-        const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1000')
-        const data = await response.json()
-        const names = data.results.map(p => p.name)
-        setPokemonList(names)
+        const base = 'https://pokeapi.co/api/v2/pokemon'
+        const first = await fetch(base).then(r => r.json())
+        const all = await fetch(`${base}?limit=${first.count}`).then(r => r.json())
+        setPokemonList(all.results.map(p => p.name))
       } catch (err) {
         console.error('Failed to fetch Pokemon list:', err)
       }

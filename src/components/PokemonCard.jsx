@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import StatsCalculator from './StatsCalculator'
 import VersionSelector from './VersionSelector'
+import { renderEvolutionNode } from './EvolutionTree'
 import {
   usePokemonSpecies,
   useAbilityDescriptions,
@@ -323,41 +324,11 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
         {/* Evolution Box */}
         <div className="info-box">
           <div className="box-title">Evolution Line</div>
-          <div className="box-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            {evolutions.length > 1 ? (
-              evolutions.map((item, idx) => {
-                if (item.isTrigger) {
-                  return (
-                    <div key={`trigger-${idx}`} style={{ color: '#ff6b6b', fontSize: '13px', fontWeight: 'bold', textAlign: 'center', maxWidth: '90px', margin: '4px 0 2px 0' }}>
-                      {item.text}
-                    </div>
-                  )
-                }
-                
-                const isCurrentPokemon = item.name === pokemon.name
-                return (
-                  <button
-                    key={item.name}
-                    onClick={() => onEvolutionClick?.(item.name)}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: isCurrentPokemon ? '#ff0000' : '#444',
-                      color: '#fff',
-                      border: isCurrentPokemon ? '2px solid #cc0000' : '1px solid #666',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontWeight: isCurrentPokemon ? 'bold' : 'normal',
-                      fontSize: '12px',
-                      textTransform: 'capitalize',
-                      boxShadow: isCurrentPokemon ? '0 2px 4px rgba(255, 0, 0, 0.3)' : 'none'
-                    }}
-                  >
-                    {item.name}
-                  </button>
-                )
-              })
+          <div className="box-content" style={{ display: 'flex', justifyContent: 'center', padding: '10px' }}>
+            {evolutions ? (
+              renderEvolutionNode(evolutions, pokemon.name, onEvolutionClick)
             ) : (
-              <p style={{ margin: '0', color: '#888', fontSize: '12px' }}>No evolution available.</p>
+              <p style={{ margin: 0, color: '#888', fontSize: '12px' }}>No evolution available.</p>
             )}
           </div>
         </div>
