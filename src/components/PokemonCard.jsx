@@ -82,6 +82,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
     let resists = new Set()
     let weak = new Set()
     let veryWeak = new Set()
+    let veryResistant = new Set()
 
     types.forEach(type => {
       const matchup = typeEffectiveness[type]
@@ -100,14 +101,25 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
       intersection.forEach(t => veryWeak.add(t))
       // Remove very weak from regular weak
       intersection.forEach(t => weak.delete(t))
+
+      // Calculate very resistant for dual types: types that BOTH component types resist
+      const type1Resists = new Set(typeEffectiveness[types[0]]?.resists || [])
+      const type2Resists = new Set(typeEffectiveness[types[1]]?.resists || [])
+      const resistIntersection = new Set([...type1Resists].filter(t => type2Resists.has(t)))
+      resistIntersection.forEach(t => veryResistant.add(t))
+      // Remove very resistant from regular resists
+      resistIntersection.forEach(t => resists.delete(t))
     }
 
     // Remove overlaps: if a type resists and is weak, it cancels out
     weak.forEach(t => resists.delete(t))
     veryWeak.forEach(t => resists.delete(t))
     veryWeak.forEach(t => weak.delete(t))
+    weak.forEach(t => veryResistant.delete(t))
+    veryWeak.forEach(t => veryResistant.delete(t))
 
     return {
+      veryResistant: Array.from(veryResistant),
       resists: Array.from(resists),
       weak: Array.from(weak),
       veryWeak: Array.from(veryWeak)
@@ -205,6 +217,20 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
                           transform: 'translate(-50%, -50%)',
                           boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
                         }}>
+                          <div style={{ marginBottom: '8px' }}>
+                            <div style={{ color: '#aaa', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>Very Resistant to:</div>
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                              {getCombinedTypeMatchups().veryResistant.length > 0 ? (
+                                getCombinedTypeMatchups().veryResistant.map(t => (
+                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: '#fff', padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                                    {t}
+                                  </span>
+                                ))
+                              ) : (
+                                <span style={{ color: '#888', fontSize: '11px' }}>None</span>
+                              )}
+                            </div>
+                          </div>
                           <div style={{ marginBottom: '8px' }}>
                             <div style={{ color: '#aaa', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>Resists:</div>
                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
