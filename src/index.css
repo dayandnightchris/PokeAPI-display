@@ -179,9 +179,9 @@ body {
 .pokemon-main-image {
   width: 100%;
   height: auto;
-  max-width: 150px;
+  /*max-width: 150px;
   border: 3px solid grey;
-  padding: 3px;
+  padding: 3px;*/
 }
 
 .box-title {
@@ -402,6 +402,53 @@ body {
 .move-name {
   flex: 1;
   text-transform: capitalize;
+}
+
+/* Form Selector */
+.form-selector-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.form-label {
+  font-weight: bold;
+  font-size: 14px;
+  color: var(--text-color);
+}
+
+.form-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.form-button {
+  padding: 6px 12px;
+  border: 2px solid #ddd;
+  background-color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: capitalize;
+  transition: all 0.2s ease;
+}
+
+.form-button:hover {
+  border-color: var(--primary-color);
+  background-color: #fff5f5;
+}
+
+.form-button.active {
+  border-color: var(--primary-color);
+  background-color: var(--primary-color);
+  color: white;
 }
 
 /* Pokedex Entries */

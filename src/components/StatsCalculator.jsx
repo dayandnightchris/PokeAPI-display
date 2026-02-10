@@ -82,13 +82,13 @@ export default function StatsCalculator({ pokemon, selectedVersion }) {
   }
 
   const totalEvs = Object.values(evs).reduce((sum, val) => sum + val, 0)
-  const evRemaining = 510 - totalEvs
+  const evRemaining = 508 - totalEvs
 
   const handleEvChange = (statKey, value) => {
     const newValue = parseInt(value) || 0
     const clampedValue = Math.max(0, Math.min(252, newValue))
     const currentTotal = totalEvs - evs[statKey]
-    const finalValue = currentTotal + clampedValue > 510 ? 510 - currentTotal : clampedValue
+    const finalValue = currentTotal + clampedValue > 508 ? 508 - currentTotal : clampedValue
     setEvs({ ...evs, [statKey]: finalValue })
   }
 
@@ -135,7 +135,7 @@ export default function StatsCalculator({ pokemon, selectedVersion }) {
           fontWeight: 'bold',
           fontSize: '0.9rem'
         }}>
-          EVs Remaining: {evRemaining} / 510
+          EVs Remaining: {evRemaining} / 508
         </div>
       </div>
 
