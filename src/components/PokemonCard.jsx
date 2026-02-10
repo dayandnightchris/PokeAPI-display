@@ -1,257 +1,29 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import StatsCalculator from './StatsCalculator'
 import VersionSelector from './VersionSelector'
+import {
+  usePokemonSpecies,
+  useAbilityDescriptions,
+  usePokemonForms,
+  useEvolutionChain,
+  useGroupedMoves,
+  useVersionSprite
+} from '../hooks'
 
 export default function PokemonCard({ pokemon, onEvolutionClick }) {
-  const [species, setSpecies] = useState(null)
-  const [selectedVersion, setSelectedVersion] = useState(null)
-  const [allEncounters, setAllEncounters] = useState([])
-  const [abilityDescriptions, setAbilityDescriptions] = useState({})
-  const [evolutions, setEvolutions] = useState([])
-  const [moves, setMoves] = useState({ levelUp: [], tm: [], tutor: [], event: [], egg: [] })
-  const [versionSprite, setVersionSprite] = useState(null)
+  // Data fetching hooks
+  const { species, selectedVersion, setSelectedVersion, allEncounters } = usePokemonSpecies(pokemon)
+  const { forms, selectedForm, setSelectedForm, formPokemon } = usePokemonForms({ species, pokemon, selectedVersion })
+  const abilityDescriptions = useAbilityDescriptions(formPokemon || pokemon)
+  const evolutions = useEvolutionChain({ species, selectedVersion })
+  const moves = useGroupedMoves(formPokemon || pokemon)
+  const versionSprite = useVersionSprite(formPokemon || pokemon, selectedVersion)
+
+  // UI state
   const [hoveredType, setHoveredType] = useState(null)
-  const [forms, setForms] = useState([])
-  const [selectedForm, setSelectedForm] = useState(null)
-  const [formPokemon, setFormPokemon] = useState(null)
+
+  // Derive display pokemon
   const displayPokemon = formPokemon || pokemon
-
-  useEffect(() => {
-    if (!pokemon) return
-    
-    // Reset form state when pokemon changes
-    setSelectedForm(null)
-    setFormPokemon(null)
-    
-    // Fetch species data for more info
-    fetch(pokemon.species.url)
-      .then(res => res.json())
-      .then(data => setSpecies(data))
-      .catch(err => console.error('Failed to fetch species:', err))
-    
-    // Fetch location areas with version info
-    fetch(`https://pokeapi.co/api/v2/pokemon/${pokemon.id}/encounters`)
-      .then(res => res.json())
-      .then(data => setAllEncounters(data))
-      .catch(err => {
-        console.error('Failed to fetch location areas:', err)
-        setAllEncounters([])
-      })
-    
-    // Auto-select the latest version
-    if (pokemon.game_indices && pokemon.game_indices.length > 0) {
-      const latestVersion = pokemon.game_indices[pokemon.game_indices.length - 1].version.name
-      setSelectedVersion(latestVersion)
-    }
-  }, [pokemon])
-
-  // Extract forms and set initial selected form, filtered by game version
-  useEffect(() => {
-    if (!species?.varieties?.length) return
-    
-    const getVersionAvailability = async (formName) => {
-      try {
-        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${formName}/`)
-        const data = await res.json()
-        // Check if this form exists in the selected version
-        return data.game_indices?.some(gi => gi.version.name === selectedVersion) || false
-      } catch (err) {
-        console.error('Failed to check form availability:', formName, err)
-        return false
-      }
-    }
-    
-    // Get all distinct form names from varieties
-    let formList = species.varieties
-      .map(v => v.pokemon.name)
-      .filter(name => {
-        // Filter to only forms of the current pokemon's evolution line
-        const baseName = pokemon.name.split('-')[0]
-        return name.startsWith(baseName)
-      })
-      .sort()
-    
-    // Filter forms by version availability
-    if (selectedVersion) {
-      const filterByVersion = async () => {
-        const availableForms = []
-        for (const form of formList) {
-          const isAvailable = await getVersionAvailability(form)
-          if (isAvailable) {
-            availableForms.push(form)
-          }
-        }
-        setForms(availableForms)
-        
-        // Auto-select the base form (without hyphen) or first form
-        const baseForm = availableForms.find(f => !f.includes('-')) || availableForms[0]
-        if (baseForm && baseForm !== selectedForm) {
-          setSelectedForm(baseForm)
-        }
-      }
-      filterByVersion()
-    } else {
-      setForms(formList)
-      const baseForm = formList.find(f => !f.includes('-')) || formList[0]
-      if (baseForm && baseForm !== selectedForm) {
-        setSelectedForm(baseForm)
-      }
-    }
-  }, [species?.varieties, pokemon.name, selectedVersion, selectedForm])
-
-  // Fetch selected form's pokemon data
-  useEffect(() => {
-    if (!selectedForm || selectedForm === pokemon.name) {
-      setFormPokemon(null)
-      return
-    }
-    
-    fetch(`https://pokeapi.co/api/v2/pokemon/${selectedForm}/`)
-      .then(res => res.json())
-      .then(data => setFormPokemon(data))
-      .catch(err => console.error('Failed to fetch form pokemon:', selectedForm, err))
-  }, [selectedForm, pokemon.name])
-
-  // Fetch ability descriptions
-  useEffect(() => {
-    if (!pokemon?.abilities?.length) return
-    
-    const fetchAbilityData = async () => {
-      const descriptions = {}
-      for (const ability of pokemon.abilities) {
-        try {
-          const res = await fetch(ability.ability.url)
-          const data = await res.json()
-          const desc = data.effect_entries?.find(e => e.language.name === 'en')?.effect || 'No description available.'
-          descriptions[ability.ability.name] = desc
-        } catch (err) {
-          console.error('Failed to fetch ability:', ability.ability.name)
-          descriptions[ability.ability.name] = 'No description available.'
-        }
-      }
-      setAbilityDescriptions(descriptions)
-    }
-    
-    fetchAbilityData()
-  }, [pokemon?.abilities])
-
-  // Fetch evolution chain with version filtering
-  useEffect(() => {
-    if (!species?.evolution_chain?.url) return
-    
-    const checkVersionAvailability = async (speciesName) => {
-      try {
-        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${speciesName}/`)
-        const data = await res.json()
-        // If no version selected, show all. Otherwise check if species exists in version
-        if (!selectedVersion) return true
-        return data.game_indices?.some(gi => gi.version.name === selectedVersion) || false
-      } catch (err) {
-        return false
-      }
-    }
-    
-    const fetchEvolutionChain = async () => {
-      try {
-        const res = await fetch(species.evolution_chain.url)
-        const data = await res.json()
-        const evolutionList = []
-        const seen = new Set()
-        
-        const traverse = async (chain) => {
-          // Add current species if not seen and available in version
-          if (chain.species && !seen.has(chain.species.name)) {
-            const isAvailable = await checkVersionAvailability(chain.species.name)
-            if (isAvailable) {
-              evolutionList.push({
-                name: chain.species.name,
-                url: chain.species.url
-              })
-              seen.add(chain.species.name)
-            }
-          }
-          
-          // Process evolutions
-          if (chain.evolves_to?.length > 0) {
-            for (const evo of chain.evolves_to) {
-              const isEvoAvailable = await checkVersionAvailability(evo.species.name)
-              if (isEvoAvailable) {
-                // Add trigger between current and next evolution
-                const trigger = evo.evolution_details?.[0]
-                const triggerText = trigger ? getTriggerText(trigger) : 'Unknown'
-                evolutionList.push({
-                  isTrigger: true,
-                  text: triggerText
-                })
-                
-                // Add evolved species and continue recursion
-                if (!seen.has(evo.species.name)) {
-                  evolutionList.push({
-                    name: evo.species.name,
-                    url: evo.species.url
-                  })
-                  seen.add(evo.species.name)
-                  
-                  // Continue traversal from this species
-                  await traverse(evo)
-                }
-              }
-            }
-          }
-        }
-        
-        await traverse(data.chain)
-        setEvolutions(evolutionList)
-      } catch (err) {
-        console.error('Failed to fetch evolution chain:', err)
-      }
-    }
-    
-    fetchEvolutionChain()
-  }, [species?.evolution_chain?.url, selectedVersion])
-
-  const getTriggerText = (trigger) => {
-    if (trigger.trigger.name === 'level-up') {
-      if (trigger.min_level) {
-        return `L${trigger.min_level}`
-      }
-      // Check for other level-up conditions
-      if (trigger.min_happiness) {
-        return `Happiness ${trigger.min_happiness}`
-      }
-      if (trigger.min_affection) {
-        return `Affection ${trigger.min_affection}`
-      }
-      if (trigger.min_beauty) {
-        return `Beauty ${trigger.min_beauty}`
-      }
-      if (trigger.known_move) {
-        return `Learn ${trigger.known_move.name}`
-      }
-      if (trigger.time_of_day) {
-        return `Level up (${trigger.time_of_day})`
-      }
-      if (trigger.location) {
-        return `Level up at ${trigger.location.name}`
-      }
-      return 'Level up'
-    } else if (trigger.trigger.name === 'trade') {
-      if (trigger.held_item) {
-        return `Trade (${trigger.held_item.name.replace(/-/g, ' ')})`
-      }
-      if (trigger.trade_species) {
-        return `Trade for ${trigger.trade_species.name}`
-      }
-      return 'Trade'
-    } else if (trigger.trigger.name === 'use-item') {
-      return `Use ${trigger.item?.name.replace(/-/g, ' ') || 'Item'}`
-    } else if (trigger.trigger.name === 'shed') {
-      return 'Shed'
-    } else if (trigger.trigger.name === 'other') {
-      return 'Special'
-    }
-    return trigger.trigger.name.replace(/-/g, ' ')
-  }
 
   const typeColors = {
     normal: '#A8A878',
@@ -335,115 +107,6 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
       veryWeak: Array.from(veryWeak)
     }
   }
-
-  // Fetch moves grouped by method
-  useEffect(() => {
-    if (!displayPokemon?.moves?.length) return
-    
-    const groupedMoves = { levelUp: [], tm: [], tutor: [], event: [], egg: [] }
-    const seenMoves = { levelUp: new Set(), tm: new Set(), tutor: new Set(), event: new Set(), egg: new Set() }
-    
-    displayPokemon.moves.forEach(moveData => {
-      const moveName = moveData.move.name
-      moveData.version_group_details?.forEach(detail => {
-        const method = detail.move_learn_method?.name
-        const level = detail.level_learned_at
-        
-        if (method === 'level-up' && !seenMoves.levelUp.has(moveName)) {
-          groupedMoves.levelUp.push({ name: moveName, level })
-          seenMoves.levelUp.add(moveName)
-        } else if (method === 'machine' && !seenMoves.tm.has(moveName)) {
-          groupedMoves.tm.push(moveName)
-          seenMoves.tm.add(moveName)
-        } else if (method === 'tutor' && !seenMoves.tutor.has(moveName)) {
-          groupedMoves.tutor.push(moveName)
-          seenMoves.tutor.add(moveName)
-        } else if (method === 'reminder' && !seenMoves.event.has(moveName)) {
-          groupedMoves.event.push(moveName)
-          seenMoves.event.add(moveName)
-        } else if (method === 'egg' && !seenMoves.egg.has(moveName)) {
-          groupedMoves.egg.push(moveName)
-          seenMoves.egg.add(moveName)
-        }
-      })
-    })
-    
-    // Sort level-up moves by level
-    groupedMoves.levelUp.sort((a, b) => a.level - b.level)
-    // Sort moves alphabetically
-    groupedMoves.tm.sort()
-    groupedMoves.tutor.sort()
-    groupedMoves.event.sort()
-    groupedMoves.egg.sort()
-    
-    setMoves(groupedMoves)
-  }, [displayPokemon?.moves])
-
-  // Fetch version-specific sprites
-  useEffect(() => {
-    if (!displayPokemon?.sprites?.versions || !selectedVersion) {
-      setVersionSprite(null)
-      return
-    }
-
-    // Map version names to version group keys
-    const versionGroupMap = {
-      'red': 'generation-i',
-      'blue': 'generation-i',
-      'yellow': 'generation-i',
-      'gold': 'generation-ii',
-      'silver': 'generation-ii',
-      'crystal': 'generation-ii',
-      'ruby': 'generation-iii',
-      'sapphire': 'generation-iii',
-      'firered': 'generation-iii',
-      'leafgreen': 'generation-iii',
-      'emerald': 'generation-iii',
-      'diamond': 'generation-iv',
-      'pearl': 'generation-iv',
-      'platinum': 'generation-iv',
-      'heartgold': 'generation-iv',
-      'soulsilver': 'generation-iv',
-      'black': 'generation-v',
-      'white': 'generation-v',
-      'black-2': 'generation-v',
-      'white-2': 'generation-v',
-      'x': 'generation-vi',
-      'y': 'generation-vi',
-      'omega-ruby': 'generation-vi',
-      'alpha-sapphire': 'generation-vi',
-      'sun': 'generation-vii',
-      'moon': 'generation-vii',
-      'ultra-sun': 'generation-vii',
-      'ultra-moon': 'generation-vii',
-      'lets-go-pikachu': 'generation-vii',
-      'lets-go-eevee': 'generation-vii',
-      'sword': 'generation-viii',
-      'shield': 'generation-viii',
-      'scarlet': 'generation-ix',
-      'violet': 'generation-ix'
-    }
-
-    const versionGroup = versionGroupMap[selectedVersion]
-    if (versionGroup && displayPokemon.sprites.versions[versionGroup]) {
-      const groupSprites = displayPokemon.sprites.versions[versionGroup]
-      // Try to find a sprite for this version
-      let sprite = null
-      
-      // Try different keys in the version group
-      for (const key of Object.keys(groupSprites)) {
-        if (key.includes(selectedVersion)) {
-          const versionData = groupSprites[key]
-          sprite = versionData?.front_default || null
-          if (sprite) break
-        }
-      }
-      
-      setVersionSprite(sprite)
-    } else {
-      setVersionSprite(null)
-    }
-  }, [displayPokemon?.sprites?.versions, selectedVersion])
 
   if (!pokemon) {
     return <div className="loading">Loading Pokemon data...</div>
@@ -701,7 +364,9 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
             {selectedVersion && allEncounters.length > 0 ? (
               (() => {
                 const locationsForVersion = allEncounters
-                  .filter(enc => enc.version?.name === selectedVersion && enc.location_area?.name)
+                  .filter(enc =>
+                    enc.version_details?.some(vd => vd.version.name === selectedVersion)
+                  )
                   .map(enc => enc.location_area.name)
                 
                 const uniqueLocations = [...new Set(locationsForVersion)]
