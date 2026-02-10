@@ -75,7 +75,7 @@ function formatEvolutionDetails(details) {
 }
 
 export function useEvolutionChain({ species, selectedVersion }) {
-  const [tree, setTree] = useState(null)
+  const [tree, setTree] = useState([])
 
   useEffect(() => {
     if (!species?.evolution_chain?.url) return
@@ -100,37 +100,39 @@ export function useEvolutionChain({ species, selectedVersion }) {
       return results.some(Boolean)
     }
 
-    const buildNode = async (chainNode) => {
-      if (!active || !chainNode?.species?.name) return null
+    const buildNodes = async (chainNode) => {
+      if (!active || !chainNode?.species?.name) return []
 
       const name = chainNode.species.name
 
-      const ok = await checkSpeciesAvailableInVersion(name)
-      if (!ok) return null
-
-      const children = []
+      const childEdges = []
       for (const evo of chainNode.evolves_to || []) {
-        const child = await buildNode(evo)
-        if (!child) continue
-
-        children.push({
-          triggerText: formatEvolutionDetails(evo.evolution_details),
-          node: child
-        })
+        const childRoots = await buildNodes(evo)
+        for (const child of childRoots) {
+          childEdges.push({
+            triggerText: formatEvolutionDetails(evo.evolution_details),
+            node: child
+          })
+        }
       }
 
-      return { name, url: chainNode.species.url, children }
+      const ok = await checkSpeciesAvailableInVersion(name)
+      if (!ok) {
+        return childEdges.map(edge => edge.node)
+      }
+
+      return [{ name, url: chainNode.species.url, children: childEdges }]
     }
 
     const run = async () => {
       try {
         const res = await fetch(species.evolution_chain.url)
         const data = await res.json()
-        const built = await buildNode(data.chain)
+        const built = await buildNodes(data.chain)
         if (active) setTree(built)
       } catch (e) {
         console.error('Failed to fetch evolution chain:', e)
-        if (active) setTree(null)
+        if (active) setTree([])
       }
     }
 

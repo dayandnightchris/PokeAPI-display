@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import StatsCalculator from './StatsCalculator'
 import VersionSelector from './VersionSelector'
-import { renderEvolutionNode } from './EvolutionTree'
+import { renderEvolutionForest } from './EvolutionTree'
 import {
   usePokemonSpecies,
   useAbilityDescriptions,
@@ -324,9 +324,9 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
         {/* Evolution Box */}
         <div className="info-box">
           <div className="box-title">Evolution Line</div>
-          <div className="box-content" style={{ display: 'flex', justifyContent: 'center', padding: '10px' }}>
-            {evolutions ? (
-              renderEvolutionNode(evolutions, pokemon.name, onEvolutionClick)
+          <div className="box-content evolution-box-content" style={{ display: 'flex', justifyContent: 'center' }}>
+            {evolutions.length > 0 ? (
+              renderEvolutionForest(evolutions, pokemon.name, onEvolutionClick)
             ) : (
               <p style={{ margin: 0, color: '#888', fontSize: '12px' }}>No evolution available.</p>
             )}
