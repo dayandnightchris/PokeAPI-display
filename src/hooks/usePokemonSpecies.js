@@ -29,10 +29,21 @@ export function usePokemonSpecies(pokemon) {
         if (active) setAllEncounters([])
       })
 
-    // Auto-select the latest version
-    if (pokemon.game_indices && pokemon.game_indices.length > 0) {
-      const latestVersion = pokemon.game_indices[pokemon.game_indices.length - 1].version.name
-      if (active) setSelectedVersion(latestVersion)
+    // Preserve the user's currently selected version when switching Pokémon.
+    // If the current selection is not available for the new Pokémon, fall back to the latest.
+    const gameIndices = pokemon.game_indices || []
+    if (gameIndices.length > 0) {
+      const available = new Set(gameIndices.map(gi => gi.version?.name).filter(Boolean))
+      const latestVersion = gameIndices[gameIndices.length - 1].version.name
+
+      if (active) {
+        setSelectedVersion(prev => {
+          if (prev && available.has(prev)) return prev
+          return latestVersion
+        })
+      }
+    } else {
+      if (active) setSelectedVersion(null)
     }
 
     return () => {
