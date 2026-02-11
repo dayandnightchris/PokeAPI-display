@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export default function VersionSelector({ pokemon, selectedVersion, onVersionChange }) {
+export default function VersionSelector({ pokemon, selectedVersion, onVersionChange, allEncounters }) {
   const [versions, setVersions] = useState([])
   const [loading, setLoading] = useState(false)
 
@@ -74,18 +74,36 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
         })
       }
 
+      if (allEncounters && allEncounters.length > 0) {
+        allEncounters.forEach(encounter => {
+          encounter.version_details?.forEach(detail => {
+            const versionName = detail.version?.name
+            if (versionName) versionSet.add(versionName)
+          })
+        })
+      }
+
       const uniqueVersions = Array.from(versionSet).sort((a, b) => {
         const genA = versionGeneration[a] || 0
         const genB = versionGeneration[b] || 0
         if (genA !== genB) return genA - genB
-        return a.localeCompare(b)
+        return (versionDisplayNames[a] || a).localeCompare(versionDisplayNames[b] || b)
       })
 
-      // Build version options
-      const versionOptions = uniqueVersions.map(version => ({
-        display: versionDisplayNames[version] || version,
-        name: version
-      }))
+      const grouped = new Map()
+      uniqueVersions.forEach(version => {
+        const gen = versionGeneration[version] || 0
+        if (!grouped.has(gen)) grouped.set(gen, [])
+        grouped.get(gen).push({
+          display: versionDisplayNames[version] || version,
+          name: version,
+          gen
+        })
+      })
+
+      const versionOptions = Array.from(grouped.entries())
+        .sort((a, b) => a[0] - b[0])
+        .map(([, items]) => items)
 
       setVersions(versionOptions)
     } catch (err) {
@@ -93,7 +111,13 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
     } finally {
       setLoading(false)
     }
-  }, [pokemon])
+  }, [pokemon, allEncounters])
+
+  useEffect(() => {
+    if (!selectedVersion && versions.length > 0 && versions[0].length > 0) {
+      onVersionChange(versions[0][0].name)
+    }
+  }, [selectedVersion, versions, onVersionChange])
 
   const handleVersionChange = (e) => {
     const version = e.target.value
@@ -122,11 +146,18 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
         onChange={handleVersionChange}
         className="version-dropdown"
       >
-        {versions.map(({ display, name }) => (
-          <option key={name} value={name}>
-            {display}
-          </option>
-        ))}
+        {versions.map((group, idx) => {
+          const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
+          return (
+            <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
+              {group.map(({ display, name }) => (
+                <option key={name} value={name}>
+                  {display}
+                </option>
+              ))}
+            </optgroup>
+          )
+        })}
       </select>
     </div>
   )

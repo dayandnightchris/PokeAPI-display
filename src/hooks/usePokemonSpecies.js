@@ -51,5 +51,23 @@ export function usePokemonSpecies(pokemon) {
     }
   }, [pokemon])
 
+  useEffect(() => {
+    if (!pokemon || selectedVersion) return
+    if (!allEncounters || allEncounters.length === 0) return
+
+    const encounterVersions = new Set()
+    allEncounters.forEach(encounter => {
+      encounter.version_details?.forEach(detail => {
+        const versionName = detail.version?.name
+        if (versionName) encounterVersions.add(versionName)
+      })
+    })
+
+    const versionList = Array.from(encounterVersions)
+    if (versionList.length === 0) return
+
+    setSelectedVersion(versionList[0])
+  }, [pokemon, selectedVersion, allEncounters])
+
   return { species, selectedVersion, setSelectedVersion, allEncounters }
 }

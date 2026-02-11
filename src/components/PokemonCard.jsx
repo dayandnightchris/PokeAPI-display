@@ -195,7 +195,12 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
     <div className="pokemon-card-container">
       {/* Version Selector */}
       <div className="version-selector-wrapper">
-        <VersionSelector pokemon={pokemon} selectedVersion={selectedVersion} onVersionChange={setSelectedVersion} />
+        <VersionSelector
+          pokemon={pokemon}
+          selectedVersion={selectedVersion}
+          onVersionChange={setSelectedVersion}
+          allEncounters={allEncounters}
+        />
       </div>
 
       {/* Form Selector */}
