@@ -446,22 +446,55 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
         {/* Locations Box */}
         <div className="info-box">
           <div className="box-title">Location</div>
-          <div className="box-content" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+          <div className="box-content" style={{ maxHeight: '300px', overflowY: 'auto' }}>
             {selectedVersion && allEncounters.length > 0 ? (
               (() => {
-                const locationsForVersion = allEncounters
-                  .filter(enc =>
-                    enc.version_details?.some(vd => vd.version.name === selectedVersion)
-                  )
-                  .map(enc => enc.location_area.name)
+                // Build encounter data grouped by location
+                const encountersByLocation = {}
+                allEncounters.forEach(enc => {
+                  const versionDetail = enc.version_details?.find(vd => vd.version.name === selectedVersion)
+                  if (versionDetail && versionDetail.encounter_details?.length > 0) {
+                    const locationName = enc.location_area.name
+                    if (!encountersByLocation[locationName]) {
+                      encountersByLocation[locationName] = []
+                    }
+                    versionDetail.encounter_details.forEach(detail => {
+                      encountersByLocation[locationName].push({
+                        method: detail.method?.name || 'unknown',
+                        rate: detail.chance || 0
+                      })
+                    })
+                  }
+                })
                 
-                const uniqueLocations = [...new Set(locationsForVersion)]
-                return uniqueLocations.length > 0 ? (
-                  <ul style={{ padding: '0 20px', margin: '0', lineHeight: '1.8' }}>
-                    {uniqueLocations.map(location => (
-                      <li key={location}>{location.replace(/-/g, ' ')}</li>
-                    ))}
-                  </ul>
+                const hasEncounters = Object.keys(encountersByLocation).length > 0
+                return hasEncounters ? (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #ccc', fontWeight: 'bold' }}>
+                        <th style={{ padding: '6px 8px', textAlign: 'left' }}>Location</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'left' }}>Method</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'center' }}>Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(encountersByLocation).map(([location, encounters]) =>
+                        encounters.map((encounter, idx) => (
+                          <tr key={`${location}-${idx}`} style={{ borderBottom: '1px solid #eee' }}>
+                            <td style={{ padding: '6px 8px' }}>
+                              {idx === 0 ? location.replace(/-/g, ' ') : ''}
+                            </td>
+                            <td style={{ padding: '6px 8px' }}>
+                              {encounter.method.replace(/-/g, ' ').charAt(0).toUpperCase() + encounter.method.replace(/-/g, ' ').slice(1)}
+                            </td>
+                            <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                              {encounter.rate}%
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 ) : (
                   <p style={{ margin: '0' }}>No known locations for this version.</p>
                 )
