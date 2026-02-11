@@ -360,17 +360,21 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
         <div className="info-box">
           <div className="box-title">Abilities</div>
           <div className="box-content abilities-list">
-            {filteredAbilities.map((ability, idx) => (
-              <div key={idx} className="ability-item">
-                <span className="tooltip-trigger">
-                  {ability.ability.name}
-                  {abilityDescriptions[ability.ability.name]?.description && (
-                    <span className="tooltip-text">{abilityDescriptions[ability.ability.name].description}</span>
-                  )}
-                </span>
-                {showHiddenBadge(ability.is_hidden) && <span className="hidden-badge">Hidden</span>}
-              </div>
-            ))}
+            {filteredAbilities.length > 0 ? (
+              filteredAbilities.map((ability, idx) => (
+                <div key={idx} className="ability-item">
+                  <span className="tooltip-trigger">
+                    {ability.ability.name}
+                    {abilityDescriptions[ability.ability.name]?.description && (
+                      <span className="tooltip-text">{abilityDescriptions[ability.ability.name].description}</span>
+                    )}
+                  </span>
+                  {showHiddenBadge(ability.is_hidden) && <span className="hidden-badge">Hidden</span>}
+                </div>
+              ))
+            ) : (
+              <p style={{ margin: '0', color: '#888', fontSize: '12px' }}>No abilities in this version.</p>
+            )}
           </div>
         </div>
 
