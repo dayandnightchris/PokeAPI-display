@@ -446,7 +446,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
         {/* Locations Box */}
         <div className="info-box">
           <div className="box-title">Location</div>
-          <div className="box-content">
+          <div className="box-content" style={{ maxHeight: '200px', overflowY: 'auto' }}>
             {selectedVersion && allEncounters.length > 0 ? (
               (() => {
                 const locationsForVersion = allEncounters
