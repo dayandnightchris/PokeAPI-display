@@ -189,6 +189,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
     ? englishEntries.filter(entry => entry.version?.name === selectedVersion)
     : englishEntries
   const displayedEntries = selectedVersion ? versionEntries : versionEntries.slice(0, 3)
+  const nationalDexNumber = species?.pokedex_numbers?.find(entry => entry.pokedex?.name === 'national')?.entry_number
 
   return (
     <div className="pokemon-card-container">
@@ -237,7 +238,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
             </div>
             <div className="info-row">
               <span className="label">#</span>
-              <span className="value">{displayPokemon.id || 'Unknown'}</span>
+              <span className="value">{nationalDexNumber || 'Unknown'}</span>
             </div>
             <div className="info-row" style={{ position: 'relative' }}>
               <span className="label">Type:</span>
