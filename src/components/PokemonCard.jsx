@@ -100,24 +100,24 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
   const getTypeColor = (typeName) => typeColors[typeName?.toLowerCase()] || '#999'
 
   const typeEffectiveness = {
-    normal: { resists: [], weak: ['fighting'], veryWeak: [] },
-    fire: { resists: ['fire', 'grass', 'ice', 'bug', 'steel', 'fairy'], weak: ['water', 'ground', 'rock'], veryWeak: [] },
-    water: { resists: ['fire', 'water', 'ice', 'steel'], weak: ['electric', 'grass'], veryWeak: [] },
-    electric: { resists: ['flying', 'steel'], weak: ['ground'], veryWeak: [] },
-    grass: { resists: ['ground', 'water', 'grass'], weak: ['fire', 'ice', 'poison', 'flying', 'bug'], veryWeak: [] },
-    ice: { resists: ['ice'], weak: ['fire', 'fighting', 'rock', 'steel'], veryWeak: [] },
-    fighting: { resists: ['rock', 'bug', 'dark'], weak: ['flying', 'psychic', 'fairy'], veryWeak: [] },
-    poison: { resists: ['fighting', 'poison', 'bug', 'grass'], weak: ['ground', 'psychic'], veryWeak: [] },
-    ground: { resists: ['poison', 'rock'], weak: ['water', 'grass', 'ice'], veryWeak: [] },
-    flying: { resists: ['fighting', 'bug', 'grass'], weak: ['electric', 'ice', 'rock'], veryWeak: [] },
-    psychic: { resists: ['fighting', 'psychic'], weak: ['bug', 'ghost', 'dark'], veryWeak: [] },
-    bug: { resists: ['fighting', 'ground', 'grass'], weak: ['fire', 'flying', 'rock'], veryWeak: [] },
-    rock: { resists: ['normal', 'flying', 'poison', 'fire'], weak: ['water', 'grass', 'fighting', 'ground', 'steel'], veryWeak: [] },
-    ghost: { resists: ['poison', 'bug'], weak: ['ghost', 'dark'], veryWeak: [] },
-    dragon: { resists: ['fire', 'water', 'grass', 'electric'], weak: ['ice', 'dragon', 'fairy'], veryWeak: [] },
-    dark: { resists: ['ghost', 'dark'], weak: ['fighting', 'bug', 'fairy'], veryWeak: [] },
-    steel: { resists: ['normal', 'flying', 'rock', 'bug', 'steel', 'grass', 'psychic', 'ice', 'dragon', 'fairy'], weak: ['fire', 'water', 'ground'], veryWeak: [] },
-    fairy: { resists: ['fighting', 'bug', 'dark'], weak: ['poison', 'steel'], veryWeak: [] }
+    normal: { resists: [], weak: ['fighting'], immune: ['ghost'], veryWeak: [] },
+    fire: { resists: ['fire', 'grass', 'ice', 'bug', 'steel', 'fairy'], weak: ['water', 'ground', 'rock'], immune: [], veryWeak: [] },
+    water: { resists: ['fire', 'water', 'ice', 'steel'], weak: ['electric', 'grass'], immune: [], veryWeak: [] },
+    electric: { resists: ['flying', 'steel'], weak: ['ground'], immune: [], veryWeak: [] },
+    grass: { resists: ['ground', 'water', 'grass'], weak: ['fire', 'ice', 'poison', 'flying', 'bug'], immune: [], veryWeak: [] },
+    ice: { resists: ['ice'], weak: ['fire', 'fighting', 'rock', 'steel'], immune: [], veryWeak: [] },
+    fighting: { resists: ['rock', 'bug', 'dark'], weak: ['flying', 'psychic', 'fairy'], immune: [], veryWeak: [] },
+    poison: { resists: ['fighting', 'poison', 'bug', 'grass'], weak: ['ground', 'psychic'], immune: [], veryWeak: [] },
+    ground: { resists: ['poison', 'rock'], weak: ['water', 'grass', 'ice'], immune: ['electric'], veryWeak: [] },
+    flying: { resists: ['fighting', 'bug', 'grass'], weak: ['electric', 'ice', 'rock'], immune: ['ground'], veryWeak: [] },
+    psychic: { resists: ['fighting', 'psychic'], weak: ['bug', 'ghost', 'dark'], immune: [], veryWeak: [] },
+    bug: { resists: ['fighting', 'ground', 'grass'], weak: ['fire', 'flying', 'rock'], immune: [], veryWeak: [] },
+    rock: { resists: ['normal', 'flying', 'poison', 'fire'], weak: ['water', 'grass', 'fighting', 'ground', 'steel'], immune: [], veryWeak: [] },
+    ghost: { resists: ['poison', 'bug'], weak: ['ghost', 'dark'], immune: ['normal', 'fighting'], veryWeak: [] },
+    dragon: { resists: ['fire', 'water', 'grass', 'electric'], weak: ['ice', 'dragon', 'fairy'], immune: [], veryWeak: [] },
+    dark: { resists: ['ghost', 'dark'], weak: ['fighting', 'bug', 'fairy'], immune: ['psychic'], veryWeak: [] },
+    steel: { resists: ['normal', 'flying', 'rock', 'bug', 'steel', 'grass', 'psychic', 'ice', 'dragon', 'fairy'], weak: ['fire', 'water', 'ground'], immune: ['poison'], veryWeak: [] },
+    fairy: { resists: ['fighting', 'bug', 'dark'], weak: ['poison', 'steel'], immune: ['dragon'], veryWeak: [] }
   }
 
   const getCombinedTypeMatchups = () => {
@@ -128,6 +128,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
     let weak = new Set()
     let veryWeak = new Set()
     let veryResistant = new Set()
+    let immune = new Set()
 
     types.forEach(type => {
       const matchup = typeEffectiveness[type]
@@ -135,6 +136,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
         matchup.resists?.forEach(t => resists.add(t))
         matchup.weak?.forEach(t => weak.add(t))
         matchup.veryWeak?.forEach(t => veryWeak.add(t))
+        matchup.immune?.forEach(t => immune.add(t))
       }
     })
 
@@ -162,8 +164,15 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
     veryWeak.forEach(t => weak.delete(t))
     weak.forEach(t => veryResistant.delete(t))
     veryWeak.forEach(t => veryResistant.delete(t))
+    immune.forEach(t => {
+      resists.delete(t)
+      weak.delete(t)
+      veryWeak.delete(t)
+      veryResistant.delete(t)
+    })
 
     return {
+      immune: Array.from(immune),
       veryResistant: Array.from(veryResistant),
       resists: Array.from(resists),
       weak: Array.from(weak),
@@ -268,6 +277,20 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
                           transform: 'translate(-50%, -50%)',
                           boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
                         }}>
+                          <div style={{ marginBottom: '8px' }}>
+                            <div style={{ color: '#aaa', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>Immune to:</div>
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                              {getCombinedTypeMatchups().immune.length > 0 ? (
+                                getCombinedTypeMatchups().immune.map(t => (
+                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: '#fff', padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                                    {t}
+                                  </span>
+                                ))
+                              ) : (
+                                <span style={{ color: '#888', fontSize: '11px' }}>None</span>
+                              )}
+                            </div>
+                          </div>
                           <div style={{ marginBottom: '8px' }}>
                             <div style={{ color: '#aaa', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>Very Resistant to:</div>
                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
