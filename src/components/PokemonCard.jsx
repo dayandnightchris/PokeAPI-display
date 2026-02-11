@@ -11,13 +11,13 @@ import {
   useVersionSprite
 } from '../hooks'
 
-export default function PokemonCard({ pokemon, onEvolutionClick }) {
+export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) {
   // UI state
   const [hoveredType, setHoveredType] = useState(null)
 
   // Data fetching hooks
   const { species, selectedVersion, setSelectedVersion, allEncounters } = usePokemonSpecies(pokemon)
-  const { forms, selectedForm, setSelectedForm, formPokemon } = usePokemonForms({ species, pokemon, selectedVersion })
+  const { forms, selectedForm, setSelectedForm, formPokemon } = usePokemonForms({ species, pokemon, selectedVersion, initialForm })
   const abilityDescriptions = useAbilityDescriptions(formPokemon || pokemon)
   const evolutions = useEvolutionChain({ species, selectedVersion })
   const moves = useGroupedMoves(formPokemon || pokemon)
@@ -26,10 +26,10 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
   // Derive display pokemon
   const displayPokemon = formPokemon || pokemon
 
-  // Clear form selection when pokemon changes
+  // Clear or restore form selection when pokemon changes
   useEffect(() => {
-    setSelectedForm(null)
-  }, [pokemon?.id, setSelectedForm])
+    setSelectedForm(initialForm || null)
+  }, [pokemon?.id, initialForm, setSelectedForm])
 
   const typeColors = {
     normal: '#A8A878',
