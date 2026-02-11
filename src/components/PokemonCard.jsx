@@ -449,20 +449,21 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
           <div className="box-content" style={{ maxHeight: '300px', overflowY: 'auto' }}>
             {selectedVersion && allEncounters.length > 0 ? (
               (() => {
-                // Build encounter data grouped by location
+                // Build encounter data grouped by location and method
                 const encountersByLocation = {}
                 allEncounters.forEach(enc => {
                   const versionDetail = enc.version_details?.find(vd => vd.version.name === selectedVersion)
                   if (versionDetail && versionDetail.encounter_details?.length > 0) {
                     const locationName = enc.location_area.name
                     if (!encountersByLocation[locationName]) {
-                      encountersByLocation[locationName] = []
+                      encountersByLocation[locationName] = {}
                     }
                     versionDetail.encounter_details.forEach(detail => {
-                      encountersByLocation[locationName].push({
-                        method: detail.method?.name || 'unknown',
-                        rate: detail.chance || 0
-                      })
+                      const methodName = detail.method?.name || 'unknown'
+                      if (!encountersByLocation[locationName][methodName]) {
+                        encountersByLocation[locationName][methodName] = 0
+                      }
+                      encountersByLocation[locationName][methodName] += detail.chance || 0
                     })
                   }
                 })
@@ -478,17 +479,17 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.entries(encountersByLocation).map(([location, encounters]) =>
-                        encounters.map((encounter, idx) => (
-                          <tr key={`${location}-${idx}`} style={{ borderBottom: '1px solid #eee' }}>
+                      {Object.entries(encountersByLocation).map(([location, methods]) =>
+                        Object.entries(methods).map(([method, rate], idx) => (
+                          <tr key={`${location}-${method}`} style={{ borderBottom: '1px solid #eee' }}>
                             <td style={{ padding: '6px 8px' }}>
                               {idx === 0 ? location.replace(/-/g, ' ') : ''}
                             </td>
                             <td style={{ padding: '6px 8px' }}>
-                              {encounter.method.replace(/-/g, ' ').charAt(0).toUpperCase() + encounter.method.replace(/-/g, ' ').slice(1)}
+                              {method.replace(/-/g, ' ').charAt(0).toUpperCase() + method.replace(/-/g, ' ').slice(1)}
                             </td>
                             <td style={{ padding: '6px 8px', textAlign: 'center' }}>
-                              {encounter.rate}%
+                              {rate}%
                             </td>
                           </tr>
                         ))
