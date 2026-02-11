@@ -90,7 +90,7 @@ export default function PokemonSearch({ onSearch, loading, pokemonList }) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             onFocus={() => input && setShowSuggestions(suggestions.length > 0)}
-            placeholder="Enter Pokemon name or ID..."
+            placeholder="Enter Pokemon name or dex number..."
             disabled={loading}
             autoComplete="off"
           />
