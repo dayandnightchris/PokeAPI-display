@@ -295,4 +295,12 @@
   opacity: 1;
 }
 
+.move-table{
+  
+  tr:nth-child(even) {background: #ff6b6b79}
+
+}
+
+
+
 

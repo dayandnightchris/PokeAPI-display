@@ -525,12 +525,14 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
           {moves.levelUp.length > 0 && (
             <div className="info-box">
               <div className="box-title">Level Up Moves</div>
-              <div className="box-content" style={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
-                <ul style={{ padding: '0 20px', margin: '0' }}>
+              <div className="box-content" style={{ fontSize: '14px', maxHeight: '200px', overflowY: 'auto' }}>
+                <table className="move-table" align ='left' style={{ padding: '0 20px', margin: '0' }}>
                   {moves.levelUp.map(move => (
-                    <li key={move.name}>Lv. {move.level}: {move.name}</li>
+                    <tr>
+                    <td key={move.name}><b>Lv. {move.level}:</b> {move.name}</td>
+                    </tr>
                   ))}
-                </ul>
+                </table>
               </div>
             </div>
           )}
@@ -538,12 +540,14 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
           {moves.tm.length > 0 && (
             <div className="info-box">
               <div className="box-title">TMs</div>
-              <div className="box-content" style={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
-                <ul style={{ padding: '0 20px', margin: '0' }}>
+              <div className="box-content" style={{ fontSize: '14px', maxHeight: '200px', overflowY: 'auto' }}>
+                <table className="move-table" align ='left' style={{ padding: '0 20px', margin: '0' }}>
                   {moves.tm.map((move, idx) => (
-                    <li key={move}>TM{String(idx + 1).padStart(3, '0')}: {move}</li>
+                    <tr>
+                    <td key={move}><b>TM{String(idx + 1).padStart(3, '0')}:</b> {move}</td>
+                    </tr>
                   ))}
-                </ul>
+                </table>
               </div>
             </div>
           )}
@@ -551,12 +555,14 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
           {moves.tutor.length > 0 && (
             <div className="info-box">
               <div className="box-title">Tutor</div>
-              <div className="box-content" style={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
-                <ul style={{ padding: '0 20px', margin: '0' }}>
+              <div className="box-content" style={{ fontSize: '14px', maxHeight: '200px', overflowY: 'auto' }}>
+                <table className="move-table" align ='left' style={{  padding: '0 20px', margin: '0' }}>
                   {moves.tutor.map(move => (
-                    <li key={move}>{move}</li>
+                    <tr>
+                    <td key={move}>{move}</td>
+                    </tr>
                   ))}
-                </ul>
+                </table>
               </div>
             </div>
           )}
@@ -577,12 +583,14 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
           {moves.egg.length > 0 && (
             <div className="info-box">
               <div className="box-title">Egg</div>
-              <div className="box-content" style={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
-                <ul style={{ padding: '0 20px', margin: '0' }}>
+              <div className="box-content" style={{ fontSize: '14px', maxHeight: '200px', overflowY: 'auto' }}>
+                <table className="move-table" align ='left' style={{ padding: '0 20px', margin: '0' }}>
                   {moves.egg.map(move => (
-                    <li key={move}>{move}</li>
+                    <tr>
+                    <td key={move}>{move}</td>
+                    </tr>
                   ))}
-                </ul>
+                </table>
               </div>
             </div>
           )}
