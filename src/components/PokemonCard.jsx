@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import StatsCalculator from './StatsCalculator'
 import VersionSelector from './VersionSelector'
 import { renderEvolutionForest } from './EvolutionTree'
+import { getVersionInfo, generationOrder } from '../utils/versionInfo'
 import {
   usePokemonSpecies,
   useAbilityDescriptions,
@@ -14,13 +15,14 @@ import {
 export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) {
   // UI state
   const [hoveredType, setHoveredType] = useState(null)
+  const [versionInfo, setVersionInfo] = useState(null)
 
   // Data fetching hooks
   const { species, selectedVersion, setSelectedVersion, allEncounters } = usePokemonSpecies(pokemon)
   const { forms, selectedForm, setSelectedForm, formPokemon } = usePokemonForms({ species, pokemon, selectedVersion, initialForm })
   const abilityDescriptions = useAbilityDescriptions(formPokemon || pokemon)
   const evolutions = useEvolutionChain({ species, selectedVersion })
-  const moves = useGroupedMoves(formPokemon || pokemon)
+  const moves = useGroupedMoves(formPokemon || pokemon, selectedVersion)
   const versionSprite = useVersionSprite(formPokemon || pokemon, selectedVersion)
 
   // Derive display pokemon
@@ -30,6 +32,49 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
   useEffect(() => {
     setSelectedForm(initialForm || null)
   }, [pokemon?.id, initialForm, setSelectedForm])
+
+  useEffect(() => {
+    let active = true
+
+    if (!selectedVersion) {
+      setVersionInfo(null)
+      return () => {
+        active = false
+      }
+    }
+
+    const loadVersionInfo = async () => {
+      const info = await getVersionInfo(selectedVersion)
+      if (active) setVersionInfo(info)
+    }
+
+    loadVersionInfo()
+
+    return () => {
+      active = false
+    }
+  }, [selectedVersion])
+
+  const selectedGenerationRank = versionInfo?.generation
+    ? generationOrder[versionInfo.generation]
+    : null
+
+  const showHiddenBadge = (isHidden) => {
+    if (!isHidden) return false
+    if (!selectedGenerationRank) return true
+    return selectedGenerationRank >= generationOrder['generation-v']
+  }
+
+  const filteredAbilities = (displayPokemon.abilities || []).filter(ability => {
+    if (!selectedGenerationRank) return true
+    const meta = abilityDescriptions[ability.ability.name]
+    const abilityGenerationRank = meta?.generation
+      ? generationOrder[meta.generation]
+      : null
+
+    if (!abilityGenerationRank) return true
+    return abilityGenerationRank <= selectedGenerationRank
+  })
 
   const typeColors = {
     normal: '#A8A878',
@@ -129,6 +174,12 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
   if (!pokemon) {
     return <div className="loading">Loading Pokemon data...</div>
   }
+
+  const englishEntries = species?.flavor_text_entries?.filter(entry => entry.language?.name === 'en') || []
+  const versionEntries = selectedVersion
+    ? englishEntries.filter(entry => entry.version?.name === selectedVersion)
+    : englishEntries
+  const displayedEntries = selectedVersion ? versionEntries : versionEntries.slice(0, 3)
 
   return (
     <div className="pokemon-card-container">
@@ -286,15 +337,15 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
         <div className="info-box">
           <div className="box-title">Abilities</div>
           <div className="box-content abilities-list">
-            {displayPokemon.abilities?.map((ability, idx) => (
+            {filteredAbilities.map((ability, idx) => (
               <div key={idx} className="ability-item">
                 <span className="tooltip-trigger">
                   {ability.ability.name}
-                  {abilityDescriptions[ability.ability.name] && (
-                    <span className="tooltip-text">{abilityDescriptions[ability.ability.name]}</span>
+                  {abilityDescriptions[ability.ability.name]?.description && (
+                    <span className="tooltip-text">{abilityDescriptions[ability.ability.name].description}</span>
                   )}
                 </span>
-                {ability.is_hidden && <span className="hidden-badge">Hidden</span>}
+                {showHiddenBadge(ability.is_hidden) && <span className="hidden-badge">Hidden</span>}
               </div>
             ))}
           </div>
@@ -537,12 +588,9 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
       </div>
 
       {/* Pokedex Entries Grid */}
-      {species?.flavor_text_entries?.length > 0 && (
+      {displayedEntries.length > 0 && (
         <div className="grid-3">
-          {species.flavor_text_entries
-            .filter(e => e.language.name === 'en')
-            .slice(0, 3)
-            .map((entry, idx) => (
+          {displayedEntries.map((entry, idx) => (
               <div key={idx} className="info-box">
                 <div className="box-title">{entry.version?.name?.replace(/-/g, ' ') || `Entry ${idx + 1}`}</div>
                 <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>

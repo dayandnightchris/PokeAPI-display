@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { fetchPokemonCached } from '../utils/pokeCache'
+import { getVersionInfo } from '../utils/versionInfo'
 
 export function usePokemonForms({ species, pokemon, selectedVersion, initialForm }) {
   const [forms, setForms] = useState([])
@@ -12,10 +13,25 @@ export function usePokemonForms({ species, pokemon, selectedVersion, initialForm
 
     let active = true
 
-    const getVersionAvailability = async (formName) => {
+    const getVersionAvailability = async (formName, versionInfo) => {
       try {
         const data = await fetchPokemonCached(formName)
-        if (!data) return true
+        if (!data) {
+          if (!versionInfo?.versionGroup) return true
+          const formRes = await fetch(`https://pokeapi.co/api/v2/pokemon-form/${formName}/`)
+          if (!formRes.ok) return false
+          const formData = await formRes.json()
+          if (formData?.version_group?.name === versionInfo.versionGroup) return true
+
+          if (versionInfo.generation && formData?.version_group?.url) {
+            const groupRes = await fetch(formData.version_group.url)
+            if (!groupRes.ok) return false
+            const groupData = await groupRes.json()
+            return groupData?.generation?.name === versionInfo.generation
+          }
+
+          return false
+        }
         // Check if this form exists in the selected version
         return data.game_indices?.some(gi => gi.version.name === selectedVersion) || false
       } catch (err) {
@@ -48,10 +64,11 @@ export function usePokemonForms({ species, pokemon, selectedVersion, initialForm
 
     if (selectedVersion) {
       const filterByVersion = async () => {
+        const versionInfo = await getVersionInfo(selectedVersion)
         const availableForms = []
         for (const form of formList) {
           if (!active) return
-          const isAvailable = await getVersionAvailability(form)
+          const isAvailable = await getVersionAvailability(form, versionInfo)
           if (isAvailable) {
             availableForms.push(form)
           }

@@ -15,10 +15,11 @@ export function useAbilityDescriptions(displayPokemon) {
           const res = await fetch(ability.ability.url)
           const data = await res.json()
           const desc = data.effect_entries?.find(e => e.language.name === 'en')?.effect || 'No description available.'
-          descriptions[ability.ability.name] = desc
+          const generation = data.generation?.name || null
+          descriptions[ability.ability.name] = { description: desc, generation }
         } catch (err) {
           console.error('Failed to fetch ability:', ability.ability.name)
-          descriptions[ability.ability.name] = 'No description available.'
+          descriptions[ability.ability.name] = { description: 'No description available.', generation: null }
         }
       }
       if (active) {
