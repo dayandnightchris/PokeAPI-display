@@ -12,6 +12,161 @@ import {
   useVersionSprite
 } from '../hooks'
 
+const formatMoveLabel = (value) => {
+  if (!value) return 'N/A'
+  return value.replace(/-/g, ' ')
+}
+
+const getMoveEffectEntry = (details) => {
+  if (!details) return 'N/A'
+  const entry = (details.effect_entries || []).find(e => e.language?.name === 'en')
+  if (!entry) return 'N/A'
+  const baseText = entry.short_effect || entry.effect || 'N/A'
+  if (details.effect_chance == null) return baseText
+  return baseText.replace('$effect_chance', details.effect_chance)
+}
+
+function MoveTable({ title, moves, showLevel, showTmNumber }) {
+  const [sortConfig, setSortConfig] = useState({
+    key: showLevel ? 'level' : showTmNumber ? 'tmNumber' : 'name',
+    direction: 'asc'
+  })
+
+  const columns = [
+    ...(showLevel ? [{ key: 'level', label: 'Level', numeric: true }] : []),
+    ...(showTmNumber ? [{ key: 'tmNumber', label: 'TM#', numeric: true }] : []),
+    { key: 'name', label: 'Name' },
+    { key: 'type', label: 'Type' },
+    { key: 'effect', label: 'Effect Entry' },
+    { key: 'category', label: 'Category' },
+    { key: 'power', label: 'Power', numeric: true },
+    { key: 'pp', label: 'PP', numeric: true },
+    { key: 'accuracy', label: 'Accuracy', numeric: true },
+    { key: 'priority', label: 'Priority', numeric: true },
+    { key: 'introduced', label: 'Introduced' }
+  ]
+
+  const handleSort = (key) => {
+    setSortConfig(prev => {
+      const direction = prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+      return { key, direction }
+    })
+  }
+
+  const getSortValue = (move, key) => {
+    switch (key) {
+      case 'level':
+        return move.level ?? null
+      case 'tmNumber':
+        return move.tmNumber ?? null
+      case 'name':
+        return move.name
+      case 'type':
+        return move.details?.type?.name
+      case 'effect':
+        return getMoveEffectEntry(move.details)
+      case 'category':
+        return move.details?.damage_class?.name
+      case 'power':
+        return move.details?.power
+      case 'pp':
+        return move.details?.pp
+      case 'accuracy':
+        return move.details?.accuracy
+      case 'priority':
+        return move.details?.priority
+      case 'introduced':
+        return move.details?.generation?.name
+      default:
+        return null
+    }
+  }
+
+  const getSortIndicator = (key) => {
+    if (sortConfig.key !== key) return ''
+    return sortConfig.direction === 'asc' ? ' ▲' : ' ▼'
+  }
+
+  const sortedMoves = [...moves].sort((a, b) => {
+    const valueA = getSortValue(a, sortConfig.key)
+    const valueB = getSortValue(b, sortConfig.key)
+
+    if (valueA == null && valueB == null) return 0
+    if (valueA == null) return 1
+    if (valueB == null) return -1
+
+    let result = 0
+    if (typeof valueA === 'number' && typeof valueB === 'number') {
+      result = valueA - valueB
+    } else {
+      result = String(valueA).localeCompare(String(valueB))
+    }
+
+    return sortConfig.direction === 'asc' ? result : -result
+  })
+
+  const renderCell = (move, key) => {
+    switch (key) {
+      case 'level':
+        return move.level ?? 'N/A'
+      case 'tmNumber':
+        return move.tmNumber ? String(move.tmNumber).padStart(3, '0') : 'N/A'
+      case 'name':
+        return formatMoveLabel(move.name)
+      case 'type':
+        return formatMoveLabel(move.details?.type?.name)
+      case 'effect':
+        return getMoveEffectEntry(move.details)
+      case 'category':
+        return formatMoveLabel(move.details?.damage_class?.name)
+      case 'power':
+        return move.details?.power ?? 'N/A'
+      case 'pp':
+        return move.details?.pp ?? 'N/A'
+      case 'accuracy':
+        return move.details?.accuracy ?? 'N/A'
+      case 'priority':
+        return move.details?.priority ?? 'N/A'
+      case 'introduced':
+        return formatMoveLabel(move.details?.generation?.name)
+      default:
+        return 'N/A'
+    }
+  }
+
+  return (
+    <div className="info-box">
+      <div className="box-title">{title}</div>
+      <div className="box-content" style={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
+        <table className="move-table" style={{ margin: '0' }}>
+          <thead>
+            <tr>
+              {columns.map(column => (
+                <th key={column.key} className={column.numeric ? 'move-col-number' : undefined}>
+                  <button type="button" onClick={() => handleSort(column.key)}>
+                    {column.label}{getSortIndicator(column.key)}
+                  </button>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sortedMoves.map(move => (
+              <tr key={showLevel ? `${move.name}-${move.level}` : showTmNumber ? `${move.name}-${move.tmNumber}` : move.name}>
+                {columns.map(column => (
+                  <td key={column.key} className={column.numeric ? 'move-col-number' : undefined}>
+                    {renderCell(move, column.key)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) {
   // UI state
   const [hoveredType, setHoveredType] = useState(null)
@@ -523,48 +678,15 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
       {(moves.levelUp.length > 0 || moves.tm.length > 0 || moves.tutor.length > 0 || moves.event.length > 0 || moves.egg.length > 0) && (
         <div className="container-flex">
           {moves.levelUp.length > 0 && (
-            <div className="info-box">
-              <div className="box-title">Level Up Moves</div>
-              <div className="box-content" style={{ fontSize: '14px', maxHeight: '200px', overflowY: 'auto' }}>
-                <table className="move-table" align ='left' style={{ padding: '0 20px', margin: '0' }}>
-                  {moves.levelUp.map(move => (
-                    <tr>
-                    <td key={move.name}><b>Lv. {move.level}:</b> {move.name}</td>
-                    </tr>
-                  ))}
-                </table>
-              </div>
-            </div>
+            <MoveTable title="Level Up Moves" moves={moves.levelUp} showLevel />
           )}
 
           {moves.tm.length > 0 && (
-            <div className="info-box">
-              <div className="box-title">TMs</div>
-              <div className="box-content" style={{ fontSize: '14px', maxHeight: '200px', overflowY: 'auto' }}>
-                <table className="move-table" align ='left' style={{ padding: '0 20px', margin: '0' }}>
-                  {moves.tm.map((move, idx) => (
-                    <tr>
-                    <td key={move}><b>TM{String(idx + 1).padStart(3, '0')}:</b> {move}</td>
-                    </tr>
-                  ))}
-                </table>
-              </div>
-            </div>
+            <MoveTable title="TMs" moves={moves.tm} showTmNumber />
           )}
 
           {moves.tutor.length > 0 && (
-            <div className="info-box">
-              <div className="box-title">Tutor</div>
-              <div className="box-content" style={{ fontSize: '14px', maxHeight: '200px', overflowY: 'auto' }}>
-                <table className="move-table" align ='left' style={{  padding: '0 20px', margin: '0' }}>
-                  {moves.tutor.map(move => (
-                    <tr>
-                    <td key={move}>{move}</td>
-                    </tr>
-                  ))}
-                </table>
-              </div>
-            </div>
+            <MoveTable title="Tutor" moves={moves.tutor} />
           )}
 
           {moves.event.length > 0 && (
@@ -573,7 +695,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
               <div className="box-content" style={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
                 <ul style={{ padding: '0 20px', margin: '0' }}>
                   {moves.event.map(move => (
-                    <li key={move}>{move}</li>
+                    <li key={move.name}>{formatMoveLabel(move.name)}</li>
                   ))}
                 </ul>
               </div>
@@ -581,18 +703,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
           )}
 
           {moves.egg.length > 0 && (
-            <div className="info-box">
-              <div className="box-title">Egg</div>
-              <div className="box-content" style={{ fontSize: '14px', maxHeight: '200px', overflowY: 'auto' }}>
-                <table className="move-table" align ='left' style={{ padding: '0 20px', margin: '0' }}>
-                  {moves.egg.map(move => (
-                    <tr>
-                    <td key={move}>{move}</td>
-                    </tr>
-                  ))}
-                </table>
-              </div>
-            </div>
+            <MoveTable title="Egg" moves={moves.egg} />
           )}
         </div>
       )}
