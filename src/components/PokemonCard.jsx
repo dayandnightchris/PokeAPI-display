@@ -514,6 +514,14 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
                   ))}
               </div>
             </div>
+            <div className="info-row">
+              <span className="label">Height:</span>
+              <span className="value">{pokemon.height ? (pokemon.height / 10).toFixed(1) + ' m' : 'N/A'}</span>
+            </div>
+            <div className="info-row">
+              <span className="label">Weight:</span>
+              <span className="value">{pokemon.weight ? (pokemon.weight / 10).toFixed(1) + ' kg' : 'N/A'}</span>
+            </div>
           </div>
         </div>
 
@@ -665,11 +673,23 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
 
         {/* Misc Stats Box */}
         <div className="info-box">
-          <div className="box-title">Misc Stats</div>
+          <div className="box-title">Encounter Info</div>
           <div className="box-content" style={{ fontSize: '12px' }}>
-            <div><strong>Height:</strong> {displayPokemon.height ? (displayPokemon.height / 10).toFixed(1) + ' m' : 'N/A'}</div>
-            <div><strong>Weight:</strong> {displayPokemon.weight ? (displayPokemon.weight / 10).toFixed(1) + ' kg' : 'N/A'}</div>
             <div><strong>Capture Rate:</strong> {species?.capture_rate || 'N/A'}</div>
+            <div><strong>Wild Held Item:</strong> {species?.capture_rate|| 'None'}</div>
+            <div><strong>EV Yield:</strong>    {pokemon.stats?.some(s => s.effort > 0) ? (
+                <ul style={{ padding: '0 20px', margin: '0' }}>
+                  {pokemon.stats.map(stat => (
+                    stat.effort > 0 && (
+                      <li key={stat.stat.name}>
+                        {stat.stat.name}: {stat.effort}
+                      </li>
+                    )
+                  ))}
+                </ul>
+              ) : (
+                <p style={{ margin: '0' }}>None</p>
+              )}</div>
           </div>
         </div>
       </div>
@@ -710,7 +730,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
 
       {/* Egg Groups, Hatch Steps, Gender, EV Yield Grid */}
       {species && (
-        <div className="grid-4">
+        <div className="grid-3">
           <div className="info-box">
             <div className="box-title">Egg Groups</div>
             <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>
@@ -741,25 +761,6 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
               <p style={{ margin: '0' }}>
                 {species.gender_rate === -1 ? 'Genderless' : species.gender_rate === 0 ? 'Male only' : species.gender_rate === 8 ? 'Female only' : `${species.gender_rate * 12.5}% Female`}
               </p>
-            </div>
-          </div>
-
-          <div className="info-box">
-            <div className="box-title">EV Yield</div>
-            <div className="box-content" style={{ fontSize: '12px' }}>
-              {displayPokemon.stats?.some(s => s.effort > 0) ? (
-                <ul style={{ padding: '0 20px', margin: '0' }}>
-                  {displayPokemon.stats.map(stat => (
-                    stat.effort > 0 && (
-                      <li key={stat.stat.name}>
-                        {stat.stat.name}: {stat.effort}
-                      </li>
-                    )
-                  ))}
-                </ul>
-              ) : (
-                <p style={{ margin: '0' }}>None</p>
-              )}
             </div>
           </div>
         </div>
