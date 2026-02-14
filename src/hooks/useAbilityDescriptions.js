@@ -4,13 +4,29 @@ export function useAbilityDescriptions(displayPokemon) {
   const [abilityDescriptions, setAbilityDescriptions] = useState({})
 
   useEffect(() => {
-    if (!displayPokemon?.abilities?.length) return
+    if (!displayPokemon?.abilities?.length && !displayPokemon?.past_abilities?.length) return
 
     let active = true
 
     const fetchAbilityData = async () => {
       const descriptions = {}
-      for (const ability of displayPokemon.abilities) {
+      // Collect all abilities from current and past entries
+      const allAbilities = [...(displayPokemon.abilities || [])]
+      if (displayPokemon.past_abilities) {
+        for (const entry of displayPokemon.past_abilities) {
+          if (entry.abilities) allAbilities.push(...entry.abilities)
+        }
+      }
+      // Deduplicate by ability name, skip null entries from past_abilities
+      const seen = new Set()
+      const uniqueAbilities = allAbilities.filter(a => {
+        if (!a.ability) return false
+        if (seen.has(a.ability.name)) return false
+        seen.add(a.ability.name)
+        return true
+      })
+
+      for (const ability of uniqueAbilities) {
         try {
           const res = await fetch(ability.ability.url)
           const data = await res.json()
@@ -32,7 +48,7 @@ export function useAbilityDescriptions(displayPokemon) {
     return () => {
       active = false
     }
-  }, [displayPokemon?.abilities])
+  }, [displayPokemon?.abilities, displayPokemon?.past_abilities])
 
   return abilityDescriptions
 }

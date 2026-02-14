@@ -220,15 +220,56 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
     return selectedGenerationRank >= generationOrder['generation-v']
   }
 
-  const filteredAbilities = (displayPokemon.abilities || []).filter(ability => {
-    if (!selectedGenerationRank) return true
-    const meta = abilityDescriptions[ability.ability.name]
-    const abilityGenerationRank = meta?.generation
-      ? generationOrder[meta.generation]
-      : null
+  const getGenerationAbilities = () => {
+    // If no generation is selected, use current abilities
+    if (!selectedGenerationRank) {
+      return displayPokemon.abilities || []
+    }
 
-    if (!abilityGenerationRank) return true
-    return abilityGenerationRank <= selectedGenerationRank
+    // Check if there are past abilities
+    const pastAbilities = displayPokemon.past_abilities || []
+    if (pastAbilities.length === 0) {
+      return displayPokemon.abilities || []
+    }
+
+    // Build a slot map from current abilities
+    const slotMap = new Map()
+    for (const ability of (displayPokemon.abilities || [])) {
+      slotMap.set(ability.slot, ability)
+    }
+
+    // past_abilities entries contain only the slots that CHANGED, not full lists.
+    // ability: null means that slot didn't exist in that era.
+    // Apply all entries whose generation >= selected generation as overrides.
+    for (const pastAbility of pastAbilities) {
+      const pastGenRank = pastAbility.generation?.name
+        ? generationOrder[pastAbility.generation.name]
+        : null
+
+      if (pastGenRank && pastGenRank >= selectedGenerationRank) {
+        for (const entry of pastAbility.abilities) {
+          if (entry.ability === null) {
+            // Slot didn't exist in this era — remove it
+            slotMap.delete(entry.slot)
+          } else {
+            // Slot had a different ability — override it
+            slotMap.set(entry.slot, entry)
+          }
+        }
+      }
+    }
+
+    return Array.from(slotMap.values()).sort((a, b) => a.slot - b.slot)
+  }
+
+  const generationAbilities = getGenerationAbilities()
+
+  // Filter out hidden abilities pre-Gen 5 (hidden abilities didn't exist before Gen 5)
+  const filteredAbilities = generationAbilities.filter(ability => {
+    if (ability.is_hidden && selectedGenerationRank && selectedGenerationRank < generationOrder['generation-v']) {
+      return false
+    }
+    return true
   })
 
   const getGenerationTypes = () => {
