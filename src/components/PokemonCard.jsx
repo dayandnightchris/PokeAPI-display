@@ -1,162 +1,235 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import StatsCalculator from './StatsCalculator'
 import VersionSelector from './VersionSelector'
+import { renderEvolutionForest } from './EvolutionTree'
+import { getVersionInfo, generationOrder } from '../utils/versionInfo'
+import {
+  usePokemonSpecies,
+  useAbilityDescriptions,
+  usePokemonForms,
+  useEvolutionChain,
+  useGroupedMoves,
+  useVersionSprite
+} from '../hooks'
 
-export default function PokemonCard({ pokemon, onEvolutionClick }) {
-  const [species, setSpecies] = useState(null)
-  const [selectedVersion, setSelectedVersion] = useState(null)
-  const [allEncounters, setAllEncounters] = useState([])
-  const [abilityDescriptions, setAbilityDescriptions] = useState({})
-  const [evolutions, setEvolutions] = useState([])
-  const [moves, setMoves] = useState({ levelUp: [], tm: [], egg: [] })
+const formatMoveLabel = (value) => {
+  if (!value) return 'N/A'
+  return value.replace(/-/g, ' ')
+}
 
-  useEffect(() => {
-    if (!pokemon) return
-    
-    // Fetch species data for more info
-    fetch(pokemon.species.url)
-      .then(res => res.json())
-      .then(data => setSpecies(data))
-      .catch(err => console.error('Failed to fetch species:', err))
-    
-    // Fetch location areas with version info
-    fetch(`https://pokeapi.co/api/v2/pokemon/${pokemon.id}/encounters`)
-      .then(res => res.json())
-      .then(data => setAllEncounters(data))
-      .catch(err => {
-        console.error('Failed to fetch location areas:', err)
-        setAllEncounters([])
-      })
-    
-    // Auto-select the latest version
-    if (pokemon.game_indices && pokemon.game_indices.length > 0) {
-      const latestVersion = pokemon.game_indices[pokemon.game_indices.length - 1].version.name
-      setSelectedVersion(latestVersion)
-    }
-  }, [pokemon])
+const getMoveEffectEntry = (details) => {
+  if (!details) return 'N/A'
+  const entry = (details.effect_entries || []).find(e => e.language?.name === 'en')
+  if (!entry) return 'N/A'
+  const baseText = entry.short_effect || entry.effect || 'N/A'
+  if (details.effect_chance == null) return baseText
+  return baseText.replace('$effect_chance', details.effect_chance)
+}
 
-  // Fetch ability descriptions
-  useEffect(() => {
-    if (!pokemon?.abilities?.length) return
-    
-    const fetchAbilityData = async () => {
-      const descriptions = {}
-      for (const ability of pokemon.abilities) {
-        try {
-          const res = await fetch(ability.ability.url)
-          const data = await res.json()
-          const desc = data.effect_entries?.find(e => e.language.name === 'en')?.effect || 'No description available.'
-          descriptions[ability.ability.name] = desc
-        } catch (err) {
-          console.error('Failed to fetch ability:', ability.ability.name)
-          descriptions[ability.ability.name] = 'No description available.'
-        }
-      }
-      setAbilityDescriptions(descriptions)
-    }
-    
-    fetchAbilityData()
-  }, [pokemon?.abilities])
+function MoveTable({ title, moves, showLevel, showTmNumber }) {
+  const [sortConfig, setSortConfig] = useState({
+    key: showLevel ? 'level' : showTmNumber ? 'tmNumber' : 'name',
+    direction: 'asc'
+  })
 
-  // Fetch evolution chain
-  useEffect(() => {
-    if (!species?.evolution_chain?.url) return
-    
-    const fetchEvolutionChain = async () => {
-      try {
-        const res = await fetch(species.evolution_chain.url)
-        const data = await res.json()
-        const evolutionList = []
-        const seen = new Set()
-        
-        const traverse = (chain) => {
-          // Add current species if not seen
-          if (chain.species && !seen.has(chain.species.name)) {
-            evolutionList.push({
-              name: chain.species.name,
-              url: chain.species.url
-            })
-            seen.add(chain.species.name)
-          }
-          
-          // Process evolutions
-          if (chain.evolves_to?.length > 0) {
-            chain.evolves_to.forEach(evo => {
-              // Add trigger between current and next evolution
-              const trigger = evo.evolution_details?.[0]
-              const triggerText = trigger ? getTriggerText(trigger) : 'Unknown'
-              evolutionList.push({
-                isTrigger: true,
-                text: triggerText
-              })
-              
-              // Add evolved species and continue recursion
-              if (!seen.has(evo.species.name)) {
-                evolutionList.push({
-                  name: evo.species.name,
-                  url: evo.species.url
-                })
-                seen.add(evo.species.name)
-                
-                // Continue traversal from this species
-                traverse(evo)
-              }
-            })
-          }
-        }
-        
-        traverse(data.chain)
-        setEvolutions(evolutionList)
-      } catch (err) {
-        console.error('Failed to fetch evolution chain:', err)
-      }
-    }
-    
-    fetchEvolutionChain()
-  }, [species?.evolution_chain?.url])
+  const columns = [
+    ...(showLevel ? [{ key: 'level', label: 'Level', numeric: true }] : []),
+    ...(showTmNumber ? [{ key: 'tmNumber', label: 'TM#', numeric: true }] : []),
+    { key: 'name', label: 'Name' },
+    { key: 'type', label: 'Type' },
+    { key: 'effect', label: 'Effect Entry' },
+    { key: 'category', label: 'Category' },
+    { key: 'power', label: 'Power', numeric: true },
+    { key: 'pp', label: 'PP', numeric: true },
+    { key: 'accuracy', label: 'Accuracy', numeric: true },
+    { key: 'priority', label: 'Priority', numeric: true },
+    { key: 'introduced', label: 'Introduced' }
+  ]
 
-  const getTriggerText = (trigger) => {
-    if (trigger.trigger.name === 'level-up') {
-      if (trigger.min_level) {
-        return `L${trigger.min_level}`
-      }
-      // Check for other level-up conditions
-      if (trigger.min_happiness) {
-        return `Happiness ${trigger.min_happiness}`
-      }
-      if (trigger.min_affection) {
-        return `Affection ${trigger.min_affection}`
-      }
-      if (trigger.min_beauty) {
-        return `Beauty ${trigger.min_beauty}`
-      }
-      if (trigger.known_move) {
-        return `Learn ${trigger.known_move.name}`
-      }
-      if (trigger.time_of_day) {
-        return `Level up (${trigger.time_of_day})`
-      }
-      if (trigger.location) {
-        return `Level up at ${trigger.location.name}`
-      }
-      return 'Level up'
-    } else if (trigger.trigger.name === 'trade') {
-      if (trigger.held_item) {
-        return `Trade (${trigger.held_item.name.replace(/-/g, ' ')})`
-      }
-      if (trigger.trade_species) {
-        return `Trade for ${trigger.trade_species.name}`
-      }
-      return 'Trade'
-    } else if (trigger.trigger.name === 'use-item') {
-      return `Use ${trigger.item?.name.replace(/-/g, ' ') || 'Item'}`
-    } else if (trigger.trigger.name === 'shed') {
-      return 'Shed'
-    } else if (trigger.trigger.name === 'other') {
-      return 'Special'
-    }
-    return trigger.trigger.name.replace(/-/g, ' ')
+  const handleSort = (key) => {
+    setSortConfig(prev => {
+      const direction = prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+      return { key, direction }
+    })
   }
+
+  const getSortValue = (move, key) => {
+    switch (key) {
+      case 'level':
+        return move.level ?? null
+      case 'tmNumber':
+        return move.tmNumber ?? null
+      case 'name':
+        return move.name
+      case 'type':
+        return move.details?.type?.name
+      case 'effect':
+        return getMoveEffectEntry(move.details)
+      case 'category':
+        return move.details?.damage_class?.name
+      case 'power':
+        return move.details?.power
+      case 'pp':
+        return move.details?.pp
+      case 'accuracy':
+        return move.details?.accuracy
+      case 'priority':
+        return move.details?.priority
+      case 'introduced':
+        return move.details?.generation?.name
+      default:
+        return null
+    }
+  }
+
+  const getSortIndicator = (key) => {
+    if (sortConfig.key !== key) return ''
+    return sortConfig.direction === 'asc' ? ' ▲' : ' ▼'
+  }
+
+  const sortedMoves = [...moves].sort((a, b) => {
+    const valueA = getSortValue(a, sortConfig.key)
+    const valueB = getSortValue(b, sortConfig.key)
+
+    if (valueA == null && valueB == null) return 0
+    if (valueA == null) return 1
+    if (valueB == null) return -1
+
+    let result = 0
+    if (typeof valueA === 'number' && typeof valueB === 'number') {
+      result = valueA - valueB
+    } else {
+      result = String(valueA).localeCompare(String(valueB))
+    }
+
+    return sortConfig.direction === 'asc' ? result : -result
+  })
+
+  const renderCell = (move, key) => {
+    switch (key) {
+      case 'level':
+        return move.level ?? 'N/A'
+      case 'tmNumber':
+        return move.tmNumber ? String(move.tmNumber).padStart(3, '0') : 'N/A'
+      case 'name':
+        return formatMoveLabel(move.name)
+      case 'type':
+        return formatMoveLabel(move.details?.type?.name)
+      case 'effect':
+        return getMoveEffectEntry(move.details)
+      case 'category':
+        return formatMoveLabel(move.details?.damage_class?.name)
+      case 'power':
+        return move.details?.power ?? 'N/A'
+      case 'pp':
+        return move.details?.pp ?? 'N/A'
+      case 'accuracy':
+        return move.details?.accuracy ?? 'N/A'
+      case 'priority':
+        return move.details?.priority ?? 'N/A'
+      case 'introduced':
+        return formatMoveLabel(move.details?.generation?.name)
+      default:
+        return 'N/A'
+    }
+  }
+
+  return (
+    <div className="info-box">
+      <div className="box-title">{title}</div>
+      <div className="box-content" style={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
+        <table className="move-table" style={{ margin: '0' }}>
+          <thead>
+            <tr>
+              {columns.map(column => (
+                <th key={column.key} className={column.numeric ? 'move-col-number' : undefined}>
+                  <button type="button" onClick={() => handleSort(column.key)}>
+                    {column.label}{getSortIndicator(column.key)}
+                  </button>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sortedMoves.map(move => (
+              <tr key={showLevel ? `${move.name}-${move.level}` : showTmNumber ? `${move.name}-${move.tmNumber}` : move.name}>
+                {columns.map(column => (
+                  <td key={column.key} className={column.numeric ? 'move-col-number' : undefined}>
+                    {renderCell(move, column.key)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) {
+  // UI state
+  const [hoveredType, setHoveredType] = useState(null)
+  const [versionInfo, setVersionInfo] = useState(null)
+
+  // Data fetching hooks
+  const { species, selectedVersion, setSelectedVersion, allEncounters } = usePokemonSpecies(pokemon)
+  const { forms, selectedForm, setSelectedForm, formPokemon } = usePokemonForms({ species, pokemon, selectedVersion, initialForm })
+  const abilityDescriptions = useAbilityDescriptions(formPokemon || pokemon)
+  const evolutions = useEvolutionChain({ species, selectedVersion })
+  const moves = useGroupedMoves(formPokemon || pokemon, selectedVersion)
+  const versionSprite = useVersionSprite(formPokemon || pokemon, selectedVersion)
+
+  // Derive display pokemon
+  const displayPokemon = formPokemon || pokemon
+
+  // Clear or restore form selection when pokemon changes
+  useEffect(() => {
+    setSelectedForm(initialForm || null)
+  }, [pokemon?.id, initialForm, setSelectedForm])
+
+  useEffect(() => {
+    let active = true
+
+    if (!selectedVersion) {
+      setVersionInfo(null)
+      return () => {
+        active = false
+      }
+    }
+
+    const loadVersionInfo = async () => {
+      const info = await getVersionInfo(selectedVersion)
+      if (active) setVersionInfo(info)
+    }
+
+    loadVersionInfo()
+
+    return () => {
+      active = false
+    }
+  }, [selectedVersion])
+
+  const selectedGenerationRank = versionInfo?.generation
+    ? generationOrder[versionInfo.generation]
+    : null
+
+  const showHiddenBadge = (isHidden) => {
+    if (!isHidden) return false
+    if (!selectedGenerationRank) return true
+    return selectedGenerationRank >= generationOrder['generation-v']
+  }
+
+  const filteredAbilities = (displayPokemon.abilities || []).filter(ability => {
+    if (!selectedGenerationRank) return true
+    const meta = abilityDescriptions[ability.ability.name]
+    const abilityGenerationRank = meta?.generation
+      ? generationOrder[meta.generation]
+      : null
+
+    if (!abilityGenerationRank) return true
+    return abilityGenerationRank <= selectedGenerationRank
+  })
 
   const typeColors = {
     normal: '#A8A878',
@@ -181,59 +254,135 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
 
   const getTypeColor = (typeName) => typeColors[typeName?.toLowerCase()] || '#999'
 
-  // Fetch moves grouped by method
-  useEffect(() => {
-    if (!pokemon?.moves?.length) return
-    
-    const groupedMoves = { levelUp: [], tm: [], egg: [] }
-    const seenMoves = { levelUp: new Set(), tm: new Set(), egg: new Set() }
-    
-    pokemon.moves.forEach(moveData => {
-      const moveName = moveData.move.name
-      moveData.version_group_details?.forEach(detail => {
-        const method = detail.move_learn_method?.name
-        const level = detail.level_learned_at
-        
-        if (method === 'level-up' && !seenMoves.levelUp.has(moveName)) {
-          groupedMoves.levelUp.push({ name: moveName, level })
-          seenMoves.levelUp.add(moveName)
-        } else if (method === 'machine' && !seenMoves.tm.has(moveName)) {
-          groupedMoves.tm.push(moveName)
-          seenMoves.tm.add(moveName)
-        } else if (method === 'egg' && !seenMoves.egg.has(moveName)) {
-          groupedMoves.egg.push(moveName)
-          seenMoves.egg.add(moveName)
-        }
-      })
+  const typeEffectiveness = {
+    normal: { resists: [], weak: ['fighting'], immune: ['ghost'], veryWeak: [] },
+    fire: { resists: ['fire', 'grass', 'ice', 'bug', 'steel', 'fairy'], weak: ['water', 'ground', 'rock'], immune: [], veryWeak: [] },
+    water: { resists: ['fire', 'water', 'ice', 'steel'], weak: ['electric', 'grass'], immune: [], veryWeak: [] },
+    electric: { resists: ['flying', 'steel'], weak: ['ground'], immune: [], veryWeak: [] },
+    grass: { resists: ['ground', 'water', 'grass'], weak: ['fire', 'ice', 'poison', 'flying', 'bug'], immune: [], veryWeak: [] },
+    ice: { resists: ['ice'], weak: ['fire', 'fighting', 'rock', 'steel'], immune: [], veryWeak: [] },
+    fighting: { resists: ['rock', 'bug', 'dark'], weak: ['flying', 'psychic', 'fairy'], immune: [], veryWeak: [] },
+    poison: { resists: ['fighting', 'poison', 'bug', 'grass'], weak: ['ground', 'psychic'], immune: [], veryWeak: [] },
+    ground: { resists: ['poison', 'rock'], weak: ['water', 'grass', 'ice'], immune: ['electric'], veryWeak: [] },
+    flying: { resists: ['fighting', 'bug', 'grass'], weak: ['electric', 'ice', 'rock'], immune: ['ground'], veryWeak: [] },
+    psychic: { resists: ['fighting', 'psychic'], weak: ['bug', 'ghost', 'dark'], immune: [], veryWeak: [] },
+    bug: { resists: ['fighting', 'ground', 'grass'], weak: ['fire', 'flying', 'rock'], immune: [], veryWeak: [] },
+    rock: { resists: ['normal', 'flying', 'poison', 'fire'], weak: ['water', 'grass', 'fighting', 'ground', 'steel'], immune: [], veryWeak: [] },
+    ghost: { resists: ['poison', 'bug'], weak: ['ghost', 'dark'], immune: ['normal', 'fighting'], veryWeak: [] },
+    dragon: { resists: ['fire', 'water', 'grass', 'electric'], weak: ['ice', 'dragon', 'fairy'], immune: [], veryWeak: [] },
+    dark: { resists: ['ghost', 'dark'], weak: ['fighting', 'bug', 'fairy'], immune: ['psychic'], veryWeak: [] },
+    steel: { resists: ['normal', 'flying', 'rock', 'bug', 'steel', 'grass', 'psychic', 'ice', 'dragon', 'fairy'], weak: ['fire', 'water', 'ground'], immune: ['poison'], veryWeak: [] },
+    fairy: { resists: ['fighting', 'bug', 'dark'], weak: ['poison', 'steel'], immune: ['dragon'], veryWeak: [] }
+  }
+
+  const getCombinedTypeMatchups = () => {
+    const types = displayPokemon.types?.map(t => t.type.name) || []
+    if (types.length === 0) return null
+
+    let resists = new Set()
+    let weak = new Set()
+    let veryWeak = new Set()
+    let veryResistant = new Set()
+    let immune = new Set()
+
+    types.forEach(type => {
+      const matchup = typeEffectiveness[type]
+      if (matchup) {
+        matchup.resists?.forEach(t => resists.add(t))
+        matchup.weak?.forEach(t => weak.add(t))
+        matchup.veryWeak?.forEach(t => veryWeak.add(t))
+        matchup.immune?.forEach(t => immune.add(t))
+      }
     })
-    
-    // Sort level-up moves by level
-    groupedMoves.levelUp.sort((a, b) => a.level - b.level)
-    // Sort moves alphabetically
-    groupedMoves.tm.sort()
-    groupedMoves.egg.sort()
-    
-    setMoves(groupedMoves)
-  }, [pokemon?.moves])
+
+    // Calculate very weak for dual types: types that BOTH component types are weak to
+    if (types.length === 2) {
+      const type1Weak = new Set(typeEffectiveness[types[0]]?.weak || [])
+      const type2Weak = new Set(typeEffectiveness[types[1]]?.weak || [])
+      const intersection = new Set([...type1Weak].filter(t => type2Weak.has(t)))
+      intersection.forEach(t => veryWeak.add(t))
+      // Remove very weak from regular weak
+      intersection.forEach(t => weak.delete(t))
+
+      // Calculate very resistant for dual types: types that BOTH component types resist
+      const type1Resists = new Set(typeEffectiveness[types[0]]?.resists || [])
+      const type2Resists = new Set(typeEffectiveness[types[1]]?.resists || [])
+      const resistIntersection = new Set([...type1Resists].filter(t => type2Resists.has(t)))
+      resistIntersection.forEach(t => veryResistant.add(t))
+      // Remove very resistant from regular resists
+      resistIntersection.forEach(t => resists.delete(t))
+    }
+
+    // Remove overlaps: if a type resists and is weak, it cancels out
+    weak.forEach(t => resists.delete(t))
+    veryWeak.forEach(t => resists.delete(t))
+    veryWeak.forEach(t => weak.delete(t))
+    weak.forEach(t => veryResistant.delete(t))
+    veryWeak.forEach(t => veryResistant.delete(t))
+    immune.forEach(t => {
+      resists.delete(t)
+      weak.delete(t)
+      veryWeak.delete(t)
+      veryResistant.delete(t)
+    })
+
+    return {
+      immune: Array.from(immune),
+      veryResistant: Array.from(veryResistant),
+      resists: Array.from(resists),
+      weak: Array.from(weak),
+      veryWeak: Array.from(veryWeak)
+    }
+  }
 
   if (!pokemon) {
     return <div className="loading">Loading Pokemon data...</div>
   }
 
+  const englishEntries = species?.flavor_text_entries?.filter(entry => entry.language?.name === 'en') || []
+  const versionEntries = selectedVersion
+    ? englishEntries.filter(entry => entry.version?.name === selectedVersion)
+    : englishEntries
+  const displayedEntries = selectedVersion ? versionEntries : versionEntries.slice(0, 3)
+  const nationalDexNumber = species?.pokedex_numbers?.find(entry => entry.pokedex?.name === 'national')?.entry_number
+
   return (
     <div className="pokemon-card-container">
       {/* Version Selector */}
       <div className="version-selector-wrapper">
-        <VersionSelector pokemon={pokemon} selectedVersion={selectedVersion} onVersionChange={setSelectedVersion} />
+        <VersionSelector
+          pokemon={pokemon}
+          selectedVersion={selectedVersion}
+          onVersionChange={setSelectedVersion}
+          allEncounters={allEncounters}
+        />
       </div>
+
+      {/* Form Selector */}
+      {forms.length > 1 && (
+        <div className="form-selector-wrapper">
+          <label className="form-label">Form:</label>
+          <div className="form-buttons">
+            {forms.map(form => (
+              <button
+                key={form}
+                className={`form-button ${selectedForm === form ? 'active' : ''}`}
+                onClick={() => setSelectedForm(form)}
+              >
+                {form.replace(pokemon.name + '-', '').replace(/-/g, ' ')}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card-section grid-4">
         {/* Image Box */}
         <div className="info-box image-box">
-          {pokemon.sprites?.other?.['official-artwork']?.front_default && (
+          {(versionSprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_default) && (
             <img
-              src={pokemon.sprites.other['official-artwork'].front_default}
-              alt={pokemon.name}
+              src={versionSprite || displayPokemon.sprites.other['official-artwork'].front_default}
+              alt={displayPokemon.name}
               className="pokemon-main-image"
             />
           )}
@@ -245,16 +394,16 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
           <div className="box-content">
             <div className="info-row">
               <span className="label">Name:</span>
-              <span className="value">{pokemon.name?.toUpperCase() || 'Unknown'}</span>
+              <span className="value">{displayPokemon.name?.toUpperCase() || 'Unknown'}</span>
             </div>
             <div className="info-row">
               <span className="label">#</span>
-              <span className="value">{pokemon.id || 'Unknown'}</span>
+              <span className="value">{nationalDexNumber || 'Unknown'}</span>
             </div>
-            <div className="info-row">
+            <div className="info-row" style={{ position: 'relative' }}>
               <span className="label">Type:</span>
               <div className="types-inline">
-                {pokemon.types?.map(type => (
+                {displayPokemon.types?.map(type => (
                   <span
                     key={type.type.name}
                     className="type-badge-small"
@@ -265,12 +414,104 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
                       borderRadius: '3px',
                       textTransform: 'capitalize',
                       fontSize: '12px',
-                      fontWeight: 'bold'
+                      fontWeight: 'bold',
+                      position: 'relative',
+                      cursor: 'help',
+                      display: 'inline-block',
+                      marginRight: '8px'
                     }}
+                    onMouseEnter={() => setHoveredType(type.type.name)}
+                    onMouseLeave={() => setHoveredType(null)}
                   >
                     {type.type.name}
-                  </span>
-                ))}
+                    {getCombinedTypeMatchups() && hoveredType === type.type.name && (
+                        <div style={{
+                          position: 'fixed',
+                          zIndex: 10000,
+                          backgroundColor: '#222',
+                          border: '2px solid #555',
+                          borderRadius: '6px',
+                          padding: '12px',
+                          minWidth: '280px',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                        }}>
+                          <div style={{ marginBottom: '8px' }}>
+                            <div style={{ color: '#aaa', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>Immune to:</div>
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                              {getCombinedTypeMatchups().immune.length > 0 ? (
+                                getCombinedTypeMatchups().immune.map(t => (
+                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: '#fff', padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                                    {t}
+                                  </span>
+                                ))
+                              ) : (
+                                <span style={{ color: '#888', fontSize: '11px' }}>None</span>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ marginBottom: '8px' }}>
+                            <div style={{ color: '#aaa', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>Very Resistant to:</div>
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                              {getCombinedTypeMatchups().veryResistant.length > 0 ? (
+                                getCombinedTypeMatchups().veryResistant.map(t => (
+                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: '#fff', padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                                    {t}
+                                  </span>
+                                ))
+                              ) : (
+                                <span style={{ color: '#888', fontSize: '11px' }}>None</span>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ marginBottom: '8px' }}>
+                            <div style={{ color: '#aaa', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>Resists:</div>
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                              {getCombinedTypeMatchups().resists.length > 0 ? (
+                                getCombinedTypeMatchups().resists.map(t => (
+                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: '#fff', padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                                    {t}
+                                  </span>
+                                ))
+                              ) : (
+                                <span style={{ color: '#888', fontSize: '11px' }}>None</span>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ marginBottom: '8px' }}>
+                            <div style={{ color: '#aaa', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>Weak to:</div>
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                              {getCombinedTypeMatchups().weak.length > 0 ? (
+                                getCombinedTypeMatchups().weak.map(t => (
+                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: '#fff', padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                                    {t}
+                                  </span>
+                                ))
+                              ) : (
+                                <span style={{ color: '#888', fontSize: '11px' }}>None</span>
+                              )}
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ color: '#aaa', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>Very Weak to:</div>
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                              {getCombinedTypeMatchups().veryWeak.length > 0 ? (
+                                getCombinedTypeMatchups().veryWeak.map(t => (
+                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: '#fff', padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                                    {t}
+                                  </span>
+                                ))
+                              ) : (
+                                <span style={{ color: '#888', fontSize: '11px' }}>None</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </span>
+                  ))}
               </div>
             </div>
             <div className="info-row">
@@ -288,17 +529,21 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
         <div className="info-box">
           <div className="box-title">Abilities</div>
           <div className="box-content abilities-list">
-            {pokemon.abilities?.map((ability, idx) => (
-              <div key={idx} className="ability-item">
-                <span className="tooltip-trigger">
-                  {ability.ability.name}
-                  {abilityDescriptions[ability.ability.name] && (
-                    <span className="tooltip-text">{abilityDescriptions[ability.ability.name]}</span>
-                  )}
-                </span>
-                {ability.is_hidden && <span className="hidden-badge">Hidden</span>}
-              </div>
-            ))}
+            {filteredAbilities.length > 0 ? (
+              filteredAbilities.map((ability, idx) => (
+                <div key={idx} className="ability-item">
+                  <span className="tooltip-trigger">
+                    {ability.ability.name}
+                    {abilityDescriptions[ability.ability.name]?.description && (
+                      <span className="tooltip-text">{abilityDescriptions[ability.ability.name].description}</span>
+                    )}
+                  </span>
+                  {showHiddenBadge(ability.is_hidden) && <span className="hidden-badge">Hidden</span>}
+                </div>
+              ))
+            ) : (
+              <p style={{ margin: '0', color: '#888', fontSize: '12px' }}>No abilities in this version.</p>
+            )}
           </div>
         </div>
 
@@ -306,7 +551,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
         <div className="info-box">
           <div className="box-title">Base Stats</div>
           <div className="box-content stats-compact">
-            {pokemon.stats?.map(stat => {
+            {displayPokemon.stats?.map(stat => {
               const maxStat = 255 // Maximum possible stat value in Pokemon
               const percentage = (stat.base_stat / maxStat) * 100
               const statColor = stat.base_stat < 60 ? '#ff6b6b' : 
@@ -350,62 +595,70 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
       {/* Evolution, Locations, Misc Stats Grid */}
       <div className="grid-3">
         {/* Evolution Box */}
-        {evolutions.length > 1 && (
-          <div className="info-box">
-            <div className="box-title">Evolution Line</div>
-            <div className="box-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-              {evolutions.map((item, idx) => {
-                if (item.isTrigger) {
-                  return (
-                    <div key={`trigger-${idx}`} style={{ color: '#ff6b6b', fontSize: '13px', fontWeight: 'bold', textAlign: 'center', maxWidth: '90px', margin: '4px 0 2px 0' }}>
-                      {item.text}
-                    </div>
-                  )
-                }
-                
-                const isCurrentPokemon = item.name === pokemon.name
-                return (
-                  <button
-                    key={item.name}
-                    onClick={() => onEvolutionClick?.(item.name)}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: isCurrentPokemon ? '#ff0000' : '#444',
-                      color: '#fff',
-                      border: isCurrentPokemon ? '2px solid #cc0000' : '1px solid #666',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontWeight: isCurrentPokemon ? 'bold' : 'normal',
-                      fontSize: '12px',
-                      textTransform: 'capitalize',
-                      boxShadow: isCurrentPokemon ? '0 2px 4px rgba(255, 0, 0, 0.3)' : 'none'
-                    }}
-                  >
-                    {item.name}
-                  </button>
-                )
-              })}
-            </div>
+        <div className="info-box">
+          <div className="box-title">Evolution Line</div>
+          <div className="box-content evolution-box-content" style={{ display: 'flex', justifyContent: 'center' }}>
+            {evolutions.length > 0 ? (
+              renderEvolutionForest(evolutions, pokemon.name, onEvolutionClick)
+            ) : (
+              <p style={{ margin: 0, color: '#888', fontSize: '12px' }}>No evolution available.</p>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Locations Box */}
         <div className="info-box">
           <div className="box-title">Location</div>
-          <div className="box-content">
+          <div className="box-content" style={{ maxHeight: '300px', overflowY: 'auto' }}>
             {selectedVersion && allEncounters.length > 0 ? (
               (() => {
-                const locationsForVersion = allEncounters
-                  .filter(enc => enc.version?.name === selectedVersion && enc.location_area?.name)
-                  .map(enc => enc.location_area.name)
+                // Build encounter data grouped by location and method
+                const encountersByLocation = {}
+                allEncounters.forEach(enc => {
+                  const versionDetail = enc.version_details?.find(vd => vd.version.name === selectedVersion)
+                  if (versionDetail && versionDetail.encounter_details?.length > 0) {
+                    const locationName = enc.location_area.name
+                    if (!encountersByLocation[locationName]) {
+                      encountersByLocation[locationName] = {}
+                    }
+                    versionDetail.encounter_details.forEach(detail => {
+                      const methodName = detail.method?.name || 'unknown'
+                      if (!encountersByLocation[locationName][methodName]) {
+                        encountersByLocation[locationName][methodName] = 0
+                      }
+                      encountersByLocation[locationName][methodName] += detail.chance || 0
+                    })
+                  }
+                })
                 
-                const uniqueLocations = [...new Set(locationsForVersion)]
-                return uniqueLocations.length > 0 ? (
-                  <ul style={{ padding: '0 20px', margin: '0', lineHeight: '1.8' }}>
-                    {uniqueLocations.map(location => (
-                      <li key={location}>{location.replace(/-/g, ' ')}</li>
-                    ))}
-                  </ul>
+                const hasEncounters = Object.keys(encountersByLocation).length > 0
+                return hasEncounters ? (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #ccc', fontWeight: 'bold' }}>
+                        <th style={{ padding: '6px 8px', textAlign: 'left' }}>Location</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'left' }}>Method</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'center' }}>Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(encountersByLocation).map(([location, methods]) =>
+                        Object.entries(methods).map(([method, rate], idx) => (
+                          <tr key={`${location}-${method}`} style={{ borderBottom: '1px solid #eee' }}>
+                            <td style={{ padding: '6px 8px' }}>
+                              {idx === 0 ? location.replace(/-/g, ' ') : ''}
+                            </td>
+                            <td style={{ padding: '6px 8px' }}>
+                              {method.replace(/-/g, ' ').charAt(0).toUpperCase() + method.replace(/-/g, ' ').slice(1)}
+                            </td>
+                            <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                              {rate}%
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 ) : (
                   <p style={{ margin: '0' }}>No known locations for this version.</p>
                 )
@@ -442,28 +695,27 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
       </div>
 
       {/* Moves Flex Container */}
-      {(moves.levelUp.length > 0 || moves.tm.length > 0 || moves.egg.length > 0) && (
+      {(moves.levelUp.length > 0 || moves.tm.length > 0 || moves.tutor.length > 0 || moves.event.length > 0 || moves.egg.length > 0) && (
         <div className="container-flex">
           {moves.levelUp.length > 0 && (
-            <div className="info-box">
-              <div className="box-title">Level Up Moves</div>
-              <div className="box-content" style={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
-                <ul style={{ padding: '0 20px', margin: '0' }}>
-                  {moves.levelUp.map(move => (
-                    <li key={move.name}>Lv. {move.level}: {move.name}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            <MoveTable title="Level Up Moves" moves={moves.levelUp} showLevel />
           )}
 
           {moves.tm.length > 0 && (
+            <MoveTable title="TMs" moves={moves.tm} showTmNumber />
+          )}
+
+          {moves.tutor.length > 0 && (
+            <MoveTable title="Tutor" moves={moves.tutor} />
+          )}
+
+          {moves.event.length > 0 && (
             <div className="info-box">
-              <div className="box-title">TMs</div>
+              <div className="box-title">Event</div>
               <div className="box-content" style={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
                 <ul style={{ padding: '0 20px', margin: '0' }}>
-                  {moves.tm.map((move, idx) => (
-                    <li key={move}>TM{String(idx + 1).padStart(3, '0')}: {move}</li>
+                  {moves.event.map(move => (
+                    <li key={move.name}>{formatMoveLabel(move.name)}</li>
                   ))}
                 </ul>
               </div>
@@ -471,16 +723,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
           )}
 
           {moves.egg.length > 0 && (
-            <div className="info-box">
-              <div className="box-title">Egg</div>
-              <div className="box-content" style={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
-                <ul style={{ padding: '0 20px', margin: '0' }}>
-                  {moves.egg.map(move => (
-                    <li key={move}>{move}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            <MoveTable title="Egg" moves={moves.egg} />
           )}
         </div>
       )}
@@ -527,17 +770,14 @@ export default function PokemonCard({ pokemon, onEvolutionClick }) {
       <div className="info-box full-width" style={{ marginTop: '10px' }}>
         <div className="box-title">Stats Calculator</div>
         <div className="box-content">
-          <StatsCalculator pokemon={pokemon} selectedVersion={selectedVersion} />
+          <StatsCalculator pokemon={displayPokemon} selectedVersion={selectedVersion} />
         </div>
       </div>
 
       {/* Pokedex Entries Grid */}
-      {species?.flavor_text_entries?.length > 0 && (
+      {displayedEntries.length > 0 && (
         <div className="grid-3">
-          {species.flavor_text_entries
-            .filter(e => e.language.name === 'en')
-            .slice(0, 3)
-            .map((entry, idx) => (
+          {displayedEntries.map((entry, idx) => (
               <div key={idx} className="info-box">
                 <div className="box-title">{entry.version?.name?.replace(/-/g, ' ') || `Entry ${idx + 1}`}</div>
                 <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>

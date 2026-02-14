@@ -82,13 +82,13 @@ export default function StatsCalculator({ pokemon, selectedVersion }) {
   }
 
   const totalEvs = Object.values(evs).reduce((sum, val) => sum + val, 0)
-  const evRemaining = 510 - totalEvs
+  const evRemaining = 508 - totalEvs
 
   const handleEvChange = (statKey, value) => {
     const newValue = parseInt(value) || 0
     const clampedValue = Math.max(0, Math.min(252, newValue))
     const currentTotal = totalEvs - evs[statKey]
-    const finalValue = currentTotal + clampedValue > 510 ? 510 - currentTotal : clampedValue
+    const finalValue = currentTotal + clampedValue > 508 ? 508 - currentTotal : clampedValue
     setEvs({ ...evs, [statKey]: finalValue })
   }
 
@@ -98,18 +98,53 @@ export default function StatsCalculator({ pokemon, selectedVersion }) {
     setIvs({ ...ivs, [statKey]: clampedValue })
   }
 
+  // Level control helpers
+  const clampLevel = (val) => Math.min(100, Math.max(1, Number(val) || 1))
+
+  const setLevelSafe = (val) => {
+    setLevel(clampLevel(val))
+  }
+
+  const bumpLevel = (delta) => {
+    setLevel(prev => clampLevel(prev + delta))
+  }
+
   return (
     <div className="stats-calculator">
-      <div className="calculator-controls" style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+      <div className="calculator-controls" style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div className="control-group">
-          <label htmlFor="level">Level: {level}</label>
+          <label htmlFor="level">Level:</label>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              marginBottom: '0.4rem'
+            }}
+          >
+            <button type="button" onClick={() => bumpLevel(-10)} style={{ padding: '0.4rem 0.6rem', cursor: 'pointer' }}>−10</button>
+            <button type="button" onClick={() => bumpLevel(-1)} style={{ padding: '0.4rem 0.6rem', cursor: 'pointer' }}>−</button>
+
+            <input
+              id="level"
+              type="number"
+              min="1"
+              max="100"
+              value={level}
+              onChange={(e) => setLevelSafe(e.target.value)}
+              style={{ width: '60px', textAlign: 'center', padding: '0.4rem' }}
+            />
+
+            <button type="button" onClick={() => bumpLevel(1)} style={{ padding: '0.4rem 0.6rem', cursor: 'pointer' }}>+</button>
+            <button type="button" onClick={() => bumpLevel(10)} style={{ padding: '0.4rem 0.6rem', cursor: 'pointer' }}>+10</button>
+          </div>
+
           <input
-            id="level"
             type="range"
             min="1"
             max="100"
             value={level}
-            onChange={(e) => setLevel(parseInt(e.target.value))}
+            onChange={(e) => setLevelSafe(e.target.value)}
             style={{ width: '150px' }}
           />
         </div>
@@ -135,7 +170,7 @@ export default function StatsCalculator({ pokemon, selectedVersion }) {
           fontWeight: 'bold',
           fontSize: '0.9rem'
         }}>
-          EVs Remaining: {evRemaining} / 510
+          EVs Remaining: {evRemaining} / 508
         </div>
       </div>
 
