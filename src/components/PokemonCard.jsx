@@ -231,6 +231,43 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
     return abilityGenerationRank <= selectedGenerationRank
   })
 
+  const getGenerationTypes = () => {
+    // If no generation is selected, use current types
+    if (!selectedGenerationRank) {
+      return displayPokemon.types || []
+    }
+
+    // Check if there are past types
+    const pastTypes = displayPokemon.past_types || []
+    if (pastTypes.length === 0) {
+      return displayPokemon.types || []
+    }
+
+    // Find the most recent past_types entry that applies to selected generation or earlier
+    // past_types are ordered with most recent first, so we iterate to find the first one
+    // where the generation change happened AFTER our selected generation
+    let applicableTypes = displayPokemon.types || []
+    
+    for (const pastType of pastTypes) {
+      const pastGenRank = pastType.generation?.name
+        ? generationOrder[pastType.generation.name]
+        : null
+      
+      // If the type change happened in a generation after our selected one,
+      // we should use the past types
+      if (pastGenRank && pastGenRank >= selectedGenerationRank) {
+        applicableTypes = pastType.types
+      } else {
+        // Once we hit a generation at or before our selection, stop
+        break
+      }
+    }
+
+    return applicableTypes
+  }
+
+  const generationTypes = getGenerationTypes()
+
   const typeColors = {
     normal: '#A8A878',
     fire: '#F08030',
@@ -276,7 +313,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
   }
 
   const getCombinedTypeMatchups = () => {
-    const types = displayPokemon.types?.map(t => t.type.name) || []
+    const types = generationTypes?.map(t => t.type.name) || []
     if (types.length === 0) return null
 
     let resists = new Set()
@@ -403,7 +440,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
             <div className="info-row" style={{ position: 'relative' }}>
               <span className="label">Type:</span>
               <div className="types-inline">
-                {displayPokemon.types?.map(type => (
+                {generationTypes?.map(type => (
                   <span
                     key={type.type.name}
                     className="type-badge-small"
