@@ -35,8 +35,8 @@ export function useGroupedMoves(displayPokemon, selectedVersion) {
             groupedMoves.levelUp.push({ name: moveName, level })
             seenMoves.levelUp.add(moveName)
           } else if (method === 'machine' && !seenMoves.tm.has(moveName)) {
-            const tmNumber = groupedMoves.tm.length + 1
-            groupedMoves.tm.push({ name: moveName, tmNumber })
+            // TM number will be fetched from move details later
+            groupedMoves.tm.push({ name: moveName, tmNumber: null })
             seenMoves.tm.add(moveName)
           } else if (method === 'tutor' && !seenMoves.tutor.has(moveName)) {
             groupedMoves.tutor.push({ name: moveName })
@@ -68,9 +68,33 @@ export function useGroupedMoves(displayPokemon, selectedVersion) {
         ...move,
         details: moveDetailsMap.get(move.name) || null
       }))
+      
+      // Special handler for TMs to extract actual TM numbers
+      const withDetailsAndTmNumber = list => list.map(move => {
+        const details = moveDetailsMap.get(move.name)
+        let tmNumber = null
+        
+        if (details?.machines && versionGroup) {
+          // Find the machine for this version group
+          const machine = details.machines.find(m => m.version_group?.name === versionGroup)
+          if (machine?.machine?.url) {
+            // Extract TM number from URL like: https://pokeapi.co/api/v2/machine/223/
+            const match = machine.machine.url.match(/\/machine\/(\d+)\/$/)
+            if (match) {
+              tmNumber = parseInt(match[1])
+            }
+          }
+        }
+        
+        return {
+          ...move,
+          tmNumber: tmNumber ?? move.tmNumber,
+          details
+        }
+      })
 
       groupedMoves.levelUp = withDetails(groupedMoves.levelUp)
-      groupedMoves.tm = withDetails(groupedMoves.tm)
+      groupedMoves.tm = withDetailsAndTmNumber(groupedMoves.tm)
       groupedMoves.tutor = withDetails(groupedMoves.tutor)
       groupedMoves.event = withDetails(groupedMoves.event)
       groupedMoves.egg = withDetails(groupedMoves.egg)
