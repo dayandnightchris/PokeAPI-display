@@ -43,7 +43,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber }) {
     { key: 'pp', label: 'PP', numeric: true },
     { key: 'accuracy', label: 'Accuracy', numeric: true },
     { key: 'priority', label: 'Priority', numeric: true },
-    { key: 'introduced', label: 'Introduced' }
+    //{ key: 'introduced', label: 'Introduced' }
   ]
 
   const handleSort = (key) => {
@@ -75,8 +75,8 @@ function MoveTable({ title, moves, showLevel, showTmNumber }) {
         return move.details?.accuracy
       case 'priority':
         return move.details?.priority
-      case 'introduced':
-        return move.details?.generation?.name
+      //case 'introduced':
+        //return move.details?.generation?.name
       default:
         return null
     }
