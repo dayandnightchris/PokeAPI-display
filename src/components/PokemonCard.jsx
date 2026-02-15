@@ -823,9 +823,9 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
           <div className="box-content" style={{ fontSize: '12px' }}>
             <div><strong>Capture Rate:</strong> {species?.capture_rate || 'N/A'}</div>
             <div><strong>Wild Held Item:</strong> {species?.held_items?.length > 0 ? species.held_items.map(item => item.item.name).join(', ') : 'None'}</div>
-            <div><strong>EV Yield:</strong> {displayPokemon.stats?.some(s => s.effort > 0) ? (
+            <div><strong>EV Yield:</strong> {(!selectedGenerationRank || selectedGenerationRank >= 3) && generationStats?.some(s => s.effort > 0) ? (
                 <ul style={{ padding: '0 20px', margin: '0' }}>
-                  {displayPokemon.stats.map(stat => (
+                  {generationStats.map(stat => (
                     stat.effort > 0 && (
                       <li key={stat.stat.name}>
                         {stat.stat.name}: {stat.effort}
@@ -833,6 +833,8 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
                     )
                   ))}
                 </ul>
+              ) : selectedGenerationRank && selectedGenerationRank < 3 ? (
+                <span style={{ margin: '0', color: '#888' }}>N/A (Stat Exp. system)</span>
               ) : (
                 <span style={{ margin: '0' }}>None</span>
               )}</div>
