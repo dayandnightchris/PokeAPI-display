@@ -1,6 +1,69 @@
 import { useState, useEffect } from 'react'
-import { getVersionInfo } from '../utils/versionInfo'
+import { getVersionInfo, generationOrder } from '../utils/versionInfo'
 import { fetchMoveCached, fetchMachineCached } from '../utils/pokeCache'
+
+// Map version groups to a comparable order (by generation + sub-order within gen)
+const versionGroupOrder = {
+  'red-blue': 1,
+  'yellow': 2,
+  'gold-silver': 3,
+  'crystal': 4,
+  'ruby-sapphire': 5,
+  'emerald': 6,
+  'firered-leafgreen': 7,
+  'colosseum': 7.5,
+  'xd': 7.6,
+  'diamond-pearl': 8,
+  'platinum': 9,
+  'heartgold-soulsilver': 10,
+  'black-white': 11,
+  'black-2-white-2': 12,
+  'x-y': 13,
+  'omega-ruby-alpha-sapphire': 14,
+  'sun-moon': 15,
+  'ultra-sun-ultra-moon': 16,
+  'lets-go-pikachu-lets-go-eevee': 17,
+  'sword-shield': 18,
+  'the-isle-of-armor': 19,
+  'the-crown-tundra': 20,
+  'brilliant-diamond-and-shining-pearl': 21,
+  'legends-arceus': 22,
+  'scarlet-violet': 23,
+  'the-teal-mask': 24,
+  'the-indigo-disk': 25
+}
+
+// Apply past_values to move details based on the selected version group
+function applyPastValues(details, versionGroup) {
+  if (!details || !versionGroup || !details.past_values?.length) return details
+
+  const selectedOrder = versionGroupOrder[versionGroup]
+  if (selectedOrder == null) return details
+
+  // Create a shallow copy of details so we can override fields
+  const adjusted = { ...details }
+
+  // past_values entries mark when a value CHANGED — meaning the listed values
+  // were in effect BEFORE that version group. Process from newest to oldest:
+  // if our selected version group is BEFORE the entry's version group,
+  // apply those past values.
+  for (const entry of details.past_values) {
+    const entryOrder = versionGroupOrder[entry.version_group?.name]
+    if (entryOrder == null) continue
+
+    // If our selected version is before this change point, apply the old values
+    if (selectedOrder < entryOrder) {
+      if (entry.power != null) adjusted.power = entry.power
+      if (entry.pp != null) adjusted.pp = entry.pp
+      if (entry.accuracy != null) adjusted.accuracy = entry.accuracy
+      if (entry.effect_chance != null) adjusted.effect_chance = entry.effect_chance
+      if (entry.type != null) adjusted.type = entry.type
+      if (entry.effect_entries?.length) adjusted.effect_entries = entry.effect_entries
+    }
+  }
+
+  return adjusted
+}
 
 export function useGroupedMoves(displayPokemon, selectedVersion) {
   const [moves, setMoves] = useState({ levelUp: [], tm: [], tutor: [], event: [], egg: [] })
@@ -66,7 +129,7 @@ export function useGroupedMoves(displayPokemon, selectedVersion) {
 
       const withDetails = list => list.map(move => ({
         ...move,
-        details: moveDetailsMap.get(move.name) || null
+        details: applyPastValues(moveDetailsMap.get(move.name), versionGroup) || null
       }))
       
 // Fetch actual TM/HM/TR numbers from machine endpoints
@@ -91,7 +154,7 @@ export function useGroupedMoves(displayPokemon, selectedVersion) {
       )
 
       const withDetailsAndTmNumber = list => list.map(move => {
-        const details = moveDetailsMap.get(move.name)
+        const details = applyPastValues(moveDetailsMap.get(move.name), versionGroup)
         let tmNumber = null
         let tmLabel = null
 
