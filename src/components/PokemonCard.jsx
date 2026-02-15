@@ -571,16 +571,17 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
                     {type.type.name}
                     {getCombinedTypeMatchups() && hoveredType === type.type.name && (
                         <div style={{
-                          position: 'fixed',
+                          position: 'absolute',
                           zIndex: 10000,
                           backgroundColor: '#222',
                           border: '2px solid #555',
                           borderRadius: '6px',
                           padding: '12px',
                           minWidth: '280px',
-                          top: '50%',
+                          bottom: '100%',
                           left: '50%',
-                          transform: 'translate(-50%, -50%)',
+                          transform: 'translateX(-50%)',
+                          marginBottom: '6px',
                           boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
                         }}>
                           <div style={{ marginBottom: '8px' }}>
