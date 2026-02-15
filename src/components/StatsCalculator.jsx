@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function StatsCalculator({ pokemon, selectedVersion }) {
+export default function StatsCalculator({ pokemon, stats: statsProp, selectedVersion }) {
   const [level, setLevel] = useState(50)
   const [nature, setNature] = useState('neutral')
   const [ivs, setIvs] = useState({ hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 })
@@ -48,20 +48,25 @@ export default function StatsCalculator({ pokemon, selectedVersion }) {
     'hp': 'hp',
     'attack': 'atk',
     'defense': 'def',
+    'special': 'spc',
     'special-attack': 'spa',
     'special-defense': 'spd',
     'speed': 'spe',
   }
 
-  const stats = pokemon.stats.map(stat => {
+  const baseStats = statsProp || pokemon.stats
+  const stats = baseStats.map(stat => {
     const statKey = statTypeMap[stat.stat.name] || stat.stat.name
+    // For Gen 1 "special" stat, use spa IVs/EVs as fallback
+    const ivKey = ivs[statKey] !== undefined ? statKey : 'spa'
+    const evKey = evs[statKey] !== undefined ? statKey : 'spa'
     const calculated = calculateStat(
       stat.base_stat, 
       level, 
-      ivs[statKey], 
-      evs[statKey], 
+      ivs[ivKey], 
+      evs[evKey], 
       nature, 
-      statKey
+      statKey === 'spc' ? 'spa' : statKey
     )
     
     return {

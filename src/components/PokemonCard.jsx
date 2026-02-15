@@ -310,7 +310,71 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
     return applicableTypes
   }
 
+  function getGenerationStats() {
+    if (!selectedGenerationRank || !displayPokemon) {
+      return displayPokemon?.stats || []
+    }
+
+    const pastStats = displayPokemon.past_stats || []
+    if (pastStats.length === 0) {
+      return displayPokemon.stats || []
+    }
+
+    // Build a map from current stats: statName -> stat object
+    const statMap = new Map()
+    for (const stat of (displayPokemon.stats || [])) {
+      statMap.set(stat.stat.name, { ...stat })
+    }
+
+    // Collect applicable past_stats entries (pastGenRank >= selectedGenerationRank)
+    // Then apply from highest gen to lowest gen so the oldest applicable entry wins
+    const applicableEntries = pastStats.filter(pastStat => {
+      const pastGenRank = pastStat.generation?.name
+        ? generationOrder[pastStat.generation.name]
+        : null
+      return pastGenRank && pastGenRank >= selectedGenerationRank
+    })
+
+    // Reverse so lowest-gen (most specific to selected era) overrides last
+    const reversed = [...applicableEntries].reverse()
+    let hasSpecialStat = false
+
+    for (const entry of reversed) {
+      for (const pastStatEntry of entry.stats) {
+        const statName = pastStatEntry.stat.name
+        if (statName === 'special') {
+          hasSpecialStat = true
+        }
+        statMap.set(statName, { ...pastStatEntry })
+      }
+    }
+
+    // If we have the Gen 1 "special" stat, remove special-attack and special-defense
+    if (hasSpecialStat) {
+      statMap.delete('special-attack')
+      statMap.delete('special-defense')
+    }
+
+    // Return in a sensible order: hp, attack, defense, special (if gen1), special-attack, special-defense, speed
+    const statOrder = ['hp', 'attack', 'defense', 'special', 'special-attack', 'special-defense', 'speed']
+    const result = []
+    for (const name of statOrder) {
+      if (statMap.has(name)) {
+        result.push(statMap.get(name))
+      }
+    }
+    // Include any stats not in our predefined order
+    for (const [name, stat] of statMap) {
+      if (!statOrder.includes(name)) {
+        result.push(stat)
+      }
+    }
+
+    return result
+  }
+
   const generationTypes = getGenerationTypes()
+  const generationStats = getGenerationStats()
 
   const typeColors = {
     normal: '#A8A878',
@@ -632,7 +696,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
         <div className="info-box">
           <div className="box-title">Base Stats</div>
           <div className="box-content stats-compact">
-            {displayPokemon.stats?.map(stat => {
+            {generationStats.map(stat => {
               const maxStat = 255 // Maximum possible stat value in Pokemon
               const percentage = (stat.base_stat / maxStat) * 100
               const statColor = stat.base_stat < 60 ? '#ff6b6b' : 
@@ -851,7 +915,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
       <div className="info-box full-width" style={{ marginTop: '10px' }}>
         <div className="box-title">Stats Calculator</div>
         <div className="box-content">
-          <StatsCalculator pokemon={displayPokemon} selectedVersion={selectedVersion} />
+          <StatsCalculator pokemon={displayPokemon} stats={generationStats} selectedVersion={selectedVersion} />
         </div>
       </div>
 
