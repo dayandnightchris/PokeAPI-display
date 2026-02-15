@@ -1,5 +1,53 @@
 import { useState, useEffect } from 'react'
 
+// Map version groups to individual version names (for Gen 6+ where game_indices is empty)
+const versionGroupToVersions = {
+  'red-blue': ['red', 'blue'],
+  'yellow': ['yellow'],
+  'gold-silver': ['gold', 'silver'],
+  'crystal': ['crystal'],
+  'ruby-sapphire': ['ruby', 'sapphire'],
+  'emerald': ['emerald'],
+  'firered-leafgreen': ['firered', 'leafgreen'],
+  'colosseum': ['colosseum'],
+  'xd': ['xd'],
+  'diamond-pearl': ['diamond', 'pearl'],
+  'platinum': ['platinum'],
+  'heartgold-soulsilver': ['heartgold', 'soulsilver'],
+  'black-white': ['black', 'white'],
+  'black-2-white-2': ['black-2', 'white-2'],
+  'x-y': ['x', 'y'],
+  'omega-ruby-alpha-sapphire': ['omega-ruby', 'alpha-sapphire'],
+  'sun-moon': ['sun', 'moon'],
+  'ultra-sun-ultra-moon': ['ultra-sun', 'ultra-moon'],
+  'lets-go-pikachu-lets-go-eevee': [],
+  'sword-shield': ['sword', 'shield'],
+  'brilliant-diamond-shining-pearl': ['brilliant-diamond', 'shining-pearl'],
+  'legends-arceus': ['legends-arceus'],
+  'scarlet-violet': ['scarlet', 'violet'],
+}
+
+function getAllAvailableVersions(pokemon) {
+  const available = new Set()
+  // From game_indices (Gen 1-5)
+  if (pokemon.game_indices) {
+    pokemon.game_indices.forEach(gi => {
+      if (gi.version?.name) available.add(gi.version.name)
+    })
+  }
+  // From moves version_group_details (all gens)
+  if (pokemon.moves) {
+    pokemon.moves.forEach(move => {
+      move.version_group_details?.forEach(vgd => {
+        const vgName = vgd.version_group?.name
+        const versions = versionGroupToVersions[vgName]
+        if (versions) versions.forEach(v => available.add(v))
+      })
+    })
+  }
+  return available
+}
+
 export function usePokemonSpecies(pokemon) {
   const [species, setSpecies] = useState(null)
   const [selectedVersion, setSelectedVersion] = useState(null)
@@ -31,15 +79,15 @@ export function usePokemonSpecies(pokemon) {
 
     // Preserve the user's currently selected version when switching Pokémon.
     // If the current selection is not available for the new Pokémon, fall back to the latest.
-    const gameIndices = pokemon.game_indices || []
-    if (gameIndices.length > 0) {
-      const available = new Set(gameIndices.map(gi => gi.version?.name).filter(Boolean))
-      const latestVersion = gameIndices[gameIndices.length - 1].version.name
-
+    const available = getAllAvailableVersions(pokemon)
+    if (available.size > 0) {
       if (active) {
         setSelectedVersion(prev => {
           if (prev && available.has(prev)) return prev
-          return latestVersion
+          // Fall back to last game_indices entry, or first available version
+          const gameIndices = pokemon.game_indices || []
+          if (gameIndices.length > 0) return gameIndices[gameIndices.length - 1].version.name
+          return Array.from(available)[0]
         })
       }
     } else {

@@ -74,6 +74,50 @@ function formatEvolutionDetails(details) {
   return details.map(formatEvolutionDetail).join(' OR ')
 }
 
+// Map version groups to individual version names (for Gen 6+ where game_indices is empty)
+const versionGroupToVersions = {
+  'red-blue': ['red', 'blue'],
+  'yellow': ['yellow'],
+  'gold-silver': ['gold', 'silver'],
+  'crystal': ['crystal'],
+  'ruby-sapphire': ['ruby', 'sapphire'],
+  'emerald': ['emerald'],
+  'firered-leafgreen': ['firered', 'leafgreen'],
+  'colosseum': ['colosseum'],
+  'xd': ['xd'],
+  'diamond-pearl': ['diamond', 'pearl'],
+  'platinum': ['platinum'],
+  'heartgold-soulsilver': ['heartgold', 'soulsilver'],
+  'black-white': ['black', 'white'],
+  'black-2-white-2': ['black-2', 'white-2'],
+  'x-y': ['x', 'y'],
+  'omega-ruby-alpha-sapphire': ['omega-ruby', 'alpha-sapphire'],
+  'sun-moon': ['sun', 'moon'],
+  'ultra-sun-ultra-moon': ['ultra-sun', 'ultra-moon'],
+  'lets-go-pikachu-lets-go-eevee': [],
+  'sword-shield': ['sword', 'shield'],
+  'brilliant-diamond-shining-pearl': ['brilliant-diamond', 'shining-pearl'],
+  'legends-arceus': ['legends-arceus'],
+  'scarlet-violet': ['scarlet', 'violet'],
+}
+
+function pokemonAvailableInVersion(pokemonData, version) {
+  if (!pokemonData || !version) return false
+  // Check game_indices (works for Gen 1-5)
+  if (pokemonData.game_indices?.some(gi => gi.version?.name === version)) return true
+  // Check moves version_group_details (works for all gens)
+  if (pokemonData.moves) {
+    for (const move of pokemonData.moves) {
+      for (const vgd of (move.version_group_details || [])) {
+        const vgName = vgd.version_group?.name
+        const versions = versionGroupToVersions[vgName]
+        if (versions?.includes(version)) return true
+      }
+    }
+  }
+  return false
+}
+
 export function useEvolutionChain({ species, selectedVersion }) {
   const [tree, setTree] = useState([])
 
@@ -93,7 +137,7 @@ export function useEvolutionChain({ species, selectedVersion }) {
         varieties.map(async (vname) => {
           const p = await fetchPokemonCached(vname)
           if (!p) return false
-          return p.game_indices?.some(gi => gi.version?.name === selectedVersion) || false
+          return pokemonAvailableInVersion(p, selectedVersion)
         })
       )
 
