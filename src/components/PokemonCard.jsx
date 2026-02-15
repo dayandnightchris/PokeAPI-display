@@ -264,8 +264,11 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
 
   const generationAbilities = getGenerationAbilities()
 
-  // Filter out hidden abilities pre-Gen 5 (hidden abilities didn't exist before Gen 5)
+  // Filter out hidden abilities pre-Gen 5, and all abilities pre-Gen 3 (abilities didn't exist before Gen 3)
   const filteredAbilities = generationAbilities.filter(ability => {
+    if (selectedGenerationRank && selectedGenerationRank < generationOrder['generation-iii']) {
+      return false
+    }
     if (ability.is_hidden && selectedGenerationRank && selectedGenerationRank < generationOrder['generation-v']) {
       return false
     }
