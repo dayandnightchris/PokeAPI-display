@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getVersionInfo } from '../utils/versionInfo'
-import { fetchMoveCached } from '../utils/pokeCache'
+import { fetchMoveCached, fetchMachineCached } from '../utils/pokeCache'
 
 export function useGroupedMoves(displayPokemon, selectedVersion) {
   const [moves, setMoves] = useState({ levelUp: [], tm: [], tutor: [], event: [], egg: [] })
@@ -69,26 +69,45 @@ export function useGroupedMoves(displayPokemon, selectedVersion) {
         details: moveDetailsMap.get(move.name) || null
       }))
       
-      // Special handler for TMs to extract actual TM numbers
+// Fetch actual TM/HM/TR numbers from machine endpoints
+      const tmMachineUrls = new Map()
+      for (const move of groupedMoves.tm) {
+        const details = moveDetailsMap.get(move.name)
+        if (details?.machines && versionGroup) {
+          const machineEntry = details.machines.find(m => m.version_group?.name === versionGroup)
+          if (machineEntry?.machine?.url) {
+            tmMachineUrls.set(move.name, machineEntry.machine.url)
+          }
+        }
+      }
+
+      // Batch-fetch all machine data in parallel
+      const machineDataMap = new Map()
+      await Promise.all(
+        Array.from(tmMachineUrls.entries()).map(async ([moveName, url]) => {
+          const data = await fetchMachineCached(url)
+          if (data) machineDataMap.set(moveName, data)
+        })
+      )
+
       const withDetailsAndTmNumber = list => list.map(move => {
         const details = moveDetailsMap.get(move.name)
         let tmNumber = null
-        
-        if (details?.machines && versionGroup) {
-          // Find the machine for this version group
-          const machine = details.machines.find(m => m.version_group?.name === versionGroup)
-          if (machine?.machine?.url) {
-            // Extract TM number from URL like: https://pokeapi.co/api/v2/machine/223/
-            const match = machine.machine.url.match(/\/machine\/(\d+)\/$/)
-            if (match) {
-              tmNumber = parseInt(match[1])
-            }
+        let tmLabel = null
+
+        const machineData = machineDataMap.get(move.name)
+        if (machineData?.item?.name) {
+          const m = machineData.item.name.match(/^(tm|hm|tr)(\d+)$/i)
+          if (m) {
+            tmNumber = parseInt(m[2], 10)
+            tmLabel = `${m[1].toUpperCase()}${m[2].padStart(2, '0')}`
           }
         }
-        
+
         return {
           ...move,
           tmNumber: tmNumber ?? move.tmNumber,
+          tmLabel: tmLabel ?? null,
           details
         }
       })

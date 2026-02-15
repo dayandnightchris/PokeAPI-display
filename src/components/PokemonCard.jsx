@@ -110,7 +110,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber }) {
       case 'level':
         return move.level ?? 'N/A'
       case 'tmNumber':
-        return move.tmNumber ? String(move.tmNumber).padStart(3, '0') : 'N/A'
+        return move.tmLabel || (move.tmNumber ? String(move.tmNumber).padStart(2, '0') : 'N/A')
       case 'name':
         return formatMoveLabel(move.name)
       case 'type':

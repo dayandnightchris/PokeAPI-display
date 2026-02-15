@@ -95,3 +95,55 @@ export async function fetchMoveCached(name) {
     return null
   }
 }
+
+const machineMemoryCache = new Map()
+
+export async function fetchMachineCached(url) {
+  if (!url) return null
+
+  // Use the URL as the key
+  if (machineMemoryCache.has(url)) return machineMemoryCache.get(url)
+
+  // Extract an ID for localStorage key
+  const idMatch = url.match(/\/machine\/(\d+)\/?$/)
+  const lsKey = idMatch ? `pokeapi:machine:${idMatch[1]}` : null
+
+  if (lsKey) {
+    try {
+      const stored = localStorage.getItem(lsKey)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        const ts = parsed?.ts
+        const data = parsed?.data ?? parsed
+        const fresh = typeof ts === 'number' ? (Date.now() - ts) < TTL_MS : true
+
+        if (data && fresh) {
+          machineMemoryCache.set(url, data)
+          return data
+        }
+      }
+    } catch (err) {
+      console.warn('localStorage read failed:', err)
+    }
+  }
+
+  try {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+
+    machineMemoryCache.set(url, data)
+    if (lsKey) {
+      try {
+        localStorage.setItem(lsKey, JSON.stringify({ ts: Date.now(), data }))
+      } catch (err) {
+        console.warn('localStorage write failed:', err)
+      }
+    }
+
+    return data
+  } catch (err) {
+    console.error('Failed to fetch machine:', url, err)
+    return null
+  }
+}
