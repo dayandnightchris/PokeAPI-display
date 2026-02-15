@@ -59,6 +59,33 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
     'scarlet': 9, 'violet': 9,
   }
 
+  // Map version groups to individual version names
+  const versionGroupToVersions = {
+    'red-blue': ['red', 'blue'],
+    'yellow': ['yellow'],
+    'gold-silver': ['gold', 'silver'],
+    'crystal': ['crystal'],
+    'ruby-sapphire': ['ruby', 'sapphire'],
+    'emerald': ['emerald'],
+    'firered-leafgreen': ['firered', 'leafgreen'],
+    'colosseum': ['colosseum'],
+    'xd': ['xd'],
+    'diamond-pearl': ['diamond', 'pearl'],
+    'platinum': ['platinum'],
+    'heartgold-soulsilver': ['heartgold', 'soulsilver'],
+    'black-white': ['black', 'white'],
+    'black-2-white-2': ['black-2', 'white-2'],
+    'x-y': ['x', 'y'],
+    'omega-ruby-alpha-sapphire': ['omega-ruby', 'alpha-sapphire'],
+    'sun-moon': ['sun', 'moon'],
+    'ultra-sun-ultra-moon': ['ultra-sun', 'ultra-moon'],
+    'lets-go-pikachu-lets-go-eevee': [],
+    'sword-shield': ['sword', 'shield'],
+    'brilliant-diamond-shining-pearl': ['brilliant-diamond', 'shining-pearl'],
+    'legends-arceus': ['legends-arceus'],
+    'scarlet-violet': ['scarlet', 'violet'],
+  }
+
   useEffect(() => {
     if (!pokemon) return
     
@@ -80,6 +107,23 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
             const versionName = detail.version?.name
             if (versionName) versionSet.add(versionName)
           })
+        })
+      }
+
+      // Also pull version groups from moves data (game_indices stops at Gen 5)
+      if (pokemon.moves && pokemon.moves.length > 0) {
+        const moveVersionGroups = new Set()
+        pokemon.moves.forEach(move => {
+          move.version_group_details?.forEach(vgd => {
+            const vgName = vgd.version_group?.name
+            if (vgName) moveVersionGroups.add(vgName)
+          })
+        })
+        moveVersionGroups.forEach(vg => {
+          const versions = versionGroupToVersions[vg]
+          if (versions) {
+            versions.forEach(v => versionSet.add(v))
+          }
         })
       }
 
