@@ -124,6 +124,18 @@ body {
   margin: 5px 0;
 }
 
+.main-info-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: auto auto;
+  gap: 5px;
+  margin: 5px 0;
+}
+
+.main-info-grid .image-box {
+  grid-row: span 2;
+}
+
 .grid-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -174,14 +186,13 @@ body {
   align-items: center;
   justify-content: center;
   padding: 15px;
-  max-height: 250px;
   overflow: hidden;
 }
 
 .pokemon-main-image {
   width: 100%;
   height: auto;
-  max-height: 220px;
+  max-height: 100%;
   object-fit: contain;
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;

@@ -521,7 +521,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
         </div>
       )}
 
-      <div className="card-section grid-4">
+      <div className="main-info-grid">
         {/* Image Box */}
         <div className="info-box image-box">
           {(versionSprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_default) && (
@@ -736,10 +736,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
             })}
           </div>
         </div>
-      </div>
 
-      {/* Evolution, Locations, Misc Stats Grid */}
-      <div className="grid-3">
         {/* Evolution Box */}
         <div className="info-box">
           <div className="box-title">Evolution Line</div>
