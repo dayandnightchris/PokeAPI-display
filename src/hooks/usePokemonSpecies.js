@@ -52,6 +52,7 @@ export function usePokemonSpecies(pokemon) {
   const [species, setSpecies] = useState(null)
   const [selectedVersion, setSelectedVersion] = useState(null)
   const [allEncounters, setAllEncounters] = useState([])
+  const [availableVersions, setAvailableVersions] = useState(new Set())
 
   useEffect(() => {
     if (!pokemon) return
@@ -80,6 +81,7 @@ export function usePokemonSpecies(pokemon) {
     // Preserve the user's currently selected version when switching Pokémon.
     // If the current selection is not available for the new Pokémon, fall back to the latest.
     const available = getAllAvailableVersions(pokemon)
+    if (active) setAvailableVersions(available)
     if (available.size > 0) {
       if (active) {
         setSelectedVersion(prev => {
@@ -117,5 +119,5 @@ export function usePokemonSpecies(pokemon) {
     setSelectedVersion(versionList[0])
   }, [pokemon, selectedVersion, allEncounters])
 
-  return { species, selectedVersion, setSelectedVersion, allEncounters }
+  return { species, selectedVersion, setSelectedVersion, allEncounters, availableVersions }
 }

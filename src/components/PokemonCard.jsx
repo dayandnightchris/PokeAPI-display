@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react'
 import StatsCalculator from './StatsCalculator'
 import VersionSelector from './VersionSelector'
 import { renderEvolutionForest } from './EvolutionTree'
-import { getVersionInfo, generationOrder } from '../utils/versionInfo'
+import { getVersionInfo, generationOrder, generationVersions, versionGeneration, versionDisplayNames } from '../utils/versionInfo'
 import {
   usePokemonSpecies,
   useAbilityDescriptions,
   usePokemonForms,
   useEvolutionChain,
   useGroupedMoves,
-  useVersionSprite
+  useVersionSprite,
+  usePreEvolutionCheck
 } from '../hooks'
 
 const formatMoveLabel = (value) => {
@@ -173,10 +174,11 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
   const [versionInfo, setVersionInfo] = useState(null)
 
   // Data fetching hooks
-  const { species, selectedVersion, setSelectedVersion, allEncounters } = usePokemonSpecies(pokemon)
+  const { species, selectedVersion, setSelectedVersion, allEncounters, availableVersions } = usePokemonSpecies(pokemon)
   const { forms, selectedForm, setSelectedForm, formPokemon } = usePokemonForms({ species, pokemon, selectedVersion, initialForm })
   const abilityDescriptions = useAbilityDescriptions(formPokemon || pokemon)
   const evolutions = useEvolutionChain({ species, selectedVersion })
+  const { canEvolveFrom } = usePreEvolutionCheck({ species, selectedVersion })
   const moves = useGroupedMoves(formPokemon || pokemon, selectedVersion)
   const versionSprite = useVersionSprite(formPokemon || pokemon, selectedVersion)
 
@@ -742,36 +744,87 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
                   })
                   
                   const hasEncounters = Object.keys(encountersByLocation).length > 0
-                  return hasEncounters ? (
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid #ccc', fontWeight: 'bold' }}>
-                          <th style={{ padding: '6px 8px', textAlign: 'left' }}>Location</th>
-                          <th style={{ padding: '6px 8px', textAlign: 'left' }}>Method</th>
-                          <th style={{ padding: '6px 8px', textAlign: 'center' }}>Rate</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Object.entries(encountersByLocation).map(([location, methods]) =>
-                          Object.entries(methods).map(([method, rate], idx) => (
-                            <tr key={`${location}-${method}`} style={{ borderBottom: '1px solid #eee' }}>
-                              <td style={{ padding: '6px 8px' }}>
-                                {idx === 0 ? location.replace(/-/g, ' ') : ''}
-                              </td>
-                              <td style={{ padding: '6px 8px' }}>
-                                {method.replace(/-/g, ' ').charAt(0).toUpperCase() + method.replace(/-/g, ' ').slice(1)}
-                              </td>
-                              <td style={{ padding: '6px 8px', textAlign: 'center' }}>
-                                {rate}%
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <p style={{ margin: '0' }}>No known locations for this version.</p>
-                  )
+                  if (hasEncounters) {
+                    return (
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid #ccc', fontWeight: 'bold' }}>
+                            <th style={{ padding: '6px 8px', textAlign: 'left' }}>Location</th>
+                            <th style={{ padding: '6px 8px', textAlign: 'left' }}>Method</th>
+                            <th style={{ padding: '6px 8px', textAlign: 'center' }}>Rate</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(encountersByLocation).map(([location, methods]) =>
+                            Object.entries(methods).map(([method, rate], idx) => (
+                              <tr key={`${location}-${method}`} style={{ borderBottom: '1px solid #eee' }}>
+                                <td style={{ padding: '6px 8px' }}>
+                                  {idx === 0 ? location.replace(/-/g, ' ') : ''}
+                                </td>
+                                <td style={{ padding: '6px 8px' }}>
+                                  {method.replace(/-/g, ' ').charAt(0).toUpperCase() + method.replace(/-/g, ' ').slice(1)}
+                                </td>
+                                <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                                  {rate}%
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    )
+                  }
+
+                  // --- No wild encounters for this version: priority fallback ---
+                  // Priority 1: Can it evolve from a pre-evolution available in this game?
+                  if (canEvolveFrom) {
+                    return <p style={{ margin: '0' }}>Evolve from {canEvolveFrom.replace(/-/g, ' ')}.</p>
+                  }
+
+                  // Priority 2: Can it be traded from another game in this gen?
+                  const currentGen = versionGeneration[selectedVersion]
+                  if (currentGen) {
+                    const genVersions = generationVersions[currentGen] || []
+                    // Only consider versions where the Pokémon has actual wild encounters
+                    const versionsWithEncounters = new Set()
+                    allEncounters.forEach(enc => {
+                      enc.version_details?.forEach(vd => {
+                        if (vd.version?.name && vd.encounter_details?.length > 0) {
+                          versionsWithEncounters.add(vd.version.name)
+                        }
+                      })
+                    })
+                    const otherGenVersions = genVersions.filter(
+                      v => v !== selectedVersion && versionsWithEncounters.has(v)
+                    )
+                    if (otherGenVersions.length > 0) {
+                      const tradeNames = otherGenVersions.map(v => versionDisplayNames[v] || v).join(', ')
+                      return <p style={{ margin: '0' }}>Trade from {tradeNames}.</p>
+                    }
+                  }
+
+                  // Priority 3: Transfer (only Gen 1-6)
+                  if (currentGen && currentGen <= 6) {
+                    return <p style={{ margin: '0' }}>Transfer only.</p>
+                  }
+
+                  return <p style={{ margin: '0' }}>No location data available.</p>
+                })()
+              ) : allEncounters.length === 0 && selectedVersion ? (
+                (() => {
+                  // No encounter data at all from the API — same priority fallback
+                  if (canEvolveFrom) {
+                    return <p style={{ margin: '0' }}>Evolve from {canEvolveFrom.replace(/-/g, ' ')}.</p>
+                  }
+
+                  // allEncounters is empty, so no wild encounters exist in any version — skip trade check
+                  const currentGen = versionGeneration[selectedVersion]
+
+                  if (currentGen && currentGen <= 6) {
+                    return <p style={{ margin: '0' }}>Transfer only.</p>
+                  }
+
+                  return <p style={{ margin: '0' }}>No location data available.</p>
                 })()
               ) : allEncounters.length === 0 ? (
                 <p style={{ margin: '0' }}>No location data available.</p>

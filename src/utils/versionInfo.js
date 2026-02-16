@@ -12,6 +12,51 @@ export const generationOrder = {
   'generation-ix': 9
 }
 
+// Map generation number to the list of version names in that generation
+export const generationVersions = {
+  1: ['red', 'blue', 'yellow'],
+  2: ['gold', 'silver', 'crystal'],
+  3: ['ruby', 'sapphire', 'emerald', 'firered', 'leafgreen', 'colosseum', 'xd'],
+  4: ['diamond', 'pearl', 'platinum', 'heartgold', 'soulsilver'],
+  5: ['black', 'white', 'black-2', 'white-2'],
+  6: ['x', 'y', 'omega-ruby', 'alpha-sapphire'],
+  7: ['sun', 'moon', 'ultra-sun', 'ultra-moon'],
+  8: ['sword', 'shield', 'brilliant-diamond', 'shining-pearl', 'legends-arceus'],
+  9: ['scarlet', 'violet'],
+}
+
+// Map version name to generation number
+export const versionGeneration = {
+  'red': 1, 'blue': 1, 'yellow': 1,
+  'gold': 2, 'silver': 2, 'crystal': 2,
+  'ruby': 3, 'sapphire': 3, 'emerald': 3, 'firered': 3, 'leafgreen': 3,
+  'colosseum': 3, 'xd': 3,
+  'diamond': 4, 'pearl': 4, 'platinum': 4, 'heartgold': 4, 'soulsilver': 4,
+  'black': 5, 'white': 5, 'black-2': 5, 'white-2': 5,
+  'x': 6, 'y': 6, 'omega-ruby': 6, 'alpha-sapphire': 6,
+  'sun': 7, 'moon': 7, 'ultra-sun': 7, 'ultra-moon': 7,
+  'sword': 8, 'shield': 8, 'brilliant-diamond': 8, 'shining-pearl': 8, 'legends-arceus': 8,
+  'scarlet': 9, 'violet': 9,
+}
+
+// Map version name to display name
+export const versionDisplayNames = {
+  'red': 'Red', 'blue': 'Blue', 'yellow': 'Yellow',
+  'gold': 'Gold', 'silver': 'Silver', 'crystal': 'Crystal',
+  'ruby': 'Ruby', 'sapphire': 'Sapphire', 'emerald': 'Emerald',
+  'firered': 'FireRed', 'leafgreen': 'LeafGreen',
+  'colosseum': 'Colosseum', 'xd': 'XD',
+  'diamond': 'Diamond', 'pearl': 'Pearl', 'platinum': 'Platinum',
+  'heartgold': 'HeartGold', 'soulsilver': 'SoulSilver',
+  'black': 'Black', 'white': 'White', 'black-2': 'Black 2', 'white-2': 'White 2',
+  'x': 'X', 'y': 'Y', 'omega-ruby': 'Omega Ruby', 'alpha-sapphire': 'Alpha Sapphire',
+  'sun': 'Sun', 'moon': 'Moon', 'ultra-sun': 'Ultra Sun', 'ultra-moon': 'Ultra Moon',
+  'sword': 'Sword', 'shield': 'Shield',
+  'brilliant-diamond': 'Brilliant Diamond', 'shining-pearl': 'Shining Pearl',
+  'legends-arceus': 'Legends: Arceus',
+  'scarlet': 'Scarlet', 'violet': 'Violet',
+}
+
 export async function getVersionInfo(versionName) {
   if (!versionName) return null
 
