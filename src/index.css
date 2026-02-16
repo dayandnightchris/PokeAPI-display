@@ -174,11 +174,15 @@ body {
   align-items: center;
   justify-content: center;
   padding: 15px;
+  max-height: 250px;
+  overflow: hidden;
 }
 
 .pokemon-main-image {
   width: 100%;
   height: auto;
+  max-height: 220px;
+  object-fit: contain;
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
