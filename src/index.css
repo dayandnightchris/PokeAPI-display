@@ -136,6 +136,21 @@ body {
   grid-row: span 2;
 }
 
+.main-info-grid .encounter-location-stack {
+  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.encounter-location-stack .info-box {
+  flex: 0 0 auto;
+}
+
+.encounter-location-stack .info-box:last-child {
+  flex: 1;
+}
+
 .grid-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

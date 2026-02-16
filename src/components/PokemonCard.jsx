@@ -693,6 +693,107 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
           </div>
         </div>
 
+        {/* Encounter Info + Location stacked in column 4, spanning both rows */}
+        <div className="encounter-location-stack">
+          <div className="info-box">
+            <div className="box-title">Encounter Info</div>
+            <div className="box-content" style={{ fontSize: '12px' }}>
+              <div><strong>Capture Rate:</strong> {species?.capture_rate || 'N/A'}</div>
+              <div><strong>Wild Held Item:</strong> {species?.held_items?.length > 0 ? species.held_items.map(item => item.item.name).join(', ') : 'None'}</div>
+              <div><strong>EV Yield:</strong> {(!selectedGenerationRank || selectedGenerationRank >= 3) && generationStats?.some(s => s.effort > 0) ? (
+                  <ul style={{ padding: '0 20px', margin: '0' }}>
+                    {generationStats.map(stat => (
+                      stat.effort > 0 && (
+                        <li key={stat.stat.name}>
+                          {stat.stat.name}: {stat.effort}
+                        </li>
+                      )
+                    ))}
+                  </ul>
+                ) : selectedGenerationRank && selectedGenerationRank < 3 ? (
+                  <span style={{ margin: '0', color: '#888' }}>N/A (Stat Exp. system)</span>
+                ) : (
+                  <span style={{ margin: '0' }}>None</span>
+                )}</div>
+            </div>
+          </div>
+
+          <div className="info-box" style={{ flex: 1 }}>
+            <div className="box-title">Location</div>
+            <div className="box-content" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+              {selectedVersion && allEncounters.length > 0 ? (
+                (() => {
+                  const encountersByLocation = {}
+                  allEncounters.forEach(enc => {
+                    const versionDetail = enc.version_details?.find(vd => vd.version.name === selectedVersion)
+                    if (versionDetail && versionDetail.encounter_details?.length > 0) {
+                      const locationName = enc.location_area.name
+                      if (!encountersByLocation[locationName]) {
+                        encountersByLocation[locationName] = {}
+                      }
+                      versionDetail.encounter_details.forEach(detail => {
+                        const methodName = detail.method?.name || 'unknown'
+                        if (!encountersByLocation[locationName][methodName]) {
+                          encountersByLocation[locationName][methodName] = 0
+                        }
+                        encountersByLocation[locationName][methodName] += detail.chance || 0
+                      })
+                    }
+                  })
+                  
+                  const hasEncounters = Object.keys(encountersByLocation).length > 0
+                  return hasEncounters ? (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid #ccc', fontWeight: 'bold' }}>
+                          <th style={{ padding: '6px 8px', textAlign: 'left' }}>Location</th>
+                          <th style={{ padding: '6px 8px', textAlign: 'left' }}>Method</th>
+                          <th style={{ padding: '6px 8px', textAlign: 'center' }}>Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(encountersByLocation).map(([location, methods]) =>
+                          Object.entries(methods).map(([method, rate], idx) => (
+                            <tr key={`${location}-${method}`} style={{ borderBottom: '1px solid #eee' }}>
+                              <td style={{ padding: '6px 8px' }}>
+                                {idx === 0 ? location.replace(/-/g, ' ') : ''}
+                              </td>
+                              <td style={{ padding: '6px 8px' }}>
+                                {method.replace(/-/g, ' ').charAt(0).toUpperCase() + method.replace(/-/g, ' ').slice(1)}
+                              </td>
+                              <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                                {rate}%
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p style={{ margin: '0' }}>No known locations for this version.</p>
+                  )
+                })()
+              ) : allEncounters.length === 0 ? (
+                <p style={{ margin: '0' }}>No location data available.</p>
+              ) : (
+                <p style={{ margin: '0' }}>Select a version to see locations.</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Evolution Box */}
+        <div className="info-box">
+          <div className="box-title">Evolution Line</div>
+          <div className="box-content evolution-box-content" style={{ display: 'flex', justifyContent: 'center' }}>
+            {evolutions.length > 0 ? (
+              renderEvolutionForest(evolutions, pokemon.name, onEvolutionClick)
+            ) : (
+              <p style={{ margin: 0, color: '#888', fontSize: '12px' }}>No evolution available.</p>
+            )}
+          </div>
+        </div>
+
         {/* Stats Box */}
         <div className="info-box">
           <div className="box-title">Base Stats</div>
@@ -737,106 +838,6 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
           </div>
         </div>
 
-        {/* Evolution Box */}
-        <div className="info-box">
-          <div className="box-title">Evolution Line</div>
-          <div className="box-content evolution-box-content" style={{ display: 'flex', justifyContent: 'center' }}>
-            {evolutions.length > 0 ? (
-              renderEvolutionForest(evolutions, pokemon.name, onEvolutionClick)
-            ) : (
-              <p style={{ margin: 0, color: '#888', fontSize: '12px' }}>No evolution available.</p>
-            )}
-          </div>
-        </div>
-
-        {/* Locations Box */}
-        <div className="info-box">
-          <div className="box-title">Location</div>
-          <div className="box-content" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-            {selectedVersion && allEncounters.length > 0 ? (
-              (() => {
-                // Build encounter data grouped by location and method
-                const encountersByLocation = {}
-                allEncounters.forEach(enc => {
-                  const versionDetail = enc.version_details?.find(vd => vd.version.name === selectedVersion)
-                  if (versionDetail && versionDetail.encounter_details?.length > 0) {
-                    const locationName = enc.location_area.name
-                    if (!encountersByLocation[locationName]) {
-                      encountersByLocation[locationName] = {}
-                    }
-                    versionDetail.encounter_details.forEach(detail => {
-                      const methodName = detail.method?.name || 'unknown'
-                      if (!encountersByLocation[locationName][methodName]) {
-                        encountersByLocation[locationName][methodName] = 0
-                      }
-                      encountersByLocation[locationName][methodName] += detail.chance || 0
-                    })
-                  }
-                })
-                
-                const hasEncounters = Object.keys(encountersByLocation).length > 0
-                return hasEncounters ? (
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid #ccc', fontWeight: 'bold' }}>
-                        <th style={{ padding: '6px 8px', textAlign: 'left' }}>Location</th>
-                        <th style={{ padding: '6px 8px', textAlign: 'left' }}>Method</th>
-                        <th style={{ padding: '6px 8px', textAlign: 'center' }}>Rate</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Object.entries(encountersByLocation).map(([location, methods]) =>
-                        Object.entries(methods).map(([method, rate], idx) => (
-                          <tr key={`${location}-${method}`} style={{ borderBottom: '1px solid #eee' }}>
-                            <td style={{ padding: '6px 8px' }}>
-                              {idx === 0 ? location.replace(/-/g, ' ') : ''}
-                            </td>
-                            <td style={{ padding: '6px 8px' }}>
-                              {method.replace(/-/g, ' ').charAt(0).toUpperCase() + method.replace(/-/g, ' ').slice(1)}
-                            </td>
-                            <td style={{ padding: '6px 8px', textAlign: 'center' }}>
-                              {rate}%
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                ) : (
-                  <p style={{ margin: '0' }}>No known locations for this version.</p>
-                )
-              })()
-            ) : allEncounters.length === 0 ? (
-              <p style={{ margin: '0' }}>No location data available.</p>
-            ) : (
-              <p style={{ margin: '0' }}>Select a version to see locations.</p>
-            )}
-          </div>
-        </div>
-
-        {/* Misc Stats Box */}
-        <div className="info-box">
-          <div className="box-title">Encounter Info</div>
-          <div className="box-content" style={{ fontSize: '12px' }}>
-            <div><strong>Capture Rate:</strong> {species?.capture_rate || 'N/A'}</div>
-            <div><strong>Wild Held Item:</strong> {species?.held_items?.length > 0 ? species.held_items.map(item => item.item.name).join(', ') : 'None'}</div>
-            <div><strong>EV Yield:</strong> {(!selectedGenerationRank || selectedGenerationRank >= 3) && generationStats?.some(s => s.effort > 0) ? (
-                <ul style={{ padding: '0 20px', margin: '0' }}>
-                  {generationStats.map(stat => (
-                    stat.effort > 0 && (
-                      <li key={stat.stat.name}>
-                        {stat.stat.name}: {stat.effort}
-                      </li>
-                    )
-                  ))}
-                </ul>
-              ) : selectedGenerationRank && selectedGenerationRank < 3 ? (
-                <span style={{ margin: '0', color: '#888' }}>N/A (Stat Exp. system)</span>
-              ) : (
-                <span style={{ margin: '0' }}>None</span>
-              )}</div>
-          </div>
-        </div>
       </div>
 
       {/* Moves Flex Container */}
