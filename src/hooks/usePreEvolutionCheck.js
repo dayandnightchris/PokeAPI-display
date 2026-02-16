@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react'
+import { versionGeneration, generationVersions, versionDisplayNames } from '../utils/versionInfo'
 
 /**
  * Checks if the current Pokémon can be obtained via evolution in the selected version.
  * Walks up the evolution chain and checks if any pre-evolution has wild encounters.
  *
- * Returns: { canEvolveFrom: string|null, loading: boolean }
- *   - canEvolveFrom: the name of the immediate pre-evolution that has wild encounters, or null
+ * Returns:
+ *   - canEvolveFrom: name of pre-evolution with wild encounters in this version, or null
+ *   - canTradeAndEvolveFrom: { preEvo, tradeVersions[] } if a pre-evo has encounters
+ *     in other same-gen games, or null
+ *   - loading: boolean
  */
 
 const encounterCache = new Map()
@@ -33,6 +37,18 @@ function hasEncountersInVersion(encounters, version) {
   )
 }
 
+function getEncounterVersions(encounters) {
+  const versions = new Set()
+  encounters.forEach(enc => {
+    enc.version_details?.forEach(vd => {
+      if (vd.version?.name && vd.encounter_details?.length > 0) {
+        versions.add(vd.version.name)
+      }
+    })
+  })
+  return versions
+}
+
 // Walk the evolution chain and collect all pre-evolutions of the target species
 function getPreEvolutions(chainNode, targetName, path = []) {
   if (!chainNode?.species?.name) return null
@@ -53,11 +69,13 @@ function getPreEvolutions(chainNode, targetName, path = []) {
 
 export function usePreEvolutionCheck({ species, selectedVersion }) {
   const [canEvolveFrom, setCanEvolveFrom] = useState(null)
+  const [canTradeAndEvolveFrom, setCanTradeAndEvolveFrom] = useState(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!species?.evolution_chain?.url || !selectedVersion || !species?.name) {
       setCanEvolveFrom(null)
+      setCanTradeAndEvolveFrom(null)
       return
     }
 
@@ -67,36 +85,55 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
     const run = async () => {
       try {
         const chainRes = await fetch(species.evolution_chain.url)
-        if (!chainRes.ok) { if (active) { setCanEvolveFrom(null); setLoading(false) }; return }
+        if (!chainRes.ok) {
+          if (active) { setCanEvolveFrom(null); setCanTradeAndEvolveFrom(null); setLoading(false) }
+          return
+        }
         const chainData = await chainRes.json()
 
         const preEvos = getPreEvolutions(chainData.chain, species.name)
         if (!preEvos || preEvos.length === 0) {
-          if (active) { setCanEvolveFrom(null); setLoading(false) }
+          if (active) { setCanEvolveFrom(null); setCanTradeAndEvolveFrom(null); setLoading(false) }
           return
         }
 
         // Check pre-evolutions from closest to farthest
-        // (e.g. for Feraligatr: check Croconaw first, then Totodile)
         const reversed = [...preEvos].reverse()
+
+        // Priority 1: Does any pre-evo have encounters in the selected version?
         for (const preEvoName of reversed) {
           const encounters = await fetchEncounters(preEvoName)
           if (hasEncountersInVersion(encounters, selectedVersion)) {
-            if (active) { setCanEvolveFrom(preEvoName); setLoading(false) }
+            if (active) { setCanEvolveFrom(preEvoName); setCanTradeAndEvolveFrom(null); setLoading(false) }
             return
           }
         }
 
-        // No pre-evolution has wild encounters — check if any pre-evo at least
-        // exists in the game (has encounters in ANY version of the same gen).
-        // If so, it could itself be obtained via trade/transfer and evolved.
-        // For simplicity, just check if the immediate pre-evo has ANY encounters at all
-        // in the game — which we handle at a higher level.
-        // For now, report no evolution path found.
-        if (active) { setCanEvolveFrom(null); setLoading(false) }
+        // Priority 2: Does any pre-evo have encounters in another game of the same gen?
+        const currentGen = versionGeneration[selectedVersion]
+        if (currentGen) {
+          const genVersions = generationVersions[currentGen] || []
+          for (const preEvoName of reversed) {
+            const encounters = await fetchEncounters(preEvoName)
+            const encounterVersions = getEncounterVersions(encounters)
+            const tradeVersions = genVersions.filter(
+              v => v !== selectedVersion && encounterVersions.has(v)
+            )
+            if (tradeVersions.length > 0) {
+              if (active) {
+                setCanEvolveFrom(null)
+                setCanTradeAndEvolveFrom({ preEvo: preEvoName, tradeVersions })
+                setLoading(false)
+              }
+              return
+            }
+          }
+        }
+
+        if (active) { setCanEvolveFrom(null); setCanTradeAndEvolveFrom(null); setLoading(false) }
       } catch (err) {
         console.error('Pre-evolution check failed:', err)
-        if (active) { setCanEvolveFrom(null); setLoading(false) }
+        if (active) { setCanEvolveFrom(null); setCanTradeAndEvolveFrom(null); setLoading(false) }
       }
     }
 
@@ -104,5 +141,5 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
     return () => { active = false }
   }, [species?.evolution_chain?.url, species?.name, selectedVersion])
 
-  return { canEvolveFrom, loading }
+  return { canEvolveFrom, canTradeAndEvolveFrom, loading }
 }

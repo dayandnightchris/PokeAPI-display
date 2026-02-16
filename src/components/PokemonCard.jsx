@@ -178,7 +178,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
   const { forms, selectedForm, setSelectedForm, formPokemon } = usePokemonForms({ species, pokemon, selectedVersion, initialForm })
   const abilityDescriptions = useAbilityDescriptions(formPokemon || pokemon)
   const evolutions = useEvolutionChain({ species, selectedVersion })
-  const { canEvolveFrom } = usePreEvolutionCheck({ species, selectedVersion })
+  const { canEvolveFrom, canTradeAndEvolveFrom } = usePreEvolutionCheck({ species, selectedVersion })
   const moves = useGroupedMoves(formPokemon || pokemon, selectedVersion)
   const versionSprite = useVersionSprite(formPokemon || pokemon, selectedVersion)
 
@@ -803,6 +803,13 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
                     }
                   }
 
+                  // Priority 2b: Can a pre-evolution be traded from another game and then evolved?
+                  if (canTradeAndEvolveFrom) {
+                    const tradeNames = canTradeAndEvolveFrom.tradeVersions.map(v => versionDisplayNames[v] || v).join(', ')
+                    const preEvoName = canTradeAndEvolveFrom.preEvo.replace(/-/g, ' ')
+                    return <p style={{ margin: '0' }}>Trade from {tradeNames} and/or evolve from {preEvoName}.</p>
+                  }
+
                   // Priority 3: Transfer (only Gen 1-6)
                   if (currentGen && currentGen <= 6) {
                     return <p style={{ margin: '0' }}>Transfer only.</p>
@@ -815,6 +822,13 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
                   // No encounter data at all from the API — same priority fallback
                   if (canEvolveFrom) {
                     return <p style={{ margin: '0' }}>Evolve from {canEvolveFrom.replace(/-/g, ' ')}.</p>
+                  }
+
+                  // Check if a pre-evo can be traded from another same-gen game and evolved
+                  if (canTradeAndEvolveFrom) {
+                    const tradeNames = canTradeAndEvolveFrom.tradeVersions.map(v => versionDisplayNames[v] || v).join(', ')
+                    const preEvoName = canTradeAndEvolveFrom.preEvo.replace(/-/g, ' ')
+                    return <p style={{ margin: '0' }}>Trade from {tradeNames} and/or evolve from {preEvoName}.</p>
                   }
 
                   // allEncounters is empty, so no wild encounters exist in any version — skip trade check
