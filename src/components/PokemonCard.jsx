@@ -33,6 +33,8 @@ function MoveTable({ title, moves, showLevel, showTmNumber }) {
     direction: 'asc'
   })
 
+  const hasSourceGames = moves.some(m => m.sourceGames)
+
   const columns = [
     ...(showLevel ? [{ key: 'level', label: 'Level', numeric: true }] : []),
     ...(showTmNumber ? [{ key: 'tmNumber', label: 'TM#', numeric: true }] : []),
@@ -44,6 +46,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber }) {
     { key: 'pp', label: 'PP', numeric: true },
     { key: 'accuracy', label: 'Accuracy', numeric: true },
     { key: 'priority', label: 'Priority', numeric: true },
+    ...(hasSourceGames ? [{ key: 'sourceGames', label: 'Game' }] : []),
     //{ key: 'introduced', label: 'Introduced' }
   ]
 
@@ -76,6 +79,8 @@ function MoveTable({ title, moves, showLevel, showTmNumber }) {
         return move.details?.accuracy
       case 'priority':
         return move.details?.priority
+      case 'sourceGames':
+        return move.sourceGames ?? ''
       //case 'introduced':
         //return move.details?.generation?.name
       default:
@@ -128,6 +133,8 @@ function MoveTable({ title, moves, showLevel, showTmNumber }) {
         return move.details?.accuracy ?? 'N/A'
       case 'priority':
         return move.details?.priority ?? 'N/A'
+      case 'sourceGames':
+        return move.sourceGames || 'N/A'
       case 'introduced':
         return formatMoveLabel(move.details?.generation?.name)
       default:

@@ -57,6 +57,35 @@ export const versionDisplayNames = {
   'scarlet': 'Scarlet', 'violet': 'Violet',
 }
 
+// Map version group name to display name
+export const versionGroupDisplayNames = {
+  'red-blue': 'R/B', 'yellow': 'Y',
+  'gold-silver': 'G/S', 'crystal': 'C',
+  'ruby-sapphire': 'R/S', 'emerald': 'E',
+  'firered-leafgreen': 'FR/LG', 'colosseum': 'Col', 'xd': 'XD',
+  'diamond-pearl': 'D/P', 'platinum': 'Pt', 'heartgold-soulsilver': 'HG/SS',
+  'black-white': 'B/W', 'black-2-white-2': 'B2/W2',
+  'x-y': 'X/Y', 'omega-ruby-alpha-sapphire': 'OR/AS',
+  'sun-moon': 'S/M', 'ultra-sun-ultra-moon': 'US/UM',
+  'lets-go-pikachu-lets-go-eevee': 'LGPE',
+  'sword-shield': 'Sw/Sh', 'the-isle-of-armor': 'IoA', 'the-crown-tundra': 'CT',
+  'brilliant-diamond-and-shining-pearl': 'BD/SP', 'legends-arceus': 'LA',
+  'scarlet-violet': 'S/V', 'the-teal-mask': 'TM', 'the-indigo-disk': 'ID',
+}
+
+// Map generation number to list of version group names
+export const generationVersionGroups = {
+  1: ['red-blue', 'yellow'],
+  2: ['gold-silver', 'crystal'],
+  3: ['ruby-sapphire', 'emerald', 'firered-leafgreen', 'colosseum', 'xd'],
+  4: ['diamond-pearl', 'platinum', 'heartgold-soulsilver'],
+  5: ['black-white', 'black-2-white-2'],
+  6: ['x-y', 'omega-ruby-alpha-sapphire'],
+  7: ['sun-moon', 'ultra-sun-ultra-moon', 'lets-go-pikachu-lets-go-eevee'],
+  8: ['sword-shield', 'the-isle-of-armor', 'the-crown-tundra', 'brilliant-diamond-and-shining-pearl', 'legends-arceus'],
+  9: ['scarlet-violet', 'the-teal-mask', 'the-indigo-disk'],
+}
+
 export async function getVersionInfo(versionName) {
   if (!versionName) return null
 

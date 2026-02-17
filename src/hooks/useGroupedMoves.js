@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getVersionInfo, generationOrder } from '../utils/versionInfo'
+import { getVersionInfo, generationOrder, versionGeneration, generationVersionGroups, versionGroupDisplayNames } from '../utils/versionInfo'
 import { fetchMoveCached, fetchMachineCached } from '../utils/pokeCache'
 
 // Map version groups to a comparable order (by generation + sub-order within gen)
@@ -75,27 +75,52 @@ export function useGroupedMoves(displayPokemon, selectedVersion) {
 
     const buildMoves = async () => {
       let versionGroup = null
+      let genVersionGroupSet = null
       if (selectedVersion) {
         const info = await getVersionInfo(selectedVersion)
         versionGroup = info?.versionGroup || null
+        // Build a set of all version groups in the same generation
+        if (versionGroup) {
+          const genNum = versionGeneration[selectedVersion]
+          if (genNum) {
+            genVersionGroupSet = new Set(generationVersionGroups[genNum] || [])
+          }
+        }
       }
 
       const groupedMoves = { levelUp: [], tm: [], tutor: [], event: [], egg: [] }
       const seenMoves = { levelUp: new Set(), tm: new Set(), tutor: new Set(), event: new Set(), egg: new Set() }
 
+      // Collect which version groups each move+method appears in
+      const moveMethodSources = new Map() // key: `${moveName}:${method}` → Set of version group names
+
       displayPokemon.moves.forEach(moveData => {
         const moveName = moveData.move.name
         const details = moveData.version_group_details || []
-        const detailsToUse = versionGroup
-          ? details.filter(detail => detail.version_group?.name === versionGroup)
+        // Filter to all version groups in the generation (not just the selected game)
+        const detailsToUse = genVersionGroupSet
+          ? details.filter(detail => genVersionGroupSet.has(detail.version_group?.name))
           : details
+
+        // For level-up moves, prefer the level from the selected version group
+        const selectedVgLevelUp = versionGroup
+          ? details.find(d => d.version_group?.name === versionGroup && d.move_learn_method?.name === 'level-up')
+          : null
 
         detailsToUse.forEach(detail => {
           const method = detail.move_learn_method?.name
           const level = detail.level_learned_at
+          const vg = detail.version_group?.name
+          const sourceKey = `${moveName}:${method}`
+
+          // Track source version groups
+          if (!moveMethodSources.has(sourceKey)) moveMethodSources.set(sourceKey, new Set())
+          if (vg) moveMethodSources.get(sourceKey).add(vg)
 
           if (method === 'level-up' && !seenMoves.levelUp.has(moveName)) {
-            groupedMoves.levelUp.push({ name: moveName, level })
+            // Use level from selected version group if available, otherwise from whichever version group has it
+            const preferredLevel = selectedVgLevelUp ? selectedVgLevelUp.level_learned_at : level
+            groupedMoves.levelUp.push({ name: moveName, level: preferredLevel })
             seenMoves.levelUp.add(moveName)
           } else if (method === 'machine' && !seenMoves.tm.has(moveName)) {
             // TM number will be fetched from move details later
@@ -114,6 +139,19 @@ export function useGroupedMoves(displayPokemon, selectedVersion) {
         })
       })
 
+      // Helper to build source games label for a move+method
+      const genVgList = genVersionGroupSet ? [...genVersionGroupSet] : null
+      const getSourceLabel = (moveName, method) => {
+        const sources = moveMethodSources.get(`${moveName}:${method}`)
+        if (!sources || !genVersionGroupSet) return null
+        // If present in all version groups of the gen, show "All"
+        if (genVgList.every(vg => sources.has(vg))) return 'All'
+        return [...sources]
+          .sort((a, b) => (versionGroupOrder[a] || 0) - (versionGroupOrder[b] || 0))
+          .map(vg => versionGroupDisplayNames[vg] || vg)
+          .join(', ')
+      }
+
       const allMoveNames = new Set()
       Object.values(groupedMoves).forEach(list => {
         list.forEach(move => allMoveNames.add(move.name))
@@ -127,8 +165,9 @@ export function useGroupedMoves(displayPokemon, selectedVersion) {
         })
       )
 
-      const withDetails = list => list.map(move => ({
+      const withDetails = (list, method) => list.map(move => ({
         ...move,
+        sourceGames: getSourceLabel(move.name, method),
         details: applyPastValues(moveDetailsMap.get(move.name), versionGroup) || null
       }))
       
@@ -136,8 +175,10 @@ export function useGroupedMoves(displayPokemon, selectedVersion) {
       const tmMachineUrls = new Map()
       for (const move of groupedMoves.tm) {
         const details = moveDetailsMap.get(move.name)
-        if (details?.machines && versionGroup) {
+        if (details?.machines && genVersionGroupSet) {
+          // Prefer selected version group's machine entry, fall back to any in the generation
           const machineEntry = details.machines.find(m => m.version_group?.name === versionGroup)
+            || details.machines.find(m => genVersionGroupSet.has(m.version_group?.name))
           if (machineEntry?.machine?.url) {
             tmMachineUrls.set(move.name, machineEntry.machine.url)
           }
@@ -169,17 +210,18 @@ export function useGroupedMoves(displayPokemon, selectedVersion) {
 
         return {
           ...move,
+          sourceGames: getSourceLabel(move.name, 'machine'),
           tmNumber: tmNumber ?? move.tmNumber,
           tmLabel: tmLabel ?? null,
           details
         }
       })
 
-      groupedMoves.levelUp = withDetails(groupedMoves.levelUp)
+      groupedMoves.levelUp = withDetails(groupedMoves.levelUp, 'level-up')
       groupedMoves.tm = withDetailsAndTmNumber(groupedMoves.tm)
-      groupedMoves.tutor = withDetails(groupedMoves.tutor)
-      groupedMoves.event = withDetails(groupedMoves.event)
-      groupedMoves.egg = withDetails(groupedMoves.egg)
+      groupedMoves.tutor = withDetails(groupedMoves.tutor, 'tutor')
+      groupedMoves.event = withDetails(groupedMoves.event, 'reminder')
+      groupedMoves.egg = withDetails(groupedMoves.egg, 'egg')
 
       // Sort level-up moves by level
       groupedMoves.levelUp.sort((a, b) => (a.level ?? 0) - (b.level ?? 0))
