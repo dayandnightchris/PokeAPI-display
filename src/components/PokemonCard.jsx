@@ -942,7 +942,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
       )}
 
       {/* Egg Groups, Hatch Steps, Gender, EV Yield Grid */}
-      {species && (
+      {species && (!selectedGenerationRank || selectedGenerationRank >= 2) && (
         <div className="grid-3">
           <div className="info-box">
             <div className="box-title">Egg Groups</div>
