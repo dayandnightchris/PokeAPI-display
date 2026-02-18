@@ -223,15 +223,16 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
       groupedMoves.event = withDetails(groupedMoves.event, 'reminder')
       groupedMoves.egg = withDetails(groupedMoves.egg, 'egg')
 
-      // If this is an evolved Pokémon, fetch egg moves from the base form
+      // If this is an evolved Pokémon, fetch egg moves from all pre-evolutions
       if (species?.evolves_from_species) {
-        // Walk back to the base form
-        let baseSpeciesName = species.evolves_from_species.name
+        // Collect all pre-evolution species names (closest first)
+        const preEvoNames = []
         let currentSpecies = species
         while (currentSpecies?.evolves_from_species) {
-          baseSpeciesName = currentSpecies.evolves_from_species.name
+          const preEvoName = currentSpecies.evolves_from_species.name
+          preEvoNames.push(preEvoName)
           try {
-            const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${baseSpeciesName}/`)
+            const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${preEvoName}/`)
             if (res.ok) {
               currentSpecies = await res.json()
             } else {
@@ -242,49 +243,50 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
           }
         }
 
-        // Fetch the base form's Pokémon data
-        const basePokemon = await fetchPokemonCached(baseSpeciesName)
-        if (basePokemon?.moves) {
-          const baseEggMoves = []
-          const baseEggSources = new Map()
+        // Fetch egg moves from each pre-evolution
+        for (const preEvoName of preEvoNames) {
+          const preEvoPokemon = await fetchPokemonCached(preEvoName)
+          if (preEvoPokemon?.moves) {
+            const preEvoEggMoves = []
 
-          basePokemon.moves.forEach(moveData => {
-            const moveName = moveData.move.name
-            if (seenMoves.egg.has(moveName)) return // already in own egg moves
+            preEvoPokemon.moves.forEach(moveData => {
+              const moveName = moveData.move.name
+              if (seenMoves.egg.has(moveName)) return // already in egg moves
 
-            const details = moveData.version_group_details || []
-            const eggDetails = genVersionGroupSet
-              ? details.filter(d => d.move_learn_method?.name === 'egg' && genVersionGroupSet.has(d.version_group?.name))
-              : details.filter(d => d.move_learn_method?.name === 'egg')
+              const details = moveData.version_group_details || []
+              const eggDetails = genVersionGroupSet
+                ? details.filter(d => d.move_learn_method?.name === 'egg' && genVersionGroupSet.has(d.version_group?.name))
+                : details.filter(d => d.move_learn_method?.name === 'egg')
 
-            if (eggDetails.length > 0) {
-              baseEggMoves.push({ name: moveName })
-              seenMoves.egg.add(moveName)
+              if (eggDetails.length > 0) {
+                preEvoEggMoves.push({ name: moveName })
+                seenMoves.egg.add(moveName)
 
-              // Track sources
-              const sourceKey = `${moveName}:egg`
-              if (!moveMethodSources.has(sourceKey)) moveMethodSources.set(sourceKey, new Set())
-              eggDetails.forEach(d => {
-                if (d.version_group?.name) moveMethodSources.get(sourceKey).add(d.version_group.name)
-              })
+                // Track sources
+                const sourceKey = `${moveName}:egg`
+                if (!moveMethodSources.has(sourceKey)) moveMethodSources.set(sourceKey, new Set())
+                eggDetails.forEach(d => {
+                  if (d.version_group?.name) moveMethodSources.get(sourceKey).add(d.version_group.name)
+                })
+              }
+            })
+
+            if (preEvoEggMoves.length > 0) {
+              // Fetch details for new egg moves
+              const newMoveNames = preEvoEggMoves.filter(m => !moveDetailsMap.has(m.name)).map(m => m.name)
+              await Promise.all(
+                newMoveNames.map(async name => {
+                  const details = await fetchMoveCached(name)
+                  if (details) moveDetailsMap.set(name, details)
+                })
+              )
+
+              const inheritedEggs = withDetails(
+                preEvoEggMoves.map(m => ({ ...m, inheritedFrom: preEvoName })),
+                'egg'
+              )
+              groupedMoves.egg.push(...inheritedEggs)
             }
-          })
-
-          if (baseEggMoves.length > 0) {
-            // Fetch details for new egg moves
-            const newMoveNames = baseEggMoves.filter(m => !moveDetailsMap.has(m.name)).map(m => m.name)
-            await Promise.all(
-              newMoveNames.map(async name => {
-                const details = await fetchMoveCached(name)
-                if (details) moveDetailsMap.set(name, details)
-              })
-            )
-
-            const inheritedEggs = withDetails(
-              baseEggMoves.map(m => ({ ...m, inheritedFrom: baseSpeciesName })),
-              'egg'
-            )
-            groupedMoves.egg.push(...inheritedEggs)
           }
         }
       }
