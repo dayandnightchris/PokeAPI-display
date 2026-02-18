@@ -118,7 +118,9 @@ function MoveTable({ title, moves, showLevel, showTmNumber }) {
       case 'tmNumber':
         return move.tmLabel || (move.tmNumber ? String(move.tmNumber).padStart(2, '0') : 'N/A')
       case 'name':
-        return formatMoveLabel(move.name)
+        return move.inheritedFrom
+          ? <>{formatMoveLabel(move.name)} <span style={{ fontSize: '10px', color: '#888' }}>({formatMoveLabel(move.inheritedFrom)})</span></>
+          : formatMoveLabel(move.name)
       case 'type':
         return formatMoveLabel(move.details?.type?.name)
       case 'effect':
@@ -186,7 +188,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
   const abilityDescriptions = useAbilityDescriptions(formPokemon || pokemon)
   const evolutions = useEvolutionChain({ species, selectedVersion })
   const { canEvolveFrom, canTradeAndEvolveFrom } = usePreEvolutionCheck({ species, selectedVersion })
-  const moves = useGroupedMoves(formPokemon || pokemon, selectedVersion)
+  const moves = useGroupedMoves(formPokemon || pokemon, selectedVersion, species)
   const versionSprite = useVersionSprite(formPokemon || pokemon, selectedVersion)
 
   // Derive display pokemon

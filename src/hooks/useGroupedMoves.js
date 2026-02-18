@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getVersionInfo, generationOrder, versionGeneration, generationVersionGroups, versionGroupDisplayNames } from '../utils/versionInfo'
-import { fetchMoveCached, fetchMachineCached } from '../utils/pokeCache'
+import { fetchMoveCached, fetchMachineCached, fetchPokemonCached } from '../utils/pokeCache'
 
 // Map version groups to a comparable order (by generation + sub-order within gen)
 const versionGroupOrder = {
@@ -65,7 +65,7 @@ function applyPastValues(details, versionGroup) {
   return adjusted
 }
 
-export function useGroupedMoves(displayPokemon, selectedVersion) {
+export function useGroupedMoves(displayPokemon, selectedVersion, species) {
   const [moves, setMoves] = useState({ levelUp: [], tm: [], tutor: [], event: [], egg: [] })
 
   useEffect(() => {
@@ -223,6 +223,72 @@ export function useGroupedMoves(displayPokemon, selectedVersion) {
       groupedMoves.event = withDetails(groupedMoves.event, 'reminder')
       groupedMoves.egg = withDetails(groupedMoves.egg, 'egg')
 
+      // If this is an evolved Pokémon, fetch egg moves from the base form
+      if (species?.evolves_from_species) {
+        // Walk back to the base form
+        let baseSpeciesName = species.evolves_from_species.name
+        let currentSpecies = species
+        while (currentSpecies?.evolves_from_species) {
+          baseSpeciesName = currentSpecies.evolves_from_species.name
+          try {
+            const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${baseSpeciesName}/`)
+            if (res.ok) {
+              currentSpecies = await res.json()
+            } else {
+              break
+            }
+          } catch {
+            break
+          }
+        }
+
+        // Fetch the base form's Pokémon data
+        const basePokemon = await fetchPokemonCached(baseSpeciesName)
+        if (basePokemon?.moves) {
+          const baseEggMoves = []
+          const baseEggSources = new Map()
+
+          basePokemon.moves.forEach(moveData => {
+            const moveName = moveData.move.name
+            if (seenMoves.egg.has(moveName)) return // already in own egg moves
+
+            const details = moveData.version_group_details || []
+            const eggDetails = genVersionGroupSet
+              ? details.filter(d => d.move_learn_method?.name === 'egg' && genVersionGroupSet.has(d.version_group?.name))
+              : details.filter(d => d.move_learn_method?.name === 'egg')
+
+            if (eggDetails.length > 0) {
+              baseEggMoves.push({ name: moveName })
+              seenMoves.egg.add(moveName)
+
+              // Track sources
+              const sourceKey = `${moveName}:egg`
+              if (!moveMethodSources.has(sourceKey)) moveMethodSources.set(sourceKey, new Set())
+              eggDetails.forEach(d => {
+                if (d.version_group?.name) moveMethodSources.get(sourceKey).add(d.version_group.name)
+              })
+            }
+          })
+
+          if (baseEggMoves.length > 0) {
+            // Fetch details for new egg moves
+            const newMoveNames = baseEggMoves.filter(m => !moveDetailsMap.has(m.name)).map(m => m.name)
+            await Promise.all(
+              newMoveNames.map(async name => {
+                const details = await fetchMoveCached(name)
+                if (details) moveDetailsMap.set(name, details)
+              })
+            )
+
+            const inheritedEggs = withDetails(
+              baseEggMoves.map(m => ({ ...m, inheritedFrom: baseSpeciesName })),
+              'egg'
+            )
+            groupedMoves.egg.push(...inheritedEggs)
+          }
+        }
+      }
+
       // Sort level-up moves by level
       groupedMoves.levelUp.sort((a, b) => (a.level ?? 0) - (b.level ?? 0))
       // Sort moves alphabetically
@@ -239,7 +305,7 @@ export function useGroupedMoves(displayPokemon, selectedVersion) {
     return () => {
       active = false
     }
-  }, [displayPokemon?.moves, selectedVersion])
+  }, [displayPokemon?.moves, selectedVersion, species?.name])
 
   return moves
 }
