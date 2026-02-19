@@ -1,10 +1,28 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { versionGeneration } from '../utils/versionInfo'
 
 export default function StatsCalculator({ pokemon, stats: statsProp, selectedVersion }) {
   const [level, setLevel] = useState(50)
   const [nature, setNature] = useState('neutral')
-  const [ivs, setIvs] = useState({ hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 })
-  const [evs, setEvs] = useState({ hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 })
+  const [ivs, setIvs] = useState({ hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31, spc: 15 })
+  const [evs, setEvs] = useState({ hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0, spc: 0 })
+
+  // Determine if we're in a legacy generation (Gen 1-2)
+  const currentGen = selectedVersion ? versionGeneration[selectedVersion] : null
+  const isLegacy = currentGen && currentGen <= 2
+  const maxIv = isLegacy ? 15 : 31
+  const maxEv = isLegacy ? 255 : 252
+
+  // Reset IVs to appropriate defaults when switching between legacy and modern generations
+  useEffect(() => {
+    setIvs(prev => {
+      const updated = {}
+      for (const key in prev) {
+        updated[key] = maxIv
+      }
+      return updated
+    })
+  }, [maxIv])
 
   // All natures with their stat modifiers
   const natures = {
@@ -33,12 +51,20 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
   }
 
   const calculateStat = (baseStat, level, iv, ev, nature, statType) => {
+    if (isLegacy) {
+      // Gen 1-2 formula: ((Base + DV) * 2 + floor(EV / 4)) * Level / 100 + 5
+      // EV here represents sqrt(Stat Exp), range 0-255. No nature modifier.
+      if (statType === 'hp') {
+        return Math.floor(((baseStat + iv) * 2 + Math.floor(ev / 4)) * level / 100) + level + 10
+      } else {
+        return Math.floor(((baseStat + iv) * 2 + Math.floor(ev / 4)) * level / 100) + 5
+      }
+    }
+    // Gen 3+ formula
     const modifier = natures[nature][statType] || 1
     if (statType === 'hp') {
-      // HP stat calculation
       return Math.floor(((2 * baseStat + iv + Math.floor(ev / 4)) * level) / 100 + level + 10)
     } else {
-      // Other stats
       const calculated = Math.floor(((2 * baseStat + iv + Math.floor(ev / 4)) * level) / 100 + 5)
       return Math.floor(calculated * modifier)
     }
@@ -57,14 +83,13 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
   const baseStats = statsProp || pokemon.stats
   const stats = baseStats.map(stat => {
     const statKey = statTypeMap[stat.stat.name] || stat.stat.name
-    // For Gen 1 "special" stat, use spa IVs/EVs as fallback
-    const ivKey = ivs[statKey] !== undefined ? statKey : 'spa'
-    const evKey = evs[statKey] !== undefined ? statKey : 'spa'
+    const ivKey = statKey
+    const evKey = statKey
     const calculated = calculateStat(
       stat.base_stat, 
       level, 
-      ivs[ivKey], 
-      evs[evKey], 
+      ivs[ivKey] ?? ivs['spa'], 
+      evs[evKey] ?? evs['spa'], 
       nature, 
       statKey === 'spc' ? 'spa' : statKey
     )
@@ -91,15 +116,22 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
 
   const handleEvChange = (statKey, value) => {
     const newValue = parseInt(value) || 0
-    const clampedValue = Math.max(0, Math.min(252, newValue))
-    const currentTotal = totalEvs - evs[statKey]
-    const finalValue = currentTotal + clampedValue > 508 ? 508 - currentTotal : clampedValue
-    setEvs({ ...evs, [statKey]: finalValue })
+    if (isLegacy) {
+      // Gen 1-2: each EV can be 0-255, no total cap
+      const clampedValue = Math.max(0, Math.min(255, newValue))
+      setEvs({ ...evs, [statKey]: clampedValue })
+    } else {
+      // Gen 3+: each EV 0-252, total capped at 508
+      const clampedValue = Math.max(0, Math.min(252, newValue))
+      const currentTotal = totalEvs - evs[statKey]
+      const finalValue = currentTotal + clampedValue > 508 ? 508 - currentTotal : clampedValue
+      setEvs({ ...evs, [statKey]: finalValue })
+    }
   }
 
   const handleIvChange = (statKey, value) => {
     const newValue = parseInt(value) || 0
-    const clampedValue = Math.max(0, Math.min(31, newValue))
+    const clampedValue = Math.max(0, Math.min(maxIv, newValue))
     setIvs({ ...ivs, [statKey]: clampedValue })
   }
 
@@ -153,30 +185,34 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
             style={{ width: '150px' }}
           />
         </div>
-        <div className="control-group" style={{ flex: '1', minWidth: '250px' }}>
-          <label htmlFor="nature">Nature:</label>
-          <select 
-            id="nature"
-            value={nature} 
-            onChange={(e) => setNature(e.target.value)}
-            style={{ width: '100%' }}
-          >
-            {Object.entries(natures).map(([key, value]) => (
-              <option key={key} value={key}>
-                {value.display}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div style={{ 
-          padding: '0.5rem 1rem', 
-          background: evRemaining < 0 ? '#ffebee' : '#e8f5e9',
-          borderRadius: '4px',
-          fontWeight: 'bold',
-          fontSize: '0.9rem'
-        }}>
-          EVs Remaining: {evRemaining} / 508
-        </div>
+        {!isLegacy && (
+          <div className="control-group" style={{ flex: '1', minWidth: '250px' }}>
+            <label htmlFor="nature">Nature:</label>
+            <select 
+              id="nature"
+              value={nature} 
+              onChange={(e) => setNature(e.target.value)}
+              style={{ width: '100%' }}
+            >
+              {Object.entries(natures).map(([key, value]) => (
+                <option key={key} value={key}>
+                  {value.display}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {!isLegacy && (
+          <div style={{ 
+            padding: '0.5rem 1rem', 
+            background: evRemaining < 0 ? '#ffebee' : '#e8f5e9',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            fontSize: '0.9rem'
+          }}>
+            EVs Remaining: {evRemaining} / 508
+          </div>
+        )}
       </div>
 
       <div className="stats-display" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -218,8 +254,8 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
               <input
                 type="number"
                 min="0"
-                max="31"
-                value={ivs[stat.key]}
+                max={maxIv}
+                value={ivs[stat.key] ?? (isLegacy ? 15 : 31)}
                 onChange={(e) => handleIvChange(stat.key, e.target.value)}
                 style={{ 
                   padding: '0.3rem', 
@@ -229,14 +265,14 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
                   fontSize: '0.85rem',
                   textAlign: 'center'
                 }}
-                title="IV (0-31)"
+                title={isLegacy ? 'DV (0-15)' : 'IV (0-31)'}
               />
               <input
                 type="number"
                 min="0"
-                max="252"
-                step="4"
-                value={evs[stat.key]}
+                max={maxEv}
+                step={isLegacy ? 1 : 4}
+                value={evs[stat.key] ?? 0}
                 onChange={(e) => handleEvChange(stat.key, e.target.value)}
                 style={{ 
                   padding: '0.3rem', 
@@ -246,7 +282,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
                   fontSize: '0.85rem',
                   textAlign: 'center'
                 }}
-                title="EV (0-252)"
+                title={isLegacy ? 'EV (0-255)' : 'EV (0-252)'}
               />
               <span style={{ 
                 fontWeight: 'bold', 
@@ -273,7 +309,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
         <span></span>
         <span style={{ fontWeight: 'bold' }}>Base</span>
         <span></span>
-        <span style={{ fontWeight: 'bold', textAlign: 'center' }}>IV</span>
+        <span style={{ fontWeight: 'bold', textAlign: 'center' }}>{isLegacy ? 'DV' : 'IV'}</span>
         <span style={{ fontWeight: 'bold', textAlign: 'center' }}>EV</span>
         <span style={{ fontWeight: 'bold', textAlign: 'right' }}>Final</span>
       </div>
