@@ -326,6 +326,18 @@
   text-align: right;
 }
 
+.move-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+}
+
+.move-loading-gif {
+  width: 40px;
+  height: 40px;
+}
+
 
 
 

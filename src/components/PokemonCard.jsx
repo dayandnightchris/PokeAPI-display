@@ -27,7 +27,7 @@ const getMoveEffectEntry = (details) => {
   return baseText.replace('$effect_chance', details.effect_chance)
 }
 
-function MoveTable({ title, moves, showLevel, showTmNumber }) {
+function MoveTable({ title, moves, showLevel, showTmNumber, loading }) {
   const [sortConfig, setSortConfig] = useState({
     key: showLevel ? 'level' : showTmNumber ? 'tmNumber' : 'name',
     direction: 'asc'
@@ -148,6 +148,11 @@ function MoveTable({ title, moves, showLevel, showTmNumber }) {
     <div className="info-box">
       <div className="box-title">{title}</div>
       <div className="box-content" style={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
+        {loading ? (
+          <div className="move-loading">
+            <video src="/simple_pokeball.webm" autoPlay loop muted className="move-loading-gif" />
+          </div>
+        ) : (
         <table className="move-table" style={{ margin: '0' }}>
           <thead>
             <tr>
@@ -172,6 +177,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber }) {
             ))}
           </tbody>
         </table>
+        )}
       </div>
     </div>
   )
@@ -188,7 +194,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
   const abilityDescriptions = useAbilityDescriptions(formPokemon || pokemon)
   const evolutions = useEvolutionChain({ species, selectedVersion })
   const { canEvolveFrom, canTradeAndEvolveFrom } = usePreEvolutionCheck({ species, selectedVersion })
-  const moves = useGroupedMoves(formPokemon || pokemon, selectedVersion, species)
+  const { moves, loading: movesLoading } = useGroupedMoves(formPokemon || pokemon, selectedVersion, species)
   const versionSprite = useVersionSprite(formPokemon || pokemon, selectedVersion)
 
   // Derive display pokemon
@@ -917,14 +923,14 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
       </div>
 
       {/* Moves Flex Container */}
-      {(moves.levelUp.length > 0 || moves.tm.length > 0 || moves.tutor.length > 0 || moves.event.length > 0 || moves.egg.length > 0) && (
+      {(movesLoading || moves.levelUp.length > 0 || moves.tm.length > 0 || moves.tutor.length > 0 || moves.event.length > 0 || moves.egg.length > 0) && (
         <div className="container-flex">
-          {moves.levelUp.length > 0 && (
-            <MoveTable title="Level Up Moves" moves={moves.levelUp} showLevel />
+          {(moves.levelUp.length > 0 || movesLoading) && (
+            <MoveTable title="Level Up Moves" moves={moves.levelUp} showLevel loading={movesLoading} />
           )}
 
-          {moves.tm.length > 0 && (
-            <MoveTable title="TMs" moves={moves.tm} showTmNumber />
+          {(moves.tm.length > 0 || movesLoading) && (
+            <MoveTable title="TMs" moves={moves.tm} showTmNumber loading={movesLoading} />
           )}
 
           {moves.tutor.length > 0 && (
@@ -944,8 +950,8 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
             </div>
           )}
 
-          {moves.egg.length > 0 && (
-            <MoveTable title="Egg" moves={moves.egg} />
+          {(moves.egg.length > 0 || movesLoading) && (
+            <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} />
           )}
         </div>
       )}

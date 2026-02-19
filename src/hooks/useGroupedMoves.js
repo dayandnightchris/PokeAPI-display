@@ -67,11 +67,13 @@ function applyPastValues(details, versionGroup) {
 
 export function useGroupedMoves(displayPokemon, selectedVersion, species) {
   const [moves, setMoves] = useState({ levelUp: [], tm: [], tutor: [], event: [], egg: [] })
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!displayPokemon?.moves?.length) return
 
     let active = true
+    setLoading(true)
 
     const buildMoves = async () => {
       let versionGroup = null
@@ -299,7 +301,10 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
       groupedMoves.event.sort((a, b) => a.name.localeCompare(b.name))
       groupedMoves.egg.sort((a, b) => a.name.localeCompare(b.name))
 
-      if (active) setMoves(groupedMoves)
+      if (active) {
+        setMoves(groupedMoves)
+        setLoading(false)
+      }
     }
 
     buildMoves()
@@ -309,5 +314,5 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
     }
   }, [displayPokemon?.moves, selectedVersion, species?.name])
 
-  return moves
+  return { moves, loading }
 }
