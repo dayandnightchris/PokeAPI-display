@@ -956,7 +956,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
         </div>
       )}
 
-      {/* Egg Groups, Hatch Steps, Gender, EV Yield Grid */}
+      {/* Egg Groups, Hatch Steps, Gender, EV Yield Grid (moved to separate section) */}
       {species && (!selectedGenerationRank || selectedGenerationRank >= 2) && (
         <div className="grid-3">
           <div className="info-box">
@@ -986,9 +986,34 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
           <div className="info-box">
             <div className="box-title">Gender Ratio</div>
             <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>
-              <p style={{ margin: '0' }}>
-                {species.gender_rate === -1 ? 'Genderless' : species.gender_rate === 0 ? 'Male only' : species.gender_rate === 8 ? 'Female only' : `${species.gender_rate * 12.5}% Female`}
-              </p>
+              {species.gender_rate === -1 ? (
+                <p style={{ margin: '0' }}>Genderless</p>
+              ) : species.gender_rate === 0 ? (
+                <p style={{ margin: '0' }}>♂ 100% Male</p>
+              ) : species.gender_rate === 8 ? (
+                <p style={{ margin: '0' }}>♀ 100% Female</p>
+              ) : (
+                <div style={{ margin: '0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ color: '#6890F0', fontWeight: 'bold' }}>♂ {(100 - species.gender_rate * 12.5)}% Male</span>
+                    <span style={{ color: '#EE99AC', fontWeight: 'bold' }}>♀ {species.gender_rate * 12.5}% Female</span>
+                  </div>
+                  <div style={{
+                    width: '100%',
+                    height: '8px',
+                    backgroundColor: '#EE99AC',
+                    borderRadius: '4px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: `${100 - species.gender_rate * 12.5}%`,
+                      height: '100%',
+                      backgroundColor: '#6890F0',
+                      borderRadius: '4px 0 0 4px'
+                    }} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
