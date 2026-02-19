@@ -13,12 +13,19 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
   const maxIv = isLegacy ? 15 : 31
   const maxEv = isLegacy ? 255 : 252
 
-  // Reset IVs to appropriate defaults when switching between legacy and modern generations
+  // Reset IVs and EVs when switching between legacy and modern generations
   useEffect(() => {
     setIvs(prev => {
       const updated = {}
       for (const key in prev) {
         updated[key] = maxIv
+      }
+      return updated
+    })
+    setEvs(prev => {
+      const updated = {}
+      for (const key in prev) {
+        updated[key] = 0
       }
       return updated
     })
