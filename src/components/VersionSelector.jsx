@@ -182,8 +182,8 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
   }
 
   return (
-    <div className="version-selector">
-      <label htmlFor="version-select">Game Version:</label>
+    
+      
       <select
         id="version-select"
         value={selectedVersion || ''}
@@ -203,6 +203,6 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
           )
         })}
       </select>
-    </div>
+    
   )
 }

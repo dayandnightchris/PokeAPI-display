@@ -510,15 +510,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
 
   return (
     <div className="pokemon-card-container">
-      {/* Version Selector */}
-      <div className="version-selector-wrapper">
-        <VersionSelector
-          pokemon={pokemon}
-          selectedVersion={selectedVersion}
-          onVersionChange={setSelectedVersion}
-          allEncounters={allEncounters}
-        />
-      </div>
+
 
       {/* Form Selector */}
       {forms.length > 1 && (
@@ -736,7 +728,13 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
           </div>
 
           <div className="info-box" style={{ flex: 1 }}>
-            <div className="box-title">Location</div>
+            <div className="box-title">Location:{/* Version Selector */} <VersionSelector
+          pokemon={pokemon}
+          selectedVersion={selectedVersion}
+          onVersionChange={setSelectedVersion}
+          allEncounters={allEncounters}
+        />
+             </div>
             <div className="box-content" style={{ maxHeight: '300px', overflowY: 'auto' }}>
               {selectedVersion && allEncounters.length > 0 ? (
                 (() => {
