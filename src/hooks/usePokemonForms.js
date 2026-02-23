@@ -1,6 +1,79 @@
 import { useState, useEffect } from 'react'
-import { fetchPokemonCached } from '../utils/pokeCache'
-import { getVersionInfo } from '../utils/versionInfo'
+import { versionGeneration } from '../utils/versionInfo'
+
+/**
+ * Determine if a form should be shown for the selected game version.
+ * Uses generation-based rules instead of unreliable game_indices checks.
+ */
+function isFormAvailable(formName, basePokemonName, selectedVersion) {
+  const gen = versionGeneration[selectedVersion]
+  if (!gen) return true // unknown version, show all
+
+  // Base form is always available
+  if (formName === basePokemonName) return true
+
+  const lowerForm = formName.toLowerCase()
+
+  // --- Mega evolutions: Gen 6-7 + LGPE + Legends Z-A (Gen 9) ---
+  if (lowerForm.includes('-mega')) {
+    if (gen >= 6 && gen <= 7) return true
+    if (gen === 9) return true // Legends Z-A
+    return false
+  }
+
+  // --- Gigantamax: Sword/Shield only ---
+  if (lowerForm.includes('-gmax')) {
+    return ['sword', 'shield'].includes(selectedVersion)
+  }
+
+  // --- Totem forms: Gen 7 (SM/USUM) only ---
+  if (lowerForm.includes('-totem')) {
+    return gen === 7
+  }
+
+  // --- Regional forms ---
+  // Alolan: Gen 7+ (LGPE included), but in PLA only Vulpix/Ninetales
+  if (lowerForm.includes('-alola')) {
+    if (selectedVersion === 'legends-arceus') {
+      return lowerForm === 'vulpix-alola' || lowerForm === 'ninetales-alola'
+    }
+    return gen >= 7
+  }
+
+  // Galarian: SwSh + Gen 9+ (not in BDSP or PLA)
+  if (lowerForm.includes('-galar')) {
+    return gen >= 9 || ['sword', 'shield'].includes(selectedVersion)
+  }
+
+  // Hisuian: PLA + Gen 9+ (not in SwSh or BDSP)
+  if (lowerForm.includes('-hisui')) {
+    return selectedVersion === 'legends-arceus' || gen >= 9
+  }
+
+  // Paldean: Gen 9
+  if (lowerForm.includes('-paldea')) return gen >= 9
+
+  // --- Pikachu special forms ---
+  // Cosplay Pikachu: ORAS only
+  const cosplayForms = ['-rock-star', '-belle', '-pop-star', '-phd', '-libre', '-cosplay']
+  if (cosplayForms.some(suffix => lowerForm.endsWith(suffix))) {
+    return ['omega-ruby', 'alpha-sapphire'].includes(selectedVersion)
+  }
+
+  // Cap Pikachu: Gen 7+
+  const capForms = ['-original-cap', '-hoenn-cap', '-sinnoh-cap', '-unova-cap', '-kalos-cap', '-alola-cap', '-partner-cap']
+  if (capForms.some(suffix => lowerForm.endsWith(suffix))) {
+    return gen >= 7
+  }
+
+  if (lowerForm.endsWith('-world-cap')) return gen >= 8
+  if (lowerForm.endsWith('-starter')) return gen >= 7
+
+  // Default: show the form. The user can only select versions where
+  // the pokemon exists, so cosmetic forms (Unown letters, Vivillon
+  // patterns, etc.) are safe to show.
+  return true
+}
 
 export function usePokemonForms({ species, pokemon, selectedVersion, initialForm }) {
   const [forms, setForms] = useState([])
@@ -10,35 +83,6 @@ export function usePokemonForms({ species, pokemon, selectedVersion, initialForm
   // Extract forms and set initial selected form, filtered by game version
   useEffect(() => {
     if (!pokemon) return
-
-    let active = true
-
-    const getVersionAvailability = async (formName, versionInfo) => {
-      try {
-        const data = await fetchPokemonCached(formName)
-        if (!data) {
-          if (!versionInfo?.versionGroup) return true
-          const formRes = await fetch(`https://pokeapi.co/api/v2/pokemon-form/${formName}/`)
-          if (!formRes.ok) return false
-          const formData = await formRes.json()
-          if (formData?.version_group?.name === versionInfo.versionGroup) return true
-
-          if (versionInfo.generation && formData?.version_group?.url) {
-            const groupRes = await fetch(formData.version_group.url)
-            if (!groupRes.ok) return false
-            const groupData = await groupRes.json()
-            return groupData?.generation?.name === versionInfo.generation
-          }
-
-          return false
-        }
-        // Check if this form exists in the selected version
-        return data.game_indices?.some(gi => gi.version.name === selectedVersion) || false
-      } catch (err) {
-        console.error('Failed to check form availability:', formName, err)
-        return false
-      }
-    }
 
     const baseName = pokemon.name.split('-')[0]
     const varietyForms = (species?.varieties || [])
@@ -53,54 +97,25 @@ export function usePokemonForms({ species, pokemon, selectedVersion, initialForm
     const formList = Array.from(new Set([...varietyForms, ...pokemonForms])).sort()
 
     if (formList.length === 0) {
-      if (active) {
-        setForms([])
-        setSelectedForm(null)
-      }
-      return () => {
-        active = false
-      }
+      setForms([])
+      setSelectedForm(null)
+      return
     }
 
-    if (selectedVersion) {
-      const filterByVersion = async () => {
-        const versionInfo = await getVersionInfo(selectedVersion)
-        const availableForms = []
-        for (const form of formList) {
-          if (!active) return
-          const isAvailable = await getVersionAvailability(form, versionInfo)
-          if (isAvailable) {
-            availableForms.push(form)
-          }
-        }
-        if (active) {
-          setForms(availableForms)
+    // Filter forms by selected version using synchronous rules
+    const availableForms = selectedVersion
+      ? formList.filter(form => isFormAvailable(form, pokemon.name, selectedVersion))
+      : formList
 
-          const baseForm = availableForms.find(f => !f.includes('-')) || availableForms[0]
-          const preferredForm = initialForm && availableForms.includes(initialForm)
-            ? initialForm
-            : baseForm
+    setForms(availableForms)
 
-          if (preferredForm && preferredForm !== selectedForm) {
-            setSelectedForm(preferredForm)
-          }
-        }
-      }
-      filterByVersion()
-    } else {
-      setForms(formList)
-      const baseForm = formList.find(f => !f.includes('-')) || formList[0]
-      const preferredForm = initialForm && formList.includes(initialForm)
-        ? initialForm
-        : baseForm
+    const baseForm = availableForms.find(f => !f.includes('-')) || availableForms[0]
+    const preferredForm = initialForm && availableForms.includes(initialForm)
+      ? initialForm
+      : baseForm
 
-      if (preferredForm && preferredForm !== selectedForm) {
-        setSelectedForm(preferredForm)
-      }
-    }
-
-    return () => {
-      active = false
+    if (preferredForm && preferredForm !== selectedForm) {
+      setSelectedForm(preferredForm)
     }
   }, [species?.varieties, pokemon, selectedVersion, initialForm])
 
@@ -130,7 +145,7 @@ export function usePokemonForms({ species, pokemon, selectedVersion, initialForm
               ...pokemon,
               name: formData?.name || selectedForm,
               sprites: formData?.sprites || pokemon.sprites,
-              types: formData?.types || pokemon.types
+              types: formData?.types?.length ? formData.types : pokemon.types
             })
           }
           return

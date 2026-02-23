@@ -541,9 +541,9 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
       <div className="main-info-grid">
         {/* Image Box */}
         <div className="info-box image-box">
-          {(versionSprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_default) && (
+          {(versionSprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_default || displayPokemon?.sprites?.front_default) && (
             <img
-              src={versionSprite || displayPokemon.sprites.other['official-artwork'].front_default}
+              src={versionSprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_default || displayPokemon?.sprites?.front_default}
               alt={displayPokemon.name}
               className="pokemon-main-image"
             />
