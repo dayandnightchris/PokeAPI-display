@@ -200,11 +200,6 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
   // Derive display pokemon
   const displayPokemon = formPokemon || pokemon
 
-  // Clear or restore form selection when pokemon changes
-  useEffect(() => {
-    setSelectedForm(initialForm || null)
-  }, [pokemon?.id, initialForm, setSelectedForm])
-
   useEffect(() => {
     let active = true
 

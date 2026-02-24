@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { versionGeneration } from '../utils/versionInfo'
 
 /**
@@ -79,10 +79,14 @@ export function usePokemonForms({ species, pokemon, selectedVersion, initialForm
   const [forms, setForms] = useState([])
   const [selectedForm, setSelectedForm] = useState(null)
   const [formPokemon, setFormPokemon] = useState(null)
+  const prevPokemonIdRef = useRef(null)
 
   // Extract forms and set initial selected form, filtered by game version
   useEffect(() => {
     if (!pokemon) return
+
+    const pokemonChanged = prevPokemonIdRef.current !== pokemon.id
+    prevPokemonIdRef.current = pokemon.id
 
     const baseName = pokemon.name.split('-')[0]
     const varietyForms = (species?.varieties || [])
@@ -110,13 +114,22 @@ export function usePokemonForms({ species, pokemon, selectedVersion, initialForm
     setForms(availableForms)
 
     const baseForm = availableForms.find(f => !f.includes('-')) || availableForms[0]
-    const preferredForm = initialForm && availableForms.includes(initialForm)
-      ? initialForm
-      : baseForm
 
-    if (preferredForm && preferredForm !== selectedForm) {
-      setSelectedForm(preferredForm)
-    }
+    setSelectedForm(prev => {
+      // When only version/species changed (not the pokemon), keep current form if still valid
+      if (!pokemonChanged && prev && availableForms.includes(prev)) {
+        return prev
+      }
+      // Explicit initialForm from search (form-only endpoints)
+      if (initialForm && availableForms.includes(initialForm)) {
+        return initialForm
+      }
+      // Pokemon.name itself is a form (e.g. searched "avalugg-hisui" directly)
+      if (availableForms.includes(pokemon.name)) {
+        return pokemon.name
+      }
+      return baseForm
+    })
   }, [species?.varieties, pokemon, selectedVersion, initialForm])
 
   // Fetch selected form's pokemon data
