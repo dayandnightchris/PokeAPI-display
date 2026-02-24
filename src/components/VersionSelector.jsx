@@ -158,8 +158,16 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
   }, [pokemon, allEncounters])
 
   useEffect(() => {
-    if (!selectedVersion && versions.length > 0 && versions[0].length > 0) {
-      onVersionChange(versions[0][0].name)
+    if (versions.length === 0) return
+
+    // Build a flat set of all available version names
+    const allVersionNames = new Set(versions.flat().map(v => v.name))
+
+    if (!selectedVersion || !allVersionNames.has(selectedVersion)) {
+      // Current selection is missing or not in the new list — pick the latest available
+      const lastGroup = versions[versions.length - 1]
+      const fallback = lastGroup[lastGroup.length - 1]?.name || versions[0][0]?.name
+      if (fallback) onVersionChange(fallback)
     }
   }, [selectedVersion, versions, onVersionChange])
 
