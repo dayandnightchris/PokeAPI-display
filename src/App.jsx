@@ -63,6 +63,35 @@ function App() {
 
       if (pokemonResponse.ok) {
         pokemonData = await pokemonResponse.json()
+
+        // If this is a non-default form (e.g. raichu-mega-x, avalugg-hisui),
+        // load the base species' default pokemon and track this as a form request.
+        if (pokemonData && pokemonData.is_default === false) {
+          requestedFormName = pokemonData.name
+          try {
+            const speciesUrl = pokemonData.species?.url
+            if (speciesUrl) {
+              const speciesRes = await fetch(speciesUrl, { signal: controller.signal })
+              if (speciesRes.ok) {
+                const speciesData = await speciesRes.json()
+                const defaultVariety = speciesData.varieties?.find(v => v.is_default)
+                  || speciesData.varieties?.[0]
+                const baseName = defaultVariety?.pokemon?.name
+                if (baseName && baseName !== pokemonData.name) {
+                  const baseRes = await fetch(`https://pokeapi.co/api/v2/pokemon/${baseName}`, {
+                    signal: controller.signal,
+                  })
+                  if (baseRes.ok) {
+                    pokemonData = await baseRes.json()
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            if (err?.name === 'AbortError') throw err
+            // Fall through with original pokemonData
+          }
+        }
       } else {
         const formResponse = await fetch(`https://pokeapi.co/api/v2/pokemon-form/${query}`, {
           signal: controller.signal,

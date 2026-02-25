@@ -189,16 +189,26 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
   const [versionInfo, setVersionInfo] = useState(null)
 
   // Data fetching hooks
-  const { species, selectedVersion, setSelectedVersion, allEncounters, availableVersions } = usePokemonSpecies(pokemon)
-  const { forms, selectedForm, setSelectedForm, formPokemon } = usePokemonForms({ species, pokemon, selectedVersion, initialForm })
+  const { species, selectedVersion, setSelectedVersion, allEncounters, availableVersions, pokedexVersions } = usePokemonSpecies(pokemon)
+  const { forms, selectedForm, setSelectedForm, formPokemon, formSuggestedVersion } = usePokemonForms({ species, pokemon, selectedVersion, initialForm })
   const abilityDescriptions = useAbilityDescriptions(formPokemon || pokemon)
   const evolutions = useEvolutionChain({ species, selectedVersion })
   const { canEvolveFrom, canTradeAndEvolveFrom } = usePreEvolutionCheck({ species, selectedVersion })
-  const { moves, loading: movesLoading } = useGroupedMoves(formPokemon || pokemon, selectedVersion, species)
+  // For forms with empty moves (e.g. PLZA megas), fall back to base pokemon's moves
+  const movesSource = (formPokemon && formPokemon.moves?.length > 0) ? formPokemon : pokemon
+  const { moves, loading: movesLoading } = useGroupedMoves(movesSource, selectedVersion, species)
   const versionSprite = useVersionSprite(formPokemon || pokemon, selectedVersion)
 
   // Derive display pokemon
   const displayPokemon = formPokemon || pokemon
+
+  // When a searched form requires a specific version (e.g. PLZA megas → legends-za),
+  // switch to that version automatically
+  useEffect(() => {
+    if (formSuggestedVersion && formSuggestedVersion !== selectedVersion) {
+      setSelectedVersion(formSuggestedVersion)
+    }
+  }, [formSuggestedVersion, selectedVersion, setSelectedVersion])
 
   useEffect(() => {
     let active = true
@@ -512,6 +522,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
           selectedVersion={selectedVersion}
           onVersionChange={setSelectedVersion}
           allEncounters={formPokemon ? [] : allEncounters}
+          pokedexVersions={pokedexVersions}
         />
       </div>
 

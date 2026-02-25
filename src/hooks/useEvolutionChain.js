@@ -99,6 +99,12 @@ const versionGroupToVersions = {
   'brilliant-diamond-shining-pearl': ['brilliant-diamond', 'shining-pearl'],
   'legends-arceus': ['legends-arceus'],
   'scarlet-violet': ['scarlet', 'violet'],
+  'the-teal-mask': ['scarlet', 'violet'],
+  'the-indigo-disk': ['scarlet', 'violet'],
+  'legends-za': ['legends-za'],
+  'mega-dimension': ['legends-za'],
+  'the-isle-of-armor': ['sword', 'shield'],
+  'the-crown-tundra': ['sword', 'shield'],
 }
 
 function pokemonAvailableInVersion(pokemonData, version) {

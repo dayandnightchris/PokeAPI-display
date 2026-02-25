@@ -42,6 +42,7 @@ const versionSpriteMap = {
   'legends-arceus':   ['generation-viii',  null],
   'scarlet':          ['generation-ix',   'scarlet-violet'],
   'violet':           ['generation-ix',   'scarlet-violet'],
+  'legends-za':       ['generation-ix',   null],
 }
 
 // Ordered from newest to oldest for fallback

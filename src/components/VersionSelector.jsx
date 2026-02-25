@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export default function VersionSelector({ pokemon, selectedVersion, onVersionChange, allEncounters }) {
+export default function VersionSelector({ pokemon, selectedVersion, onVersionChange, allEncounters, pokedexVersions }) {
   const [versions, setVersions] = useState([])
   const [loading, setLoading] = useState(false)
 
@@ -43,6 +43,7 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
     'legends-arceus': 'Legends: Arceus',
     'scarlet': 'Scarlet',
     'violet': 'Violet',
+    'legends-za': 'Legends: Z-A',
   }
 
   // Map versions to generation number for sorting
@@ -56,7 +57,7 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
     'x': 6, 'y': 6, 'omega-ruby': 6, 'alpha-sapphire': 6,
     'sun': 7, 'moon': 7, 'ultra-sun': 7, 'ultra-moon': 7,
     'sword': 8, 'shield': 8, 'brilliant-diamond': 8, 'shining-pearl': 8, 'legends-arceus': 8,
-    'scarlet': 9, 'violet': 9,
+    'scarlet': 9, 'violet': 9, 'legends-za': 9,
   }
 
   // Map version groups to individual version names
@@ -84,6 +85,12 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
     'brilliant-diamond-shining-pearl': ['brilliant-diamond', 'shining-pearl'],
     'legends-arceus': ['legends-arceus'],
     'scarlet-violet': ['scarlet', 'violet'],
+    'the-teal-mask': ['scarlet', 'violet'],
+    'the-indigo-disk': ['scarlet', 'violet'],
+    'legends-za': ['legends-za'],
+    'mega-dimension': ['legends-za'],
+    'the-isle-of-armor': ['sword', 'shield'],
+    'the-crown-tundra': ['sword', 'shield'],
   }
 
   useEffect(() => {
@@ -127,6 +134,20 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
         })
       }
 
+      // Include versions detected from species pokedex membership
+      // (e.g. legends-za from the lumiose-city pokedex)
+      if (pokedexVersions) {
+        pokedexVersions.forEach(v => {
+          if (versionDisplayNames[v]) versionSet.add(v)
+        })
+      }
+
+      // Fallback: if no versions found from pokemon data but parent already
+      // resolved a selectedVersion (e.g. via form endpoint), include it
+      if (versionSet.size === 0 && selectedVersion && versionDisplayNames[selectedVersion]) {
+        versionSet.add(selectedVersion)
+      }
+
       const uniqueVersions = Array.from(versionSet).sort((a, b) => {
         const genA = versionGeneration[a] || 0
         const genB = versionGeneration[b] || 0
@@ -155,7 +176,7 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
     } finally {
       setLoading(false)
     }
-  }, [pokemon, allEncounters])
+  }, [pokemon, allEncounters, selectedVersion, pokedexVersions])
 
   useEffect(() => {
     if (versions.length === 0) return

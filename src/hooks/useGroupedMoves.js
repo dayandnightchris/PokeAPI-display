@@ -30,7 +30,9 @@ const versionGroupOrder = {
   'legends-arceus': 22,
   'scarlet-violet': 23,
   'the-teal-mask': 24,
-  'the-indigo-disk': 25
+  'the-indigo-disk': 25,
+  'legends-za': 26,
+  'mega-dimension': 27,
 }
 
 // Apply past_values to move details based on the selected version group

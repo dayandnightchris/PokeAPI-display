@@ -22,7 +22,7 @@ export const generationVersions = {
   6: ['x', 'y', 'omega-ruby', 'alpha-sapphire'],
   7: ['sun', 'moon', 'ultra-sun', 'ultra-moon'],
   8: ['sword', 'shield', 'brilliant-diamond', 'shining-pearl', 'legends-arceus'],
-  9: ['scarlet', 'violet'],
+  9: ['scarlet', 'violet', 'legends-za'],
 }
 
 // Map version name to generation number
@@ -36,7 +36,7 @@ export const versionGeneration = {
   'x': 6, 'y': 6, 'omega-ruby': 6, 'alpha-sapphire': 6,
   'sun': 7, 'moon': 7, 'ultra-sun': 7, 'ultra-moon': 7,
   'sword': 8, 'shield': 8, 'brilliant-diamond': 8, 'shining-pearl': 8, 'legends-arceus': 8,
-  'scarlet': 9, 'violet': 9,
+  'scarlet': 9, 'violet': 9, 'legends-za': 9,
 }
 
 // Map version name to display name
@@ -55,6 +55,7 @@ export const versionDisplayNames = {
   'brilliant-diamond': 'Brilliant Diamond', 'shining-pearl': 'Shining Pearl',
   'legends-arceus': 'Legends: Arceus',
   'scarlet': 'Scarlet', 'violet': 'Violet',
+  'legends-za': 'Legends: Z-A',
 }
 
 // Map version group name to display name
@@ -71,6 +72,8 @@ export const versionGroupDisplayNames = {
   'sword-shield': 'Sw/Sh', 'the-isle-of-armor': 'IoA', 'the-crown-tundra': 'CT',
   'brilliant-diamond-and-shining-pearl': 'BD/SP', 'legends-arceus': 'LA',
   'scarlet-violet': 'S/V', 'the-teal-mask': 'TM', 'the-indigo-disk': 'ID',
+  'legends-za': 'LZ-A',
+  'mega-dimension': 'MD',
 }
 
 // Map generation number to list of version group names
@@ -83,7 +86,7 @@ export const generationVersionGroups = {
   6: ['x-y', 'omega-ruby-alpha-sapphire'],
   7: ['sun-moon', 'ultra-sun-ultra-moon', 'lets-go-pikachu-lets-go-eevee'],
   8: ['sword-shield', 'the-isle-of-armor', 'the-crown-tundra', 'brilliant-diamond-and-shining-pearl', 'legends-arceus'],
-  9: ['scarlet-violet', 'the-teal-mask', 'the-indigo-disk'],
+  9: ['scarlet-violet', 'the-teal-mask', 'the-indigo-disk', 'legends-za', 'mega-dimension'],
 }
 
 export async function getVersionInfo(versionName) {
