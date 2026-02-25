@@ -31,6 +31,14 @@ function App() {
           ...allForms.results.map(f => f.name)
         ])
 
+        // Remove superfluous cosmetic forms from autocomplete
+        for (const name of names) {
+          // Pikachu cap forms
+          if (name.startsWith('pikachu-') && name.endsWith('-cap')) names.delete(name)
+          // Alcremie cosmetic variants (63 cream/swirl+sweet combos)
+          if (name.startsWith('alcremie-') && name !== 'alcremie-gmax') names.delete(name)
+        }
+
         setPokemonList(Array.from(names).sort())
       } catch (err) {
         console.error('Failed to fetch Pokemon list:', err)

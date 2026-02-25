@@ -240,7 +240,16 @@ export function usePokemonForms({ species, pokemon, selectedVersion, initialForm
       .map(f => f.name)
       .filter(Boolean)
 
-    const formList = Array.from(new Set([...varietyForms, ...pokemonForms])).sort()
+    const formList = Array.from(new Set([...varietyForms, ...pokemonForms]))
+      .filter(name => {
+        const lower = name.toLowerCase()
+        // Hide Pikachu cap forms (too many cosmetic variants)
+        if (lower.startsWith('pikachu-') && lower.endsWith('-cap')) return false
+        // Hide Alcremie cosmetic variants (63 cream/swirl+sweet combos)
+        if (lower.startsWith('alcremie-') && lower !== 'alcremie-gmax') return false
+        return true
+      })
+      .sort()
 
     if (formList.length === 0) {
       setForms([])
