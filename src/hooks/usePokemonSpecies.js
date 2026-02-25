@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 // Used to detect game availability when the API hasn't populated moves/game_indices yet.
 const pokedexToVersions = {
   'lumiose-city': ['legends-za'],
+  'letsgo-kanto': ['lets-go-pikachu', 'lets-go-eevee'],
 }
 
 // Map version groups to individual version names (for Gen 6+ where game_indices is empty)
@@ -26,7 +27,7 @@ const versionGroupToVersions = {
   'omega-ruby-alpha-sapphire': ['omega-ruby', 'alpha-sapphire'],
   'sun-moon': ['sun', 'moon'],
   'ultra-sun-ultra-moon': ['ultra-sun', 'ultra-moon'],
-  'lets-go-pikachu-lets-go-eevee': [],
+  'lets-go-pikachu-lets-go-eevee': ['lets-go-pikachu', 'lets-go-eevee'],
   'sword-shield': ['sword', 'shield'],
   'brilliant-diamond-shining-pearl': ['brilliant-diamond', 'shining-pearl'],
   'legends-arceus': ['legends-arceus'],

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export default function VersionSelector({ pokemon, selectedVersion, onVersionChange, allEncounters, pokedexVersions }) {
+export default function VersionSelector({ pokemon, selectedVersion, onVersionChange, allEncounters, pokedexVersions, formVersionFilter }) {
   const [versions, setVersions] = useState([])
   const [loading, setLoading] = useState(false)
 
@@ -36,6 +36,8 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
     'moon': 'Moon',
     'ultra-sun': 'Ultra Sun',
     'ultra-moon': 'Ultra Moon',
+    'lets-go-pikachu': "Let's Go Pikachu",
+    'lets-go-eevee': "Let's Go Eevee",
     'sword': 'Sword',
     'shield': 'Shield',
     'brilliant-diamond': 'Brilliant Diamond',
@@ -56,6 +58,7 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
     'black': 5, 'white': 5, 'black-2': 5, 'white-2': 5,
     'x': 6, 'y': 6, 'omega-ruby': 6, 'alpha-sapphire': 6,
     'sun': 7, 'moon': 7, 'ultra-sun': 7, 'ultra-moon': 7,
+    'lets-go-pikachu': 7, 'lets-go-eevee': 7,
     'sword': 8, 'shield': 8, 'brilliant-diamond': 8, 'shining-pearl': 8, 'legends-arceus': 8,
     'scarlet': 9, 'violet': 9, 'legends-za': 9,
   }
@@ -80,7 +83,7 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
     'omega-ruby-alpha-sapphire': ['omega-ruby', 'alpha-sapphire'],
     'sun-moon': ['sun', 'moon'],
     'ultra-sun-ultra-moon': ['ultra-sun', 'ultra-moon'],
-    'lets-go-pikachu-lets-go-eevee': [],
+    'lets-go-pikachu-lets-go-eevee': ['lets-go-pikachu', 'lets-go-eevee'],
     'sword-shield': ['sword', 'shield'],
     'brilliant-diamond-shining-pearl': ['brilliant-diamond', 'shining-pearl'],
     'legends-arceus': ['legends-arceus'],
@@ -142,6 +145,17 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
         })
       }
 
+      // If the selected form is version-exclusive, restrict to those versions only
+      if (formVersionFilter) {
+        const filtered = new Set()
+        formVersionFilter.forEach(v => {
+          if (versionDisplayNames[v]) filtered.add(v)
+        })
+        // Replace the computed set entirely
+        versionSet.clear()
+        filtered.forEach(v => versionSet.add(v))
+      }
+
       // Fallback: if no versions found from pokemon data but parent already
       // resolved a selectedVersion (e.g. via form endpoint), include it
       if (versionSet.size === 0 && selectedVersion && versionDisplayNames[selectedVersion]) {
@@ -176,7 +190,7 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
     } finally {
       setLoading(false)
     }
-  }, [pokemon, allEncounters, selectedVersion, pokedexVersions])
+  }, [pokemon, allEncounters, selectedVersion, pokedexVersions, formVersionFilter])
 
   useEffect(() => {
     if (versions.length === 0) return

@@ -94,7 +94,7 @@ const versionGroupToVersions = {
   'omega-ruby-alpha-sapphire': ['omega-ruby', 'alpha-sapphire'],
   'sun-moon': ['sun', 'moon'],
   'ultra-sun-ultra-moon': ['ultra-sun', 'ultra-moon'],
-  'lets-go-pikachu-lets-go-eevee': [],
+  'lets-go-pikachu-lets-go-eevee': ['lets-go-pikachu', 'lets-go-eevee'],
   'sword-shield': ['sword', 'shield'],
   'brilliant-diamond-shining-pearl': ['brilliant-diamond', 'shining-pearl'],
   'legends-arceus': ['legends-arceus'],

@@ -22,7 +22,7 @@ const versionGroupToVersions = {
   'omega-ruby-alpha-sapphire': ['omega-ruby', 'alpha-sapphire'],
   'sun-moon': ['sun', 'moon'],
   'ultra-sun-ultra-moon': ['ultra-sun', 'ultra-moon'],
-  'lets-go-pikachu-lets-go-eevee': [],
+  'lets-go-pikachu-lets-go-eevee': ['lets-go-pikachu', 'lets-go-eevee'],
   'sword-shield': ['sword', 'shield'],
   'brilliant-diamond-shining-pearl': ['brilliant-diamond', 'shining-pearl'],
   'legends-arceus': ['legends-arceus'],
@@ -153,9 +153,14 @@ function isFormAvailable(formName, basePokemonName, selectedVersion) {
 
   if (lowerForm.endsWith('-world-cap')) return gen >= 8
 
-  // Starter forms: exclusive to Let's Go games (not selectable in version dropdown)
+  // Starter forms: exclusive to Let's Go games
   if (lowerForm === 'pikachu-starter' || lowerForm === 'eevee-starter') {
-    return false
+    return ['lets-go-pikachu', 'lets-go-eevee'].includes(selectedVersion)
+  }
+
+  // Spiky-eared Pichu: HeartGold/SoulSilver only
+  if (lowerForm === 'pichu-spiky-eared') {
+    return ['heartgold', 'soulsilver'].includes(selectedVersion)
   }
 
   // Default: show the form. The user can only select versions where
@@ -164,11 +169,47 @@ function isFormAvailable(formName, basePokemonName, selectedVersion) {
   return true
 }
 
+/**
+ * For version-exclusive non-mega forms, return the best version to switch to.
+ * Used when a searched form isn't available in the current version.
+ */
+function getFormFallbackVersion(formName) {
+  const lower = formName.toLowerCase()
+  if (lower === 'pikachu-starter' || lower === 'eevee-starter') return 'lets-go-pikachu'
+  if (lower === 'pichu-spiky-eared') return 'heartgold'
+  const cosplayForms = ['-rock-star', '-belle', '-pop-star', '-phd', '-libre', '-cosplay']
+  if (cosplayForms.some(suffix => lower.endsWith(suffix))) return 'omega-ruby'
+  if (lower.includes('-gmax')) return 'sword'
+  if (lower.includes('-totem')) return 'sun'
+  return null
+}
+
+/**
+ * For version-exclusive forms, return the set of versions they're restricted to.
+ * Returns null for non-exclusive forms (no restriction).
+ */
+function getFormExclusiveVersions(formName) {
+  const lower = formName.toLowerCase()
+  if (lower === 'pikachu-starter' || lower === 'eevee-starter')
+    return new Set(['lets-go-pikachu', 'lets-go-eevee'])
+  if (lower === 'pichu-spiky-eared')
+    return new Set(['heartgold', 'soulsilver'])
+  const cosplayForms = ['-rock-star', '-belle', '-pop-star', '-phd', '-libre', '-cosplay']
+  if (cosplayForms.some(suffix => lower.endsWith(suffix)))
+    return new Set(['omega-ruby', 'alpha-sapphire'])
+  if (lower.includes('-gmax'))
+    return new Set(['sword', 'shield'])
+  if (lower.includes('-totem'))
+    return new Set(['sun', 'moon', 'ultra-sun', 'ultra-moon'])
+  return null
+}
+
 export function usePokemonForms({ species, pokemon, selectedVersion, initialForm }) {
   const [forms, setForms] = useState([])
   const [selectedForm, setSelectedForm] = useState(null)
   const [formPokemon, setFormPokemon] = useState(null)
   const [formSuggestedVersion, setFormSuggestedVersion] = useState(null)
+  const [formVersionFilter, setFormVersionFilter] = useState(null)
   const prevPokemonIdRef = useRef(null)
   // Tracks which initialForm value has been successfully applied, so we
   // keep trying across async re-renders (e.g. when species loads) but
@@ -240,6 +281,10 @@ export function usePokemonForms({ species, pokemon, selectedVersion, initialForm
         const formVersions = megaAvailMap.get(wantedForm) || formVersionCache.get(wantedForm)
         if (formVersions && formVersions.size > 0 && selectedVersion && !formVersions.has(selectedVersion)) {
           setFormSuggestedVersion(Array.from(formVersions)[0])
+        } else if (selectedVersion && !isFormAvailable(wantedForm, pokemon.name, selectedVersion)) {
+          // Non-mega exclusive forms (starters, spiky-eared pichu, cosplay, etc.)
+          const fallback = getFormFallbackVersion(wantedForm)
+          setFormSuggestedVersion(fallback)
         } else {
           setFormSuggestedVersion(null)
         }
@@ -295,12 +340,16 @@ export function usePokemonForms({ species, pokemon, selectedVersion, initialForm
     return () => { active = false }
   }, [species?.varieties, pokemon, selectedVersion, initialForm])
 
-  // Fetch selected form's pokemon data
+  // Fetch selected form's pokemon data and update version filter
   useEffect(() => {
     if (!selectedForm || !pokemon || selectedForm === pokemon.name) {
       setFormPokemon(null)
+      setFormVersionFilter(null)
       return
     }
+
+    // Compute version restriction for the selected form
+    setFormVersionFilter(getFormExclusiveVersions(selectedForm))
 
     let active = true
 
@@ -341,5 +390,5 @@ export function usePokemonForms({ species, pokemon, selectedVersion, initialForm
     }
   }, [selectedForm, pokemon])
 
-  return { forms, selectedForm, setSelectedForm, formPokemon, formSuggestedVersion }
+  return { forms, selectedForm, setSelectedForm, formPokemon, formSuggestedVersion, formVersionFilter }
 }

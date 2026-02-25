@@ -20,7 +20,7 @@ export const generationVersions = {
   4: ['diamond', 'pearl', 'platinum', 'heartgold', 'soulsilver'],
   5: ['black', 'white', 'black-2', 'white-2'],
   6: ['x', 'y', 'omega-ruby', 'alpha-sapphire'],
-  7: ['sun', 'moon', 'ultra-sun', 'ultra-moon'],
+  7: ['sun', 'moon', 'ultra-sun', 'ultra-moon', 'lets-go-pikachu', 'lets-go-eevee'],
   8: ['sword', 'shield', 'brilliant-diamond', 'shining-pearl', 'legends-arceus'],
   9: ['scarlet', 'violet', 'legends-za'],
 }
@@ -35,6 +35,7 @@ export const versionGeneration = {
   'black': 5, 'white': 5, 'black-2': 5, 'white-2': 5,
   'x': 6, 'y': 6, 'omega-ruby': 6, 'alpha-sapphire': 6,
   'sun': 7, 'moon': 7, 'ultra-sun': 7, 'ultra-moon': 7,
+  'lets-go-pikachu': 7, 'lets-go-eevee': 7,
   'sword': 8, 'shield': 8, 'brilliant-diamond': 8, 'shining-pearl': 8, 'legends-arceus': 8,
   'scarlet': 9, 'violet': 9, 'legends-za': 9,
 }
@@ -51,6 +52,7 @@ export const versionDisplayNames = {
   'black': 'Black', 'white': 'White', 'black-2': 'Black 2', 'white-2': 'White 2',
   'x': 'X', 'y': 'Y', 'omega-ruby': 'Omega Ruby', 'alpha-sapphire': 'Alpha Sapphire',
   'sun': 'Sun', 'moon': 'Moon', 'ultra-sun': 'Ultra Sun', 'ultra-moon': 'Ultra Moon',
+  'lets-go-pikachu': "Let's Go Pikachu", 'lets-go-eevee': "Let's Go Eevee",
   'sword': 'Sword', 'shield': 'Shield',
   'brilliant-diamond': 'Brilliant Diamond', 'shining-pearl': 'Shining Pearl',
   'legends-arceus': 'Legends: Arceus',

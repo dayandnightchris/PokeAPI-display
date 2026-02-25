@@ -190,7 +190,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
 
   // Data fetching hooks
   const { species, selectedVersion, setSelectedVersion, allEncounters, availableVersions, pokedexVersions } = usePokemonSpecies(pokemon)
-  const { forms, selectedForm, setSelectedForm, formPokemon, formSuggestedVersion } = usePokemonForms({ species, pokemon, selectedVersion, initialForm })
+  const { forms, selectedForm, setSelectedForm, formPokemon, formSuggestedVersion, formVersionFilter } = usePokemonForms({ species, pokemon, selectedVersion, initialForm })
   const abilityDescriptions = useAbilityDescriptions(formPokemon || pokemon)
   const evolutions = useEvolutionChain({ species, selectedVersion })
   const { canEvolveFrom, canTradeAndEvolveFrom } = usePreEvolutionCheck({ species, selectedVersion })
@@ -522,7 +522,8 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
           selectedVersion={selectedVersion}
           onVersionChange={setSelectedVersion}
           allEncounters={formPokemon ? [] : allEncounters}
-          pokedexVersions={pokedexVersions}
+          pokedexVersions={formPokemon ? null : pokedexVersions}
+          formVersionFilter={formVersionFilter}
         />
       </div>
 
