@@ -228,13 +228,9 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
       groupedMoves.egg = withDetails(groupedMoves.egg, 'egg')
 
       // If this is an evolved Pokémon, inherit unique moves from all pre-evolutions
-      // (level-up, TM, tutor, event, egg — only moves the current pokemon can't learn at all)
+      // (level-up, TM, tutor, event, egg — per-category, so a move known via TM
+      // can still be inherited as a level-up move from a pre-evo)
       if (species?.evolves_from_species) {
-        // Build a set of ALL move names the current pokemon already knows (any method)
-        const allKnownMoves = new Set([
-          ...seenMoves.levelUp, ...seenMoves.tm, ...seenMoves.tutor,
-          ...seenMoves.event, ...seenMoves.egg
-        ])
 
         // Collect all pre-evolution species names (closest first)
         const preEvoNames = []
@@ -271,8 +267,6 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
 
           preEvoPokemon.moves.forEach(moveData => {
             const moveName = moveData.move.name
-            if (allKnownMoves.has(moveName)) return // already known by any method
-
             const vgDetails = moveData.version_group_details || []
 
             for (const [apiMethod, groupKey] of methodMap) {
@@ -281,6 +275,9 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
                 : vgDetails.filter(d => d.move_learn_method?.name === apiMethod)
 
               if (methodDetails.length === 0) continue
+
+              // Skip if the current pokemon already has this move in this same category
+              if (seenMoves[groupKey].has(moveName)) continue
 
               const moveEntry = { name: moveName, inheritedFrom: preEvoName }
 
@@ -298,7 +295,7 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
               }
 
               inheritedByCategory[groupKey].push(moveEntry)
-              allKnownMoves.add(moveName)
+              seenMoves[groupKey].add(moveName)
 
               // Track sources for sourceGames label
               const sourceKey = `${moveName}:${apiMethod}`
