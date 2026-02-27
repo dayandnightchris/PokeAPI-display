@@ -227,8 +227,15 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
       groupedMoves.event = withDetails(groupedMoves.event, 'reminder')
       groupedMoves.egg = withDetails(groupedMoves.egg, 'egg')
 
-      // If this is an evolved Pokémon, fetch egg moves from all pre-evolutions
+      // If this is an evolved Pokémon, inherit unique moves from all pre-evolutions
+      // (level-up, TM, tutor, event, egg — only moves the current pokemon can't learn at all)
       if (species?.evolves_from_species) {
+        // Build a set of ALL move names the current pokemon already knows (any method)
+        const allKnownMoves = new Set([
+          ...seenMoves.levelUp, ...seenMoves.tm, ...seenMoves.tutor,
+          ...seenMoves.event, ...seenMoves.egg
+        ])
+
         // Collect all pre-evolution species names (closest first)
         const preEvoNames = []
         let currentSpecies = species
@@ -247,50 +254,109 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
           }
         }
 
-        // Fetch egg moves from each pre-evolution
+        // API method name → groupedMoves key
+        const methodMap = [
+          ['level-up', 'levelUp'],
+          ['machine', 'tm'],
+          ['tutor', 'tutor'],
+          ['reminder', 'event'],
+          ['egg', 'egg']
+        ]
+
         for (const preEvoName of preEvoNames) {
           const preEvoPokemon = await fetchPokemonCached(preEvoName)
-          if (preEvoPokemon?.moves) {
-            const preEvoEggMoves = []
+          if (!preEvoPokemon?.moves) continue
 
-            preEvoPokemon.moves.forEach(moveData => {
-              const moveName = moveData.move.name
-              if (seenMoves.egg.has(moveName)) return // already in egg moves
+          const inheritedByCategory = { levelUp: [], tm: [], tutor: [], event: [], egg: [] }
 
-              const details = moveData.version_group_details || []
-              const eggDetails = genVersionGroupSet
-                ? details.filter(d => d.move_learn_method?.name === 'egg' && genVersionGroupSet.has(d.version_group?.name))
-                : details.filter(d => d.move_learn_method?.name === 'egg')
+          preEvoPokemon.moves.forEach(moveData => {
+            const moveName = moveData.move.name
+            if (allKnownMoves.has(moveName)) return // already known by any method
 
-              if (eggDetails.length > 0) {
-                preEvoEggMoves.push({ name: moveName })
-                seenMoves.egg.add(moveName)
+            const vgDetails = moveData.version_group_details || []
 
-                // Track sources
-                const sourceKey = `${moveName}:egg`
-                if (!moveMethodSources.has(sourceKey)) moveMethodSources.set(sourceKey, new Set())
-                eggDetails.forEach(d => {
-                  if (d.version_group?.name) moveMethodSources.get(sourceKey).add(d.version_group.name)
-                })
+            for (const [apiMethod, groupKey] of methodMap) {
+              const methodDetails = genVersionGroupSet
+                ? vgDetails.filter(d => d.move_learn_method?.name === apiMethod && genVersionGroupSet.has(d.version_group?.name))
+                : vgDetails.filter(d => d.move_learn_method?.name === apiMethod)
+
+              if (methodDetails.length === 0) continue
+
+              const moveEntry = { name: moveName, inheritedFrom: preEvoName }
+
+              // For level-up, capture the level (prefer selected version group)
+              if (apiMethod === 'level-up') {
+                const selectedVgLevelUp = versionGroup
+                  ? vgDetails.find(d => d.version_group?.name === versionGroup && d.move_learn_method?.name === 'level-up')
+                  : null
+                moveEntry.level = selectedVgLevelUp ? selectedVgLevelUp.level_learned_at : methodDetails[0]?.level_learned_at
               }
-            })
 
-            if (preEvoEggMoves.length > 0) {
-              // Fetch details for new egg moves
-              const newMoveNames = preEvoEggMoves.filter(m => !moveDetailsMap.has(m.name)).map(m => m.name)
-              await Promise.all(
-                newMoveNames.map(async name => {
-                  const details = await fetchMoveCached(name)
-                  if (details) moveDetailsMap.set(name, details)
-                })
-              )
+              // For TM, set placeholder tmNumber
+              if (apiMethod === 'machine') {
+                moveEntry.tmNumber = null
+              }
 
-              const inheritedEggs = withDetails(
-                preEvoEggMoves.map(m => ({ ...m, inheritedFrom: preEvoName })),
-                'egg'
-              )
-              groupedMoves.egg.push(...inheritedEggs)
+              inheritedByCategory[groupKey].push(moveEntry)
+              allKnownMoves.add(moveName)
+
+              // Track sources for sourceGames label
+              const sourceKey = `${moveName}:${apiMethod}`
+              if (!moveMethodSources.has(sourceKey)) moveMethodSources.set(sourceKey, new Set())
+              methodDetails.forEach(d => {
+                if (d.version_group?.name) moveMethodSources.get(sourceKey).add(d.version_group.name)
+              })
+
+              break // Only add to the first matching category
             }
+          })
+
+          // Fetch move details for any newly discovered moves
+          const newMoveNames = []
+          Object.values(inheritedByCategory).forEach(list => {
+            list.forEach(m => { if (!moveDetailsMap.has(m.name)) newMoveNames.push(m.name) })
+          })
+          await Promise.all(
+            newMoveNames.map(async name => {
+              const details = await fetchMoveCached(name)
+              if (details) moveDetailsMap.set(name, details)
+            })
+          )
+
+          // Add inherited level-up, tutor, event, egg moves
+          if (inheritedByCategory.levelUp.length > 0) {
+            groupedMoves.levelUp.push(...withDetails(inheritedByCategory.levelUp, 'level-up'))
+          }
+          if (inheritedByCategory.tutor.length > 0) {
+            groupedMoves.tutor.push(...withDetails(inheritedByCategory.tutor, 'tutor'))
+          }
+          if (inheritedByCategory.event.length > 0) {
+            groupedMoves.event.push(...withDetails(inheritedByCategory.event, 'reminder'))
+          }
+          if (inheritedByCategory.egg.length > 0) {
+            groupedMoves.egg.push(...withDetails(inheritedByCategory.egg, 'egg'))
+          }
+
+          // Add inherited TM moves (also fetch machine data for TM numbers)
+          if (inheritedByCategory.tm.length > 0) {
+            const inheritedTmMachineUrls = new Map()
+            for (const move of inheritedByCategory.tm) {
+              const details = moveDetailsMap.get(move.name)
+              if (details?.machines && genVersionGroupSet) {
+                const machineEntry = details.machines.find(m => m.version_group?.name === versionGroup)
+                  || details.machines.find(m => genVersionGroupSet.has(m.version_group?.name))
+                if (machineEntry?.machine?.url) {
+                  inheritedTmMachineUrls.set(move.name, machineEntry.machine.url)
+                }
+              }
+            }
+            await Promise.all(
+              Array.from(inheritedTmMachineUrls.entries()).map(async ([moveName, url]) => {
+                const data = await fetchMachineCached(url)
+                if (data) machineDataMap.set(moveName, data)
+              })
+            )
+            groupedMoves.tm.push(...withDetailsAndTmNumber(inheritedByCategory.tm))
           }
         }
       }
