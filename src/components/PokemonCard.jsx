@@ -723,7 +723,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
             <div className="box-title">Encounter Info</div>
             <div className="box-content" style={{ fontSize: '12px' }}>
               <div><strong>Capture Rate:</strong> {species?.capture_rate || 'N/A'}</div>
-              <div><strong>Wild Held Item:</strong> {species?.held_items?.length > 0 ? species.held_items.map(item => item.item.name).join(', ') : 'None'}</div>
+              <div><strong>Wild Held Item:</strong> {displayPokemon?.held_items?.length > 0 ? displayPokemon.held_items.map(item => item.item.name.replace(/-/g, ' ')).join(', ') : 'None'}</div>
               <div><strong>EV Yield:</strong> {(!selectedGenerationRank || selectedGenerationRank >= 3) && generationStats?.some(s => s.effort > 0) ? (
                   <ul style={{ padding: '0 20px', margin: '0' }}>
                     {generationStats.map(stat => (
