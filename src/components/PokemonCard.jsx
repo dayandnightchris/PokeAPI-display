@@ -24,7 +24,7 @@ const getMoveEffectEntry = (details) => {
   if (!entry) return 'N/A'
   const baseText = entry.short_effect || entry.effect || 'N/A'
   if (details.effect_chance == null) return baseText
-  return baseText.replace('$effect_chance', details.effect_chance)
+  return baseText.replaceAll('$effect_chance', details.effect_chance)
 }
 
 function MoveTable({ title, moves, showLevel, showTmNumber, loading }) {
