@@ -930,7 +930,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
       </div>
 
       {/* Moves Flex Container */}
-      {(movesLoading || moves.levelUp.length > 0 || moves.tm.length > 0 || moves.tutor.length > 0 || moves.event.length > 0 || moves.egg.length > 0) && (
+      {(movesLoading || moves.levelUp.length > 0 || moves.tm.length > 0 || moves.tutor.length > 0 || moves.event.length > 0 || moves.egg.length > 0 || moves.transfer.length > 0) && (
         <div className="container-flex">
           {(moves.levelUp.length > 0 || movesLoading) && (
             <MoveTable title="Level Up Moves" moves={moves.levelUp} showLevel loading={movesLoading} />
@@ -959,6 +959,10 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
 
           {(moves.egg.length > 0 || movesLoading) && (
             <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} />
+          )}
+
+          {moves.transfer.length > 0 && (
+            <MoveTable title="Transfer Only" moves={moves.transfer} />
           )}
         </div>
       )}

@@ -35,6 +35,74 @@ const versionGroupOrder = {
   'mega-dimension': 27,
 }
 
+// Determine which version groups can provide transfer-only moves for the selected version.
+// Returns a Set of version group names, or null if no transfers are possible.
+function getTransferSourceVersionGroups(selectedVersion, versionGroup) {
+  if (!selectedVersion || !versionGroup) return null
+
+  const gen = versionGeneration[selectedVersion]
+  if (!gen) return null
+
+  // Gen 3: hard cutoff, no transfers
+  if (gen === 3) return null
+
+  // LGPE, BDSP, PLA, Gen 9+: no transfers
+  const noTransferVersionGroups = new Set([
+    'lets-go-pikachu-lets-go-eevee',
+    'brilliant-diamond-and-shining-pearl',
+    'legends-arceus',
+    'scarlet-violet', 'the-teal-mask', 'the-indigo-disk',
+    'legends-za', 'mega-dimension',
+  ])
+  if (noTransferVersionGroups.has(versionGroup)) return null
+
+  const sources = new Set()
+  const currentGenVgs = new Set(generationVersionGroups[gen] || [])
+
+  // Gen 1-2: bidirectional transfers between Gen 1 and Gen 2
+  if (gen === 1 || gen === 2) {
+    const otherGen = gen === 1 ? 2 : 1
+    for (const vg of (generationVersionGroups[otherGen] || [])) {
+      sources.add(vg)
+    }
+    return sources.size > 0 ? sources : null
+  }
+
+  // Gen 4-6: forward from Gen 3+
+  if (gen >= 4 && gen <= 6) {
+    for (let g = 3; g < gen; g++) {
+      for (const vg of (generationVersionGroups[g] || [])) {
+        sources.add(vg)
+      }
+    }
+    return sources.size > 0 ? sources : null
+  }
+
+  // SM/USUM (Gen 7, but NOT LGPE): Gen 3+ forward AND Gen 1-2 via Virtual Console
+  if (gen === 7) {
+    for (let g = 1; g <= 6; g++) {
+      for (const vg of (generationVersionGroups[g] || [])) {
+        sources.add(vg)
+      }
+    }
+    return sources.size > 0 ? sources : null
+  }
+
+  // SWSH (Gen 8, sword-shield / IoA / CT only): same as SM/USUM
+  if (gen === 8) {
+    const swshVgs = new Set(['sword-shield', 'the-isle-of-armor', 'the-crown-tundra'])
+    if (!swshVgs.has(versionGroup)) return null
+    for (let g = 1; g <= 7; g++) {
+      for (const vg of (generationVersionGroups[g] || [])) {
+        sources.add(vg)
+      }
+    }
+    return sources.size > 0 ? sources : null
+  }
+
+  return null
+}
+
 // Apply past_values to move details based on the selected version group
 function applyPastValues(details, versionGroup) {
   if (!details || !versionGroup || !details.past_values?.length) return details
@@ -68,7 +136,7 @@ function applyPastValues(details, versionGroup) {
 }
 
 export function useGroupedMoves(displayPokemon, selectedVersion, species) {
-  const [moves, setMoves] = useState({ levelUp: [], tm: [], tutor: [], event: [], egg: [] })
+  const [moves, setMoves] = useState({ levelUp: [], tm: [], tutor: [], event: [], egg: [], transfer: [] })
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -358,6 +426,87 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
         }
       }
 
+      // === Transfer-only moves ===
+      // Moves that can only exist on this Pokémon in the selected game via transfer
+      // from a prior generation (not available by any learn method in the current gen).
+      const transferSourceVgs = getTransferSourceVersionGroups(selectedVersion, versionGroup)
+      if (transferSourceVgs) {
+        // Collect all move names already available in the current generation (across all categories)
+        const currentGenMoveNames = new Set()
+        Object.values(groupedMoves).forEach(list => {
+          list.forEach(m => currentGenMoveNames.add(m.name))
+        })
+
+        // Gather all pokemon to check (self + pre-evolutions)
+        const pokemonToCheck = [displayPokemon]
+        if (species?.evolves_from_species) {
+          let currentSpecies = species
+          while (currentSpecies?.evolves_from_species) {
+            const preEvoName = currentSpecies.evolves_from_species.name
+            const preEvoPokemon = await fetchPokemonCached(preEvoName)
+            if (preEvoPokemon) pokemonToCheck.push(preEvoPokemon)
+            try {
+              const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${preEvoName}/`)
+              if (res.ok) {
+                currentSpecies = await res.json()
+              } else break
+            } catch { break }
+          }
+        }
+
+        const transferMoves = []
+        const seenTransfer = new Set()
+
+        for (const pkmn of pokemonToCheck) {
+          if (!pkmn?.moves) continue
+          const isPreEvo = pkmn !== displayPokemon
+
+          for (const moveData of pkmn.moves) {
+            const moveName = moveData.move.name
+            // Skip if already available in current gen or already added as transfer
+            if (currentGenMoveNames.has(moveName) || seenTransfer.has(moveName)) continue
+
+            const vgDetails = moveData.version_group_details || []
+            // Find learn methods in transfer source version groups
+            const transferDetails = vgDetails.filter(d => transferSourceVgs.has(d.version_group?.name))
+            if (transferDetails.length === 0) continue
+
+            // Collect which source games teach this move
+            const sourceVgs = new Set()
+            transferDetails.forEach(d => {
+              if (d.version_group?.name) sourceVgs.add(d.version_group.name)
+            })
+            const sourceLabel = [...sourceVgs]
+              .sort((a, b) => (versionGroupOrder[a] || 0) - (versionGroupOrder[b] || 0))
+              .map(vg => versionGroupDisplayNames[vg] || vg)
+              .join(', ')
+
+            transferMoves.push({
+              name: moveName,
+              sourceGames: sourceLabel,
+              ...(isPreEvo ? { inheritedFrom: pkmn.name || pkmn.species?.name } : {}),
+            })
+            seenTransfer.add(moveName)
+          }
+        }
+
+        // Fetch details for new transfer moves
+        const newTransferMoveNames = transferMoves.filter(m => !moveDetailsMap.has(m.name)).map(m => m.name)
+        await Promise.all(
+          newTransferMoveNames.map(async name => {
+            const details = await fetchMoveCached(name)
+            if (details) moveDetailsMap.set(name, details)
+          })
+        )
+
+        groupedMoves.transfer = transferMoves.map(move => ({
+          ...move,
+          details: applyPastValues(moveDetailsMap.get(move.name), versionGroup) || null
+        }))
+      } else {
+        groupedMoves.transfer = []
+      }
+
       // Sort level-up moves by level
       groupedMoves.levelUp.sort((a, b) => (a.level ?? 0) - (b.level ?? 0))
       // Sort moves alphabetically
@@ -365,6 +514,7 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
       groupedMoves.tutor.sort((a, b) => a.name.localeCompare(b.name))
       groupedMoves.event.sort((a, b) => a.name.localeCompare(b.name))
       groupedMoves.egg.sort((a, b) => a.name.localeCompare(b.name))
+      groupedMoves.transfer.sort((a, b) => a.name.localeCompare(b.name))
 
       if (active) {
         setMoves(groupedMoves)
