@@ -737,7 +737,27 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
             <div className="box-title">Encounter Info</div>
             <div className="box-content" style={{ fontSize: '12px' }}>
               <div><strong>Capture Rate:</strong> {species?.capture_rate || 'N/A'}</div>
-              <div><strong>Wild Held Item:</strong> {displayPokemon?.held_items?.length > 0 ? displayPokemon.held_items.map(item => item.item.name.replace(/-/g, ' ')).join(', ') : 'None'}</div>
+              <div><strong>Wild Held Item:</strong> {(() => {
+                if (!displayPokemon?.held_items?.length) return 'None'
+                // Filter held items to the selected version
+                const items = displayPokemon.held_items
+                  .map(hi => {
+                    const vd = selectedVersion
+                      ? hi.version_details?.find(v => v.version?.name === selectedVersion)
+                      : hi.version_details?.[0]
+                    if (!vd) return null
+                    return { name: hi.item.name.replace(/-/g, ' '), rarity: vd.rarity }
+                  })
+                  .filter(Boolean)
+                if (items.length === 0) return 'None'
+                return (
+                  <ul style={{ padding: '0 20px', margin: '0' }}>
+                    {items.map(item => (
+                      <li key={item.name}>{item.name} ({item.rarity}%)</li>
+                    ))}
+                  </ul>
+                )
+              })()}</div>
               <div><strong>EV Yield:</strong> {(!selectedGenerationRank || selectedGenerationRank >= 3) && generationStats?.some(s => s.effort > 0) ? (
                   <ul style={{ padding: '0 20px', margin: '0' }}>
                     {generationStats.map(stat => (
