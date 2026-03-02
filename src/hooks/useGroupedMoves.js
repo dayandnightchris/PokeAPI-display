@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getVersionInfo, generationOrder, versionGeneration, generationVersionGroups, versionGroupDisplayNames } from '../utils/versionInfo'
 import { fetchMoveCached, fetchMachineCached, fetchPokemonCached } from '../utils/pokeCache'
+import gen1TradebackMoves from '../utils/tradebackMoves'
 
 // Map version groups to a comparable order (by generation + sub-order within gen)
 const versionGroupOrder = {
@@ -454,12 +455,17 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
           }
         }
 
+        // For Gen 1 tradeback: only allow moves explicitly listed in the whitelist
+        const selectedGen = versionGeneration[selectedVersion]
+        const isGen1Tradeback = selectedGen === 1
+
         const transferMoves = []
         const seenTransfer = new Set()
 
         for (const pkmn of pokemonToCheck) {
           if (!pkmn?.moves) continue
           const isPreEvo = pkmn !== displayPokemon
+          const pkmnName = pkmn.name || pkmn.species?.name || ''
 
           for (const moveData of pkmn.moves) {
             const moveName = moveData.move.name
@@ -470,6 +476,12 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
             // Find learn methods in transfer source version groups
             const transferDetails = vgDetails.filter(d => transferSourceVgs.has(d.version_group?.name))
             if (transferDetails.length === 0) continue
+
+            // For Gen 1: only allow moves in the tradeback whitelist for this Pokémon
+            if (isGen1Tradeback) {
+              const allowed = gen1TradebackMoves[pkmnName]
+              if (!allowed || !allowed.includes(moveName)) continue
+            }
 
             // Collect which source games teach this move
             const sourceVgs = new Set()
