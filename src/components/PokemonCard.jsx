@@ -27,7 +27,7 @@ const getMoveEffectEntry = (details) => {
   return baseText.replaceAll('$effect_chance', details.effect_chance)
 }
 
-function MoveTable({ title, moves, showLevel, showTmNumber, loading }) {
+function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading }) {
   const [sortConfig, setSortConfig] = useState({
     key: showLevel ? 'level' : showTmNumber ? 'tmNumber' : 'name',
     direction: 'asc'
@@ -35,9 +35,19 @@ function MoveTable({ title, moves, showLevel, showTmNumber, loading }) {
 
   const hasSourceGames = moves.some(m => m.sourceGames)
 
+  const methodDisplayNames = {
+    'light-ball-egg': 'Light Ball Egg',
+    'colosseum-purification': 'Colosseum Purification',
+    'xd-purification': 'XD Purification',
+    'stadium-surfing-pikachu': 'Stadium',
+    'form-change': 'Form Change',
+    'zygarde-cube': 'Zygarde Cube',
+  }
+
   const columns = [
     ...(showLevel ? [{ key: 'level', label: 'Level', numeric: true }] : []),
     ...(showTmNumber ? [{ key: 'tmNumber', label: 'TM#', numeric: true }] : []),
+    ...(showMethod ? [{ key: 'learnMethod', label: 'Method' }] : []),
     { key: 'name', label: 'Name' },
     { key: 'type', label: 'Type' },
     { key: 'effect', label: 'Effect Entry' },
@@ -81,6 +91,8 @@ function MoveTable({ title, moves, showLevel, showTmNumber, loading }) {
         return move.details?.priority
       case 'sourceGames':
         return move.sourceGames ?? ''
+      case 'learnMethod':
+        return move.learnMethod ?? ''
       //case 'introduced':
         //return move.details?.generation?.name
       default:
@@ -137,6 +149,8 @@ function MoveTable({ title, moves, showLevel, showTmNumber, loading }) {
         return move.details?.priority ?? 'N/A'
       case 'sourceGames':
         return move.sourceGames || 'N/A'
+      case 'learnMethod':
+        return methodDisplayNames[move.learnMethod] || formatMoveLabel(move.learnMethod) || 'N/A'
       case 'introduced':
         return formatMoveLabel(move.details?.generation?.name)
       default:
@@ -945,7 +959,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
           )}
 
           {(moves.special.length > 0 || movesLoading) && (
-            <MoveTable title="Special" moves={moves.special} loading={movesLoading} />
+            <MoveTable title="Special" moves={moves.special} showMethod loading={movesLoading} />
           )}
 
           {(moves.egg.length > 0 || movesLoading) && (

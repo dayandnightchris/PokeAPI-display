@@ -206,7 +206,7 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
             groupedMoves.tutor.push({ name: moveName })
             seenMoves.tutor.add(moveName)
           } else if (specialMethods.has(method) && !seenMoves.special.has(moveName)) {
-            groupedMoves.special.push({ name: moveName })
+            groupedMoves.special.push({ name: moveName, learnMethod: method })
             seenMoves.special.add(moveName)
           } else if (method === 'egg' && !seenMoves.egg.has(moveName)) {
             groupedMoves.egg.push({ name: moveName })
@@ -392,6 +392,11 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
               // For TM, set placeholder tmNumber
               if (apiMethod === 'machine') {
                 moveEntry.tmNumber = null
+              }
+
+              // For special methods, store the learn method name
+              if (groupKey === 'special') {
+                moveEntry.learnMethod = apiMethod
               }
 
               inheritedByCategory[groupKey].push(moveEntry)
