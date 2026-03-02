@@ -791,10 +791,12 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
                       }
                       versionDetail.encounter_details.forEach(detail => {
                         const methodName = detail.method?.name || 'unknown'
-                        if (!encountersByLocation[locationName][methodName]) {
-                          encountersByLocation[locationName][methodName] = 0
+                        const conditions = (detail.condition_values || []).map(cv => cv.name).sort()
+                        const key = methodName + '|' + conditions.join(',')
+                        if (!encountersByLocation[locationName][key]) {
+                          encountersByLocation[locationName][key] = { method: methodName, rate: 0, conditions }
                         }
-                        encountersByLocation[locationName][methodName] += detail.chance || 0
+                        encountersByLocation[locationName][key].rate += detail.chance || 0
                       })
                     }
                   })
@@ -811,20 +813,27 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
                           </tr>
                         </thead>
                         <tbody>
-                          {Object.entries(encountersByLocation).map(([location, methods]) =>
-                            Object.entries(methods).map(([method, rate], idx) => (
-                              <tr key={`${location}-${method}`} style={{ borderBottom: '1px solid #eee' }}>
-                                <td style={{ padding: '6px 8px' }}>
-                                  {idx === 0 ? location.replace(/-/g, ' ').replace(/ area$/i, '') : ''}
-                                </td>
-                                <td style={{ padding: '6px 8px' }}>
-                                  {method.replace(/-/g, ' ').charAt(0).toUpperCase() + method.replace(/-/g, ' ').slice(1)}
-                                </td>
-                                <td style={{ padding: '6px 8px', textAlign: 'center' }}>
-                                  {rate}%
-                                </td>
-                              </tr>
-                            ))
+                          {Object.entries(encountersByLocation).map(([location, entries]) =>
+                            Object.values(entries).map((entry, idx) => {
+                              const methodDisplay = entry.method.replace(/-/g, ' ')
+                              const conditionTip = entry.conditions.length > 0
+                                ? 'Condition: ' + entry.conditions.map(c => c.replace(/-/g, ' ')).join(', ')
+                                : ''
+                              return (
+                                <tr key={`${location}-${entry.method}-${entry.conditions.join(',')}`} style={{ borderBottom: '1px solid #eee' }}>
+                                  <td style={{ padding: '6px 8px' }}>
+                                    {idx === 0 ? location.replace(/-/g, ' ').replace(/ area$/i, '') : ''}
+                                  </td>
+                                  <td style={{ padding: '6px 8px' }} title={conditionTip}>
+                                    {methodDisplay.charAt(0).toUpperCase() + methodDisplay.slice(1)}
+                                    {entry.conditions.length > 0 && <span style={{ cursor: 'help' }}> *</span>}
+                                  </td>
+                                  <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                                    {entry.rate}%
+                                  </td>
+                                </tr>
+                              )
+                            })
                           )}
                         </tbody>
                       </table>
