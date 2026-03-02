@@ -215,7 +215,8 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
   // Data fetching hooks
   const { species, selectedVersion, setSelectedVersion, allEncounters, availableVersions, pokedexVersions } = usePokemonSpecies(pokemon)
   const { forms, selectedForm, setSelectedForm, formPokemon, formSuggestedVersion, formVersionFilter } = usePokemonForms({ species, pokemon, selectedVersion, initialForm })
-  const abilityDescriptions = useAbilityDescriptions(formPokemon || pokemon)
+  const abilityDescriptionsBase = useAbilityDescriptions(formPokemon || pokemon)
+  const [extraAbilityDescs, setExtraAbilityDescs] = useState({})
   const evolutions = useEvolutionChain({ species, selectedVersion })
   const { canEvolveFrom, canTradeAndEvolveFrom } = usePreEvolutionCheck({ species, selectedVersion })
   // For forms with empty moves (e.g. PLZA megas), fall back to base pokemon's moves
@@ -225,6 +226,29 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
 
   // Derive display pokemon
   const displayPokemon = formPokemon || pokemon
+
+  // Fetch description for hardcoded exception abilities not in the API data
+  const isBasculinBW = displayPokemon?.name === 'basculin-blue-striped' && ['black', 'white'].includes(selectedVersion)
+  useEffect(() => {
+    if (!isBasculinBW) {
+      setExtraAbilityDescs({})
+      return
+    }
+    let active = true
+    fetch('https://pokeapi.co/api/v2/ability/120/')
+      .then(res => res.json())
+      .then(data => {
+        if (!active) return
+        const desc = data.effect_entries?.find(e => e.language.name === 'en')?.effect || 'No description available.'
+        setExtraAbilityDescs({ reckless: { description: desc, generation: data.generation?.name || null } })
+      })
+      .catch(() => {
+        if (active) setExtraAbilityDescs({ reckless: { description: 'No description available.', generation: null } })
+      })
+    return () => { active = false }
+  }, [isBasculinBW])
+
+  const abilityDescriptions = { ...abilityDescriptionsBase, ...extraAbilityDescs }
 
   // When a searched form requires a specific version (e.g. PLZA megas → legends-za),
   // switch to that version automatically
@@ -309,6 +333,19 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
   }
 
   const generationAbilities = getGenerationAbilities()
+
+  // Hardcoded exception: Blue-Striped Basculin had Reckless in BW, changed to Rock Head in B2W2.
+  // The API only has Rock Head. In BW, both abilities are valid (Reckless natively, Rock Head via trade).
+  if (displayPokemon.name === 'basculin-blue-striped' && ['black', 'white'].includes(selectedVersion)) {
+    const hasReckless = generationAbilities.some(a => a.ability?.name === 'reckless')
+    if (!hasReckless) {
+      generationAbilities.unshift({
+        ability: { name: 'reckless', url: 'https://pokeapi.co/api/v2/ability/120/' },
+        is_hidden: false,
+        slot: 1
+      })
+    }
+  }
 
   // Filter out hidden abilities pre-Gen 5, and all abilities pre-Gen 3 (abilities didn't exist before Gen 3)
   const filteredAbilities = generationAbilities.filter(ability => {
