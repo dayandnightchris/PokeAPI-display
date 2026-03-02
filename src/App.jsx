@@ -72,10 +72,15 @@ function App() {
       if (pokemonResponse.ok) {
         pokemonData = await pokemonResponse.json()
 
+        // Always track the requested form name so the form selector knows which
+        // form to select — even for default forms. This ensures clicking base
+        // "raichu" in the evo tree while viewing "raichu-alola" properly resets
+        // the form selector to the base form.
+        requestedFormName = pokemonData.name
+
         // If this is a non-default form (e.g. raichu-mega-x, avalugg-hisui),
         // load the base species' default pokemon and track this as a form request.
         if (pokemonData && pokemonData.is_default === false) {
-          requestedFormName = pokemonData.name
           try {
             const speciesUrl = pokemonData.species?.url
             if (speciesUrl) {

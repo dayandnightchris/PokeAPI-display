@@ -325,11 +325,11 @@ export function useEvolutionChain({ species, selectedVersion, selectedForm }) {
      *   - Add Type B branches (species whose evolved form has a regional variant
      *     but the pre-evo does NOT)
      */
-    const buildNodes = async (chainNode) => {
+    const buildNodes = async (chainNode, forceBaseName = false) => {
       if (!active || !chainNode?.species?.name) return []
 
       const speciesName = chainNode.species.name
-      const displayName = await resolveDisplayName(speciesName)
+      const displayName = forceBaseName ? speciesName : await resolveDisplayName(speciesName)
 
       const childEdges = []
 
@@ -416,7 +416,9 @@ export function useEvolutionChain({ species, selectedVersion, selectedForm }) {
               })
             }
             // Also include base child for Type B (base form still exists alongside)
-            const baseChildRoots = await buildNodes(evo)
+            // forceBaseName=true prevents resolveDisplayName from renaming the
+            // base evo to the regional name (which would cause duplicates)
+            const baseChildRoots = await buildNodes(evo, true)
             const baseDetailsToUse = baseDetails.length > 0 ? baseDetails : evo.evolution_details
             for (const child of baseChildRoots) {
               childEdges.push({
