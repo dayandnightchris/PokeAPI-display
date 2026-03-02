@@ -930,7 +930,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
       </div>
 
       {/* Moves Flex Container */}
-      {(movesLoading || moves.levelUp.length > 0 || moves.tm.length > 0 || moves.tutor.length > 0 || moves.event.length > 0 || moves.egg.length > 0 || moves.transfer.length > 0) && (
+      {(movesLoading || moves.levelUp.length > 0 || moves.tm.length > 0 || moves.tutor.length > 0 || moves.special.length > 0 || moves.egg.length > 0 || moves.transfer.length > 0) && (
         <div className="container-flex">
           {(moves.levelUp.length > 0 || movesLoading) && (
             <MoveTable title="Level Up Moves" moves={moves.levelUp} showLevel loading={movesLoading} />
@@ -940,29 +940,20 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
             <MoveTable title="TMs" moves={moves.tm} showTmNumber loading={movesLoading} />
           )}
 
-          {moves.tutor.length > 0 && (
-            <MoveTable title="Tutor" moves={moves.tutor} />
+          {(moves.tutor.length > 0 || movesLoading) && (
+            <MoveTable title="Tutor" moves={moves.tutor} loading={movesLoading} />
           )}
 
-          {moves.event.length > 0 && (
-            <div className="info-box">
-              <div className="box-title">Event</div>
-              <div className="box-content" style={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
-                <ul style={{ padding: '0 20px', margin: '0' }}>
-                  {moves.event.map(move => (
-                    <li key={move.name}>{formatMoveLabel(move.name)}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+          {(moves.special.length > 0 || movesLoading) && (
+            <MoveTable title="Special" moves={moves.special} loading={movesLoading} />
           )}
 
           {(moves.egg.length > 0 || movesLoading) && (
             <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} />
           )}
 
-          {moves.transfer.length > 0 && (
-            <MoveTable title="Transfer Only" moves={moves.transfer} />
+          {(moves.transfer.length > 0 || movesLoading) && (
+            <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} />
           )}
         </div>
       )}

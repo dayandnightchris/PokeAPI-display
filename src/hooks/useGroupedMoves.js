@@ -137,7 +137,7 @@ function applyPastValues(details, versionGroup) {
 }
 
 export function useGroupedMoves(displayPokemon, selectedVersion, species) {
-  const [moves, setMoves] = useState({ levelUp: [], tm: [], tutor: [], event: [], egg: [], transfer: [] })
+  const [moves, setMoves] = useState({ levelUp: [], tm: [], tutor: [], special: [], egg: [], transfer: [] })
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -161,8 +161,11 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
         }
       }
 
-      const groupedMoves = { levelUp: [], tm: [], tutor: [], event: [], egg: [] }
-      const seenMoves = { levelUp: new Set(), tm: new Set(), tutor: new Set(), event: new Set(), egg: new Set() }
+      const groupedMoves = { levelUp: [], tm: [], tutor: [], special: [], egg: [] }
+      const seenMoves = { levelUp: new Set(), tm: new Set(), tutor: new Set(), special: new Set(), egg: new Set() }
+
+      // Methods that map to the "special" category
+      const specialMethods = new Set(['reminder', 'xd-purification', 'colosseum-purification', 'stadium-surfing-pikachu', 'form-change'])
 
       // Collect which version groups each move+method appears in
       const moveMethodSources = new Map() // key: `${moveName}:${method}` → Set of version group names
@@ -202,9 +205,9 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
           } else if (method === 'tutor' && !seenMoves.tutor.has(moveName)) {
             groupedMoves.tutor.push({ name: moveName })
             seenMoves.tutor.add(moveName)
-          } else if (method === 'reminder' && !seenMoves.event.has(moveName)) {
-            groupedMoves.event.push({ name: moveName })
-            seenMoves.event.add(moveName)
+          } else if (specialMethods.has(method) && !seenMoves.special.has(moveName)) {
+            groupedMoves.special.push({ name: moveName })
+            seenMoves.special.add(moveName)
           } else if (method === 'egg' && !seenMoves.egg.has(moveName)) {
             groupedMoves.egg.push({ name: moveName })
             seenMoves.egg.add(moveName)
@@ -238,11 +241,34 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
         })
       )
 
-      const withDetails = (list, method) => list.map(move => ({
-        ...move,
-        sourceGames: getSourceLabel(move.name, method),
-        details: applyPastValues(moveDetailsMap.get(move.name), versionGroup) || null
-      }))
+      const withDetails = (list, method) => list.map(move => {
+        let sourceGames
+        if (method === 'special') {
+          // Merge sources across all special learn methods
+          const merged = new Set()
+          for (const sm of specialMethods) {
+            const sources = moveMethodSources.get(`${move.name}:${sm}`)
+            if (sources) sources.forEach(vg => merged.add(vg))
+          }
+          if (merged.size === 0 || !genVersionGroupSet) {
+            sourceGames = null
+          } else if (genVgList.every(vg => merged.has(vg))) {
+            sourceGames = 'All'
+          } else {
+            sourceGames = [...merged]
+              .sort((a, b) => (versionGroupOrder[a] || 0) - (versionGroupOrder[b] || 0))
+              .map(vg => versionGroupDisplayNames[vg] || vg)
+              .join(', ')
+          }
+        } else {
+          sourceGames = getSourceLabel(move.name, method)
+        }
+        return {
+          ...move,
+          sourceGames,
+          details: applyPastValues(moveDetailsMap.get(move.name), versionGroup) || null
+        }
+      })
       
 // Fetch actual TM/HM/TR numbers from machine endpoints
       const tmMachineUrls = new Map()
@@ -293,7 +319,7 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
       groupedMoves.levelUp = withDetails(groupedMoves.levelUp, 'level-up')
       groupedMoves.tm = withDetailsAndTmNumber(groupedMoves.tm)
       groupedMoves.tutor = withDetails(groupedMoves.tutor, 'tutor')
-      groupedMoves.event = withDetails(groupedMoves.event, 'reminder')
+      groupedMoves.special = withDetails(groupedMoves.special, 'special')
       groupedMoves.egg = withDetails(groupedMoves.egg, 'egg')
 
       // If this is an evolved Pokémon, inherit unique moves from all pre-evolutions
@@ -324,7 +350,11 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
           ['level-up', 'levelUp'],
           ['machine', 'tm'],
           ['tutor', 'tutor'],
-          ['reminder', 'event'],
+          ['reminder', 'special'],
+          ['xd-purification', 'special'],
+          ['colosseum-purification', 'special'],
+          ['stadium-surfing-pikachu', 'special'],
+          ['form-change', 'special'],
           ['egg', 'egg']
         ]
 
@@ -332,7 +362,7 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
           const preEvoPokemon = await fetchPokemonCached(preEvoName)
           if (!preEvoPokemon?.moves) continue
 
-          const inheritedByCategory = { levelUp: [], tm: [], tutor: [], event: [], egg: [] }
+          const inheritedByCategory = { levelUp: [], tm: [], tutor: [], special: [], egg: [] }
 
           preEvoPokemon.moves.forEach(moveData => {
             const moveName = moveData.move.name
@@ -396,8 +426,8 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
           if (inheritedByCategory.tutor.length > 0) {
             groupedMoves.tutor.push(...withDetails(inheritedByCategory.tutor, 'tutor'))
           }
-          if (inheritedByCategory.event.length > 0) {
-            groupedMoves.event.push(...withDetails(inheritedByCategory.event, 'reminder'))
+          if (inheritedByCategory.special.length > 0) {
+            groupedMoves.special.push(...withDetails(inheritedByCategory.special, 'special'))
           }
           if (inheritedByCategory.egg.length > 0) {
             groupedMoves.egg.push(...withDetails(inheritedByCategory.egg, 'egg'))
@@ -524,7 +554,7 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
       // Sort moves alphabetically
       groupedMoves.tm.sort((a, b) => a.name.localeCompare(b.name))
       groupedMoves.tutor.sort((a, b) => a.name.localeCompare(b.name))
-      groupedMoves.event.sort((a, b) => a.name.localeCompare(b.name))
+      groupedMoves.special.sort((a, b) => a.name.localeCompare(b.name))
       groupedMoves.egg.sort((a, b) => a.name.localeCompare(b.name))
       groupedMoves.transfer.sort((a, b) => a.name.localeCompare(b.name))
 
