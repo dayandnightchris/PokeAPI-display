@@ -820,11 +820,11 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
                                 ? 'Condition: ' + entry.conditions.map(c => c.replace(/-/g, ' ')).join(', ')
                                 : ''
                               return (
-                                <tr key={`${location}-${entry.method}-${entry.conditions.join(',')}`} style={{ borderBottom: '1px solid #eee' }}>
+                                <tr key={`${location}-${entry.method}-${entry.conditions.join(',')}`} style={{ borderBottom: '1px solid #eee' }} title={conditionTip}>
                                   <td style={{ padding: '6px 8px' }}>
                                     {idx === 0 ? location.replace(/-/g, ' ').replace(/ area$/i, '') : ''}
                                   </td>
-                                  <td style={{ padding: '6px 8px' }} title={conditionTip}>
+                                  <td style={{ padding: '6px 8px' }}>
                                     {methodDisplay.charAt(0).toUpperCase() + methodDisplay.slice(1)}
                                     {entry.conditions.length > 0 && <span style={{ cursor: 'help' }}> *</span>}
                                   </td>
