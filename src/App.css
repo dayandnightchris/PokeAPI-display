@@ -326,6 +326,48 @@
   text-align: right;
 }
 
+.move-col-level {
+  width: 45px;
+}
+
+.move-col-tmNumber {
+  width: 40px;
+}
+
+.move-col-learnMethod {
+  width: 100px;
+}
+
+.move-col-name {
+  width: 110px;
+}
+
+.move-col-type {
+  width: 65px;
+}
+
+.move-col-effect {
+  width: auto;
+}
+
+.move-col-category {
+  width: 70px;
+}
+
+.move-col-power,
+.move-col-pp,
+.move-col-priority {
+  width: 55px;
+}
+
+.move-col-accuracy {
+  width: 70px;
+}
+
+.move-col-sourceGames {
+  width: 120px;
+}
+
 .move-loading {
   display: flex;
   justify-content: center;

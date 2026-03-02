@@ -223,7 +223,7 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
         // If present in all version groups of the gen, show "All"
         if (genVgList.every(vg => sources.has(vg))) return 'All'
         return [...sources]
-          .sort((a, b) => (versionGroupOrder[a] || 0) - (versionGroupOrder[b] || 0))
+          .sort((a, b) => (versionGroupOrder[b] || 0) - (versionGroupOrder[a] || 0))
           .map(vg => versionGroupDisplayNames[vg] || vg)
           .join(', ')
       }
@@ -256,7 +256,7 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
             sourceGames = 'All'
           } else {
             sourceGames = [...merged]
-              .sort((a, b) => (versionGroupOrder[a] || 0) - (versionGroupOrder[b] || 0))
+              .sort((a, b) => (versionGroupOrder[b] || 0) - (versionGroupOrder[a] || 0))
               .map(vg => versionGroupDisplayNames[vg] || vg)
               .join(', ')
           }
@@ -525,7 +525,7 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
               if (d.version_group?.name) sourceVgs.add(d.version_group.name)
             })
             const sourceLabel = [...sourceVgs]
-              .sort((a, b) => (versionGroupOrder[a] || 0) - (versionGroupOrder[b] || 0))
+              .sort((a, b) => (versionGroupOrder[b] || 0) - (versionGroupOrder[a] || 0))
               .map(vg => versionGroupDisplayNames[vg] || vg)
               .join(', ')
 

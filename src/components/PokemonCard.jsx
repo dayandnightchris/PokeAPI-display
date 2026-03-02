@@ -177,11 +177,11 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading 
             <video src="/simple_pokeball.webm" autoPlay loop muted className="move-loading-gif" />
           </div>
         ) : (
-        <table className="move-table" style={{ margin: '0' }}>
+        <table className="move-table" style={{ margin: '0', tableLayout: 'fixed' }}>
           <thead>
             <tr>
               {columns.map(column => (
-                <th key={column.key} className={column.numeric ? 'move-col-number' : undefined}>
+                <th key={column.key} className={`move-col-${column.key}${column.numeric ? ' move-col-number' : ''}`}>
                   <button type="button" onClick={() => handleSort(column.key)}>
                     {column.label}{getSortIndicator(column.key)}
                   </button>
@@ -193,7 +193,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading 
             {sortedMoves.map(move => (
               <tr key={showLevel ? `${move.name}-${move.level}` : showTmNumber ? `${move.name}-${move.tmNumber}` : move.name}>
                 {columns.map(column => (
-                  <td key={column.key} className={column.numeric ? 'move-col-number' : undefined}>
+                  <td key={column.key} className={`move-col-${column.key}${column.numeric ? ' move-col-number' : ''}`}>
                     {renderCell(move, column.key)}
                   </td>
                 ))}
