@@ -217,7 +217,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
   const { forms, selectedForm, setSelectedForm, formPokemon, formSuggestedVersion, formVersionFilter } = usePokemonForms({ species, pokemon, selectedVersion, initialForm })
   const abilityDescriptionsBase = useAbilityDescriptions(formPokemon || pokemon)
   const [extraAbilityDescs, setExtraAbilityDescs] = useState({})
-  const evolutions = useEvolutionChain({ species, selectedVersion })
+  const evolutions = useEvolutionChain({ species, selectedVersion, selectedForm })
   const { canEvolveFrom, canTradeAndEvolveFrom } = usePreEvolutionCheck({ species, selectedVersion })
   // For forms with empty moves (e.g. PLZA megas), fall back to base pokemon's moves
   const movesSource = (formPokemon && formPokemon.moves?.length > 0) ? formPokemon : pokemon
@@ -966,7 +966,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
           <div className="box-title">Evolution Line</div>
           <div className="box-content evolution-box-content" style={{ display: 'flex', justifyContent: 'center' }}>
             {evolutions.length > 0 ? (
-              renderEvolutionForest(evolutions, pokemon.name, onEvolutionClick)
+              renderEvolutionForest(evolutions, selectedForm || pokemon.name, onEvolutionClick)
             ) : (
               <p style={{ margin: 0, color: '#888', fontSize: '12px' }}>No evolution available.</p>
             )}
