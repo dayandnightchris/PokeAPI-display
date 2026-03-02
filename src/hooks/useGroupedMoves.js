@@ -165,7 +165,7 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
       const seenMoves = { levelUp: new Set(), tm: new Set(), tutor: new Set(), special: new Set(), egg: new Set() }
 
       // Methods that map to the "special" category
-      const specialMethods = new Set(['reminder', 'xd-purification', 'colosseum-purification', 'stadium-surfing-pikachu', 'form-change'])
+      const specialMethods = new Set(['light-ball-egg', 'colosseum-purification', 'xd-purification', 'stadium-surfing-pikachu', 'form-change', 'zygarde-cube'])
 
       // Collect which version groups each move+method appears in
       const moveMethodSources = new Map() // key: `${moveName}:${method}` → Set of version group names
@@ -350,11 +350,12 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
           ['level-up', 'levelUp'],
           ['machine', 'tm'],
           ['tutor', 'tutor'],
-          ['reminder', 'special'],
-          ['xd-purification', 'special'],
+          ['light-ball-egg', 'special'],
           ['colosseum-purification', 'special'],
+          ['xd-purification', 'special'],
           ['stadium-surfing-pikachu', 'special'],
           ['form-change', 'special'],
+          ['zygarde-cube', 'special'],
           ['egg', 'egg']
         ]
 
