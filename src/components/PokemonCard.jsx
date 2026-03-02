@@ -147,8 +147,18 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading 
         return move.details?.accuracy ?? 'N/A'
       case 'priority':
         return move.details?.priority ?? 'N/A'
-      case 'sourceGames':
-        return move.sourceGames || 'N/A'
+      case 'sourceGames': {
+        const src = move.sourceGames
+        if (!src) return 'N/A'
+        if (typeof src !== 'string') return src
+        const parts = src.split(', ')
+        if (parts.length <= 3) return src
+        return (
+          <span title={src} style={{ cursor: 'help' }}>
+            {parts.slice(0, 3).join(', ')} <span style={{ fontSize: '10px', color: '#888' }}>+{parts.length - 3} more</span>
+          </span>
+        )
+      }
       case 'learnMethod':
         return methodDisplayNames[move.learnMethod] || formatMoveLabel(move.learnMethod) || 'N/A'
       case 'introduced':
