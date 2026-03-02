@@ -207,13 +207,13 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading 
   )
 }
 
-export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) {
+export default function PokemonCard({ pokemon, onEvolutionClick, initialForm, initialVersion, onStateChange }) {
   // UI state
   const [hoveredType, setHoveredType] = useState(null)
   const [versionInfo, setVersionInfo] = useState(null)
 
   // Data fetching hooks
-  const { species, selectedVersion, setSelectedVersion, allEncounters, availableVersions, pokedexVersions } = usePokemonSpecies(pokemon)
+  const { species, selectedVersion, setSelectedVersion, allEncounters, availableVersions, pokedexVersions } = usePokemonSpecies(pokemon, initialVersion)
   const { forms, selectedForm, setSelectedForm, formPokemon, formSuggestedVersion, formVersionFilter } = usePokemonForms({ species, pokemon, selectedVersion, initialForm })
   const abilityDescriptionsBase = useAbilityDescriptions(formPokemon || pokemon)
   const [extraAbilityDescs, setExtraAbilityDescs] = useState({})
@@ -257,6 +257,19 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
       setSelectedVersion(formSuggestedVersion)
     }
   }, [formSuggestedVersion, selectedVersion, setSelectedVersion])
+
+  // Report version/form changes to parent for URL sync
+  useEffect(() => {
+    if (onStateChange && selectedVersion) {
+      onStateChange({ version: selectedVersion })
+    }
+  }, [selectedVersion, onStateChange])
+
+  useEffect(() => {
+    if (onStateChange && selectedForm) {
+      onStateChange({ form: selectedForm })
+    }
+  }, [selectedForm, onStateChange])
 
   useEffect(() => {
     let active = true

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 
-export default function PokemonSearch({ onSearch, loading, pokemonList }) {
-  const [input, setInput] = useState('')
+export default function PokemonSearch({ onSearch, loading, pokemonList, initialQuery }) {
+  const [input, setInput] = useState(initialQuery || '')
   const [suggestions, setSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [activeSuggestion, setActiveSuggestion] = useState(0)
@@ -24,6 +24,11 @@ export default function PokemonSearch({ onSearch, loading, pokemonList }) {
     setShowSuggestions(filtered.length > 0)
     setActiveSuggestion(0)
   }, [input, pokemonList])
+
+  // Sync input when initialQuery changes (e.g. from URL load or evo click)
+  useEffect(() => {
+    if (initialQuery) setInput(initialQuery)
+  }, [initialQuery])
 
   // Close suggestions when clicking outside
   useEffect(() => {
