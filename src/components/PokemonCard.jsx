@@ -815,7 +815,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
                             Object.entries(methods).map(([method, rate], idx) => (
                               <tr key={`${location}-${method}`} style={{ borderBottom: '1px solid #eee' }}>
                                 <td style={{ padding: '6px 8px' }}>
-                                  {idx === 0 ? location.replace(/-/g, ' ') : ''}
+                                  {idx === 0 ? location.replace(/-/g, ' ').replace(/ area$/i, '') : ''}
                                 </td>
                                 <td style={{ padding: '6px 8px' }}>
                                   {method.replace(/-/g, ' ').charAt(0).toUpperCase() + method.replace(/-/g, ' ').slice(1)}
