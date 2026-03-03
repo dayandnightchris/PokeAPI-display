@@ -6,11 +6,18 @@ export default function PokemonSearch({ onSearch, loading, pokemonList, initialQ
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [activeSuggestion, setActiveSuggestion] = useState(0)
   const containerRef = useRef(null)
+  // True only when the user is actively typing; false for programmatic input changes
+  const userIsTypingRef = useRef(false)
 
   useEffect(() => {
     if (!input.trim()) {
       setSuggestions([])
       setShowSuggestions(false)
+      return
+    }
+
+    // Only show suggestions when the user is actively typing
+    if (!userIsTypingRef.current) {
       return
     }
 
@@ -27,7 +34,10 @@ export default function PokemonSearch({ onSearch, loading, pokemonList, initialQ
 
   // Sync input when initialQuery changes (e.g. from URL load or evo click)
   useEffect(() => {
-    if (initialQuery) setInput(initialQuery)
+    if (initialQuery) {
+      userIsTypingRef.current = false
+      setInput(initialQuery)
+    }
   }, [initialQuery])
 
   // Close suggestions when clicking outside
@@ -92,7 +102,7 @@ export default function PokemonSearch({ onSearch, loading, pokemonList, initialQ
           <input
             type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => { userIsTypingRef.current = true; setInput(e.target.value) }}
             onKeyDown={handleKeyDown}
             onFocus={() => input && setShowSuggestions(suggestions.length > 0)}
             placeholder="Enter Pokemon name or dex number..."
