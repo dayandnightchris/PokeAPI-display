@@ -1038,13 +1038,15 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm }) 
             <MoveTable title="Special" moves={moves.special} showMethod loading={movesLoading} />
           )}
 
+          {(moves.transfer.length > 0 || movesLoading) && (
+            <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} />
+          )}
+
           {(moves.egg.length > 0 || movesLoading) && (
             <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} />
           )}
 
-          {(moves.transfer.length > 0 || movesLoading) && (
-            <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} />
-          )}
+
         </div>
       )}
 
