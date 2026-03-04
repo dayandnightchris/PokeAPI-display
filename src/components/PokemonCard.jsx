@@ -13,6 +13,38 @@ import {
   usePreEvolutionCheck
 } from '../hooks'
 
+function CollapsibleInfoBox({ title, children, className = '', style, contentClassName = '', contentStyle }) {
+  const [collapsed, setCollapsed] = useState(false)
+
+  return (
+    <div className={`info-box ${className}`} style={style}>
+      <div className="box-title collapsible-title">
+        <span>{title}</span>
+        <button
+          type="button"
+          className="collapse-toggle"
+          onClick={() => setCollapsed(prev => !prev)}
+          title={collapsed ? 'Expand' : 'Collapse'}
+        >
+          <svg className={`collapse-toggle-icon${collapsed ? ' collapse-toggle-flipped' : ''}`} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="48" fill="none" stroke="#333" strokeWidth="4" />
+            <path d="M2,50 A48,48 0 0,1 98,50 Z" fill="#ff0000" stroke="#333" strokeWidth="4" />
+            <path d="M2,50 A48,48 0 0,0 98,50 Z" fill="#fff" stroke="#333" strokeWidth="4" />
+            <rect x="2" y="47" width="96" height="6" fill="#333" />
+            <circle cx="50" cy="50" r="12" fill="#fff" stroke="#333" strokeWidth="4" />
+            <circle cx="50" cy="50" r="5" fill="#333" />
+          </svg>
+        </button>
+      </div>
+      {!collapsed && (
+        <div className={`box-content ${contentClassName}`} style={contentStyle}>
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const formatMoveLabel = (value) => {
   if (!value) return 'N/A'
   return value.replace(/-/g, ' ')
@@ -169,41 +201,38 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading 
   }
 
   return (
-    <div className="info-box">
-      <div className="box-title">{title}</div>
-      <div className="box-content" style={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
-        {loading ? (
-          <div className="move-loading">
-            <video src="/simple_pokeball.webm" autoPlay loop muted className="move-loading-gif" />
-          </div>
-        ) : (
-        <table className="move-table" style={{ margin: '0', tableLayout: 'fixed' }}>
-          <thead>
-            <tr>
+    <CollapsibleInfoBox title={title} contentStyle={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
+      {loading ? (
+        <div className="move-loading">
+          <video src="/simple_pokeball.webm" autoPlay loop muted className="move-loading-gif" />
+        </div>
+      ) : (
+      <table className="move-table" style={{ margin: '0', tableLayout: 'fixed' }}>
+        <thead>
+          <tr>
+            {columns.map(column => (
+              <th key={column.key} className={`move-col-${column.key}${column.numeric ? ' move-col-number' : ''}`}>
+                <button type="button" onClick={() => handleSort(column.key)}>
+                  {column.label}{getSortIndicator(column.key)}
+                </button>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sortedMoves.map(move => (
+            <tr key={showLevel ? `${move.name}-${move.level}` : showTmNumber ? `${move.name}-${move.tmNumber}` : move.name}>
               {columns.map(column => (
-                <th key={column.key} className={`move-col-${column.key}${column.numeric ? ' move-col-number' : ''}`}>
-                  <button type="button" onClick={() => handleSort(column.key)}>
-                    {column.label}{getSortIndicator(column.key)}
-                  </button>
-                </th>
+                <td key={column.key} className={`move-col-${column.key}${column.numeric ? ' move-col-number' : ''}`}>
+                  {renderCell(move, column.key)}
+                </td>
               ))}
             </tr>
-          </thead>
-          <tbody>
-            {sortedMoves.map(move => (
-              <tr key={showLevel ? `${move.name}-${move.level}` : showTmNumber ? `${move.name}-${move.tmNumber}` : move.name}>
-                {columns.map(column => (
-                  <td key={column.key} className={`move-col-${column.key}${column.numeric ? ' move-col-number' : ''}`}>
-                    {renderCell(move, column.key)}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        )}
-      </div>
-    </div>
+          ))}
+        </tbody>
+      </table>
+      )}
+    </CollapsibleInfoBox>
   )
 }
 

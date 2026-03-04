@@ -380,6 +380,37 @@
   height: 40px;
 }
 
+/* Collapsible Info Box */
+.collapsible-title {
+  display: flex;
+  align-items: center;
+}
+
+.collapsible-title > span {
+  flex: 1;
+}
+
+.collapse-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
+  line-height: 0;
+}
+
+.collapse-toggle-icon {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.35s ease;
+}
+
+.collapse-toggle-flipped {
+  transform: rotate(180deg);
+}
+
 
 
 
