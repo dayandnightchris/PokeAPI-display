@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 // Pokedex names that map to specific game versions.
 // Used to detect game availability when the API hasn't populated moves/game_indices yet.
@@ -87,7 +87,7 @@ async function fetchFormVersions(pokemon) {
   return additional
 }
 
-export function usePokemonSpecies(pokemon) {
+export function usePokemonSpecies(pokemon, initialVersion) {
   const [species, setSpecies] = useState(null)
   const [selectedVersion, setSelectedVersion] = useState(null)
   const [allEncounters, setAllEncounters] = useState([])
@@ -95,6 +95,8 @@ export function usePokemonSpecies(pokemon) {
   // Versions detected solely from species pokedex membership (e.g. legends-za from lumiose-city).
   // Kept separate so VersionSelector can add these without inflating with all base-pokemon versions.
   const [pokedexVersions, setPokedexVersions] = useState(new Set())
+  // Track whether initialVersion has been applied (only use it once on first load)
+  const initialVersionAppliedRef = useRef(false)
 
   useEffect(() => {
     if (!pokemon) return
@@ -145,10 +147,17 @@ export function usePokemonSpecies(pokemon) {
     // If the current selection is not available for the new Pokémon, fall back to the latest.
     const available = getAllAvailableVersions(pokemon)
 
+    // Use initialVersion from URL on first load (only once)
+    const useInitial = initialVersion && !initialVersionAppliedRef.current
+
     if (available.size > 0) {
       if (active) {
         setAvailableVersions(available)
         setSelectedVersion(prev => {
+          if (useInitial && available.has(initialVersion)) {
+            initialVersionAppliedRef.current = true
+            return initialVersion
+          }
           if (prev && available.has(prev)) return prev
           // Fall back to last game_indices entry, or first available version
           const gameIndices = pokemon.game_indices || []
@@ -161,13 +170,16 @@ export function usePokemonSpecies(pokemon) {
       // then try form endpoint for version_group info (e.g. PLZA megas)
       if (active) {
         setAvailableVersions(new Set())
-        setSelectedVersion(null)
+        setSelectedVersion(useInitial ? initialVersion : null)
+        if (useInitial) initialVersionAppliedRef.current = true
       }
       fetchFormVersions(pokemon).then(formVersions => {
         if (!active) return
         if (formVersions.size > 0) {
           setAvailableVersions(formVersions)
-          setSelectedVersion(Array.from(formVersions)[0])
+          if (!initialVersionAppliedRef.current || !formVersions.has(initialVersion)) {
+            setSelectedVersion(Array.from(formVersions)[0])
+          }
         }
       })
     }

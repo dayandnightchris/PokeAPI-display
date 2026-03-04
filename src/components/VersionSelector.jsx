@@ -162,7 +162,10 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
         versionSet.add(selectedVersion)
       }
 
-      const uniqueVersions = Array.from(versionSet).sort((a, b) => {
+      const uniqueVersions = Array.from(versionSet)
+        // Only include recognized versions, and temporarily hide Gen 8+ and gen 0 (red-japan, green-japan)
+        .filter(v => versionDisplayNames[v] && (versionGeneration[v] || 0) < 8)
+        .sort((a, b) => {
         const genA = versionGeneration[a] || 0
         const genB = versionGeneration[b] || 0
         if (genA !== genB) return genA - genB
