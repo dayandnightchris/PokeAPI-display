@@ -4,30 +4,32 @@ import PokemonCard from './components/PokemonCard'
 import PokemonSearch from './components/PokemonSearch'
 
 /**
- * Read URL query parameters on load.
- * Supported params: pokemon, version, form
+ * Read URL path parameters on load.
+ * Expected format: /pokemon/[version]/[form]  or  /pokemon/[form]
  */
 function getUrlParams() {
-  const params = new URLSearchParams(window.location.search)
-  return {
-    pokemon: params.get('pokemon') || null,
-    version: params.get('version') || null,
-    form: params.get('form') || null,
+  const segments = window.location.pathname.split('/').filter(Boolean)
+  if (segments[0] === 'pokemon') {
+    if (segments.length >= 3) {
+      return { version: segments[1], form: segments[2] }
+    }
+    if (segments.length === 2) {
+      return { version: null, form: segments[1] }
+    }
   }
+  return { version: null, form: null }
 }
 
 /**
- * Update the URL query string without triggering a page reload.
- * Only includes params that have a value.
+ * Update the URL path without triggering a page reload.
+ * Produces paths like /pokemon/[version]/[form] or /pokemon/[form].
  */
-function updateUrl({ pokemon, version, form }) {
-  const params = new URLSearchParams()
-  if (pokemon) params.set('pokemon', pokemon)
-  if (version) params.set('version', version)
-  if (form) params.set('form', form)
-  const qs = params.toString()
-  const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname
-  window.history.replaceState(null, '', newUrl)
+function updateUrl({ version, form }) {
+  let path = '/'
+  if (form) {
+    path = version ? `/pokemon/${version}/${form}` : `/pokemon/${form}`
+  }
+  window.history.replaceState(null, '', path)
 }
 
 function App() {
@@ -40,7 +42,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
 
   // Track current URL state so we can update it incrementally
-  const urlStateRef = useRef({ pokemon: null, version: null, form: null })
+  const urlStateRef = useRef({ version: null, form: null })
 
   // Track the latest in-flight request
   const abortRef = useRef(null)
@@ -83,13 +85,11 @@ function App() {
   const hasLoadedFromUrl = useRef(false)
   useEffect(() => {
     if (hasLoadedFromUrl.current) return
-    const { pokemon: urlPokemon, version: urlVersion, form: urlForm } = getUrlParams()
-    if (urlPokemon) {
+    const { version: urlVersion, form: urlForm } = getUrlParams()
+    if (urlForm) {
       hasLoadedFromUrl.current = true
-      // Set initial version/form from URL before fetching
       if (urlVersion) setInitialVersion(urlVersion)
-      // Use form from URL as the requested form (fetchPokemon handles non-default forms)
-      fetchPokemon(urlForm || urlPokemon)
+      fetchPokemon(urlForm)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -209,13 +209,10 @@ function App() {
         setPokemon(pokemonData)
         setRequestedForm(requestedFormName)
 
-        // Update URL with the pokemon name (use the searched form name if
-        // it differs from the base, otherwise use the base species name)
-        const urlPokemonName = requestedFormName || pokemonData.name
-        urlStateRef.current.pokemon = urlPokemonName
-        // Clear version/form — PokemonCard will report them via onStateChange
-        urlStateRef.current.version = null
-        urlStateRef.current.form = null
+        // Update URL with the form name (or base pokemon name as fallback).
+        // Keep the current version — PokemonCard will update it via
+        // onStateChange if it actually changes.
+        urlStateRef.current.form = requestedFormName || pokemonData.name
         updateUrl(urlStateRef.current)
       }
     } catch (err) {
