@@ -1099,7 +1099,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm, in
             <div className="box-title">Egg Groups</div>
             <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>
               {species.egg_groups?.length > 0 ? (
-                <ul style={{ padding: '0 20px', margin: '0' }}>
+                <ul style={{ padding: '0 20px', margin: '0', fontSize: '16px' }}>
                   {species.egg_groups.map(group => (
                     <li key={group.name}>{group.name}</li>
                   ))}
@@ -1111,10 +1111,13 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm, in
           </div>
 
           <div className="info-box">
-            <div className="box-title">Egg Steps</div>
+            <div className="box-title">Hatch Time</div>
             <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>
-              <p style={{ margin: '0', fontSize: '18px', color: '#ff6b6b', fontWeight: 'bold' }}>
-                {species.hatch_counter ? (species.hatch_counter * 255).toLocaleString() : 'N/A'}
+              <p style={{ margin: '0', fontSize: '16px' }}>
+              <ul style={{ padding: '0 20px', margin: '0' }}><li>  <b>Steps:</b> {species.hatch_counter ? (species.hatch_counter * 255).toLocaleString() : 'N/A'}</li></ul>
+              </p>
+               <p style={{ margin: '0', fontSize: '16px'}}>
+               <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Cycles:</b> {species.hatch_counter ? (species.hatch_counter).toLocaleString() : 'N/A'} </li></ul>
               </p>
             </div>
           </div>
@@ -1168,12 +1171,34 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm, in
         <div className="grid-3">
           {displayedEntries.map((entry, idx) => (
               <div key={idx} className="info-box">
-                <div className="box-title">{entry.version?.name?.replace(/-/g, ' ') || `Entry ${idx + 1}`}</div>
+                <div className="box-title">Pokédex Entry: {entry.version?.name?.replace(/-/g, ' ') || `Entry ${idx + 1}`}</div>
                 <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>
                   <p style={{ margin: '0' }}>{entry.flavor_text.replace(/\f/g, ' ')}</p>
                 </div>
               </div>
             ))}
+
+                <div className="info-box">
+            <div className="box-title">Training Info</div>
+            <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>
+              <p >
+                <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Exp. Growth Rate:</b> {species.growth_rate.name.toUpperCase() || 'Unknown'}</li></ul>
+                <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Base Happiness: </b>{species.base_happiness ? (species.base_happiness).toLocaleString() : 'N/A'}</li></ul> 
+              </p>
+            </div>
+          </div>
+
+              <div className="info-box">
+            <div className="box-title">Misc Info</div>
+            <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>
+              <p >
+                <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Habitat:</b> {species.habitat.name.toUpperCase() || 'Unknown'}</li></ul>
+                <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Color:</b> {species.color.name.toUpperCase() || 'Unknown'}</li></ul>
+                <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Introduced in:</b> {species.generation.name.toUpperCase() || 'Unknown'}</li></ul>
+
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>
