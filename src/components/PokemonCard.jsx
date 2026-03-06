@@ -1182,7 +1182,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm, in
             <div className="box-title">Training Info</div>
             <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>
               <p >
-                <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Exp. Growth Rate:</b> {species.growth_rate.name.toUpperCase() || 'Unknown'}</li></ul>
+                <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Exp. Growth Rate:</b> {species.growth_rate?.name?.toUpperCase() || 'Unknown'}</li></ul>
                 <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Base Happiness: </b>{species.base_happiness ? (species.base_happiness).toLocaleString() : 'N/A'}</li></ul> 
               </p>
             </div>
@@ -1192,9 +1192,9 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm, in
             <div className="box-title">Misc Info</div>
             <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>
               <p >
-                <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Habitat:</b> {species.habitat.name.toUpperCase() || 'Unknown'}</li></ul>
-                <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Color:</b> {species.color.name.toUpperCase() || 'Unknown'}</li></ul>
-                <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Introduced in:</b> {species.generation.name.toUpperCase() || 'Unknown'}</li></ul>
+                <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Habitat:</b> {species.habitat?.name?.toUpperCase() || 'Unknown'}</li></ul>
+                <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Color:</b> {species.color?.name?.toUpperCase() || 'Unknown'}</li></ul>
+                <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Introduced in:</b> {species.generation?.name?.toUpperCase() || 'Unknown'}</li></ul>
 
               </p>
             </div>
