@@ -32,7 +32,15 @@ function updateUrl({ version, form }) {
   window.history.replaceState(null, '', path)
 }
 
+const TABS = [
+  { id: 'pokemon', label: 'Pokémon' },
+  { id: 'abilities', label: 'Abilities' },
+  { id: 'moves', label: 'Moves' },
+  { id: 'items', label: 'Items' },
+]
+
 function App() {
+  const [activeTab, setActiveTab] = useState('pokemon')
   const [pokemon, setPokemon] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -237,12 +245,40 @@ function App() {
         <h1>PokéAPI Display</h1>
         <p>A better way to view Pokemon information</p>
       </header>
-      
-      <PokemonSearch onSearch={fetchPokemon} loading={loading} pokemonList={pokemonList} initialQuery={searchQuery} />
-      
-      {error && <div className="error">{error}</div>}
-      {loading && <div className="loading">Loading...</div>}
-      {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} />}
+
+      <nav className="tab-nav">
+        {TABS.map(tab => (
+          <button
+            key={tab.id}
+            className={`tab-button${activeTab === tab.id ? ' tab-button--active' : ''}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      {activeTab === 'pokemon' && (
+        <>
+          <PokemonSearch onSearch={fetchPokemon} loading={loading} pokemonList={pokemonList} initialQuery={searchQuery} />
+          
+          {error && <div className="error">{error}</div>}
+          {loading && <div className="loading">Loading...</div>}
+          {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} />}
+        </>
+      )}
+
+      {activeTab === 'abilities' && (
+        <div className="tab-placeholder">Abilities page coming soon.</div>
+      )}
+
+      {activeTab === 'moves' && (
+        <div className="tab-placeholder">Moves page coming soon.</div>
+      )}
+
+      {activeTab === 'items' && (
+        <div className="tab-placeholder">Items page coming soon.</div>
+      )}
     </div>
   )
 }

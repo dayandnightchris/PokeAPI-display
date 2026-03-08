@@ -51,6 +51,44 @@ body {
   color: #666;
 }
 
+/* Tab Navigation */
+.tab-nav {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 0;
+}
+
+.tab-button {
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #666;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.tab-button:hover {
+  color: var(--primary-color);
+}
+
+.tab-button--active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+.tab-placeholder {
+  text-align: center;
+  padding: 4rem 2rem;
+  font-size: 1.1rem;
+  color: #888;
+}
+
 .error {
   padding: 1rem;
   background-color: #ffebee;
