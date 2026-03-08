@@ -411,6 +411,246 @@
   transform: rotate(180deg);
 }
 
+/* ============================================
+   Move Page Styles
+   ============================================ */
 
+.move-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Move Detail Card */
+.move-detail-card {
+  background: var(--box-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.move-detail-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.move-detail-name {
+  font-size: 1.6rem;
+  color: var(--text-color);
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.move-detail-tags {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.move-category-badge {
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: #e0e0e0;
+  color: #333;
+}
+
+.move-category-badge[data-category="physical"] {
+  background: #c62828;
+  color: white;
+}
+
+.move-category-badge[data-category="special"] {
+  background: #1565c0;
+  color: white;
+}
+
+.move-category-badge[data-category="status"] {
+  background: #757575;
+  color: white;
+}
+
+.move-detail-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.move-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 80px;
+  flex: 1;
+}
+
+.move-stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #777;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.move-stat-value {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.move-detail-description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #555;
+  padding: 12px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+/* Move Learners Section */
+.move-learners-section {
+  background: var(--box-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  padding: 20px;
+}
+
+.move-learners-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.move-learners-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-color);
+}
+
+.move-learners-progress {
+  font-size: 13px;
+  color: #888;
+}
+
+.move-learners-table-wrapper {
+  max-height: 600px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.move-learners-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.move-learners-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.move-learners-table th {
+  background: #e8e8e8;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #555;
+  border-bottom: 2px solid #ccc;
+}
+
+.move-learners-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+.move-learners-table tbody tr:hover {
+  background: #f5f5f5;
+}
+
+.learner-id {
+  color: #999;
+  font-size: 13px;
+  min-width: 40px;
+}
+
+.learner-sprite {
+  width: 36px;
+  padding: 2px !important;
+}
+
+.learner-sprite img {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.learner-name {
+  font-weight: 500;
+}
+
+.learner-method {
+  text-align: left;
+}
+
+.method-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.method-badge.method-level-up {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.method-badge.method-machine {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.method-badge.method-egg {
+  background: #fff8e1;
+  color: #f57f17;
+}
+
+.method-badge.method-tutor {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.method-badge.method-form-change,
+.method-badge.method-light-ball-egg,
+.method-badge.method-stadium-surfing-pikachu,
+.method-badge.method-colosseum-purification,
+.method-badge.method-xd-shadow,
+.method-badge.method-xd-purification {
+  background: #fce4ec;
+  color: #c62828;
+}
+
+.move-no-learners {
+  text-align: center;
+  padding: 2rem;
+  color: #888;
+  font-size: 14px;
+}
 
 

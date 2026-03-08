@@ -1,0 +1,659 @@
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { versionDisplayNames, versionGeneration, versionGroupDisplayNames, generationVersionGroups } from '../utils/versionInfo'
+import { fetchPokemonCached, fetchMoveCached } from '../utils/pokeCache'
+
+// Map individual version names to the version groups that cover them
+const versionToVersionGroups = {
+  'red': ['red-blue'], 'blue': ['red-blue'], 'yellow': ['yellow'],
+  'gold': ['gold-silver'], 'silver': ['gold-silver'], 'crystal': ['crystal'],
+  'ruby': ['ruby-sapphire'], 'sapphire': ['ruby-sapphire'], 'emerald': ['emerald'],
+  'firered': ['firered-leafgreen'], 'leafgreen': ['firered-leafgreen'],
+  'colosseum': ['colosseum'], 'xd': ['xd'],
+  'diamond': ['diamond-pearl'], 'pearl': ['diamond-pearl'], 'platinum': ['platinum'],
+  'heartgold': ['heartgold-soulsilver'], 'soulsilver': ['heartgold-soulsilver'],
+  'black': ['black-white'], 'white': ['black-white'],
+  'black-2': ['black-2-white-2'], 'white-2': ['black-2-white-2'],
+  'x': ['x-y'], 'y': ['x-y'],
+  'omega-ruby': ['omega-ruby-alpha-sapphire'], 'alpha-sapphire': ['omega-ruby-alpha-sapphire'],
+  'sun': ['sun-moon'], 'moon': ['sun-moon'],
+  'ultra-sun': ['ultra-sun-ultra-moon'], 'ultra-moon': ['ultra-sun-ultra-moon'],
+  'lets-go-pikachu': ['lets-go-pikachu-lets-go-eevee'], 'lets-go-eevee': ['lets-go-pikachu-lets-go-eevee'],
+  'sword': ['sword-shield', 'the-isle-of-armor', 'the-crown-tundra'],
+  'shield': ['sword-shield', 'the-isle-of-armor', 'the-crown-tundra'],
+  'brilliant-diamond': ['brilliant-diamond-and-shining-pearl'],
+  'shining-pearl': ['brilliant-diamond-and-shining-pearl'],
+  'legends-arceus': ['legends-arceus'],
+  'scarlet': ['scarlet-violet', 'the-teal-mask', 'the-indigo-disk'],
+  'violet': ['scarlet-violet', 'the-teal-mask', 'the-indigo-disk'],
+  'legends-za': ['legends-za', 'mega-dimension'],
+}
+
+// Version group → version group canonical order
+const versionGroupOrder = {
+  'red-blue': 1, 'yellow': 2,
+  'gold-silver': 3, 'crystal': 4,
+  'ruby-sapphire': 5, 'emerald': 6, 'firered-leafgreen': 7, 'colosseum': 7.5, 'xd': 7.6,
+  'diamond-pearl': 8, 'platinum': 9, 'heartgold-soulsilver': 10,
+  'black-white': 11, 'black-2-white-2': 12,
+  'x-y': 13, 'omega-ruby-alpha-sapphire': 14,
+  'sun-moon': 15, 'ultra-sun-ultra-moon': 16, 'lets-go-pikachu-lets-go-eevee': 17,
+  'sword-shield': 18, 'the-isle-of-armor': 19, 'the-crown-tundra': 20,
+  'brilliant-diamond-and-shining-pearl': 21, 'legends-arceus': 22,
+  'scarlet-violet': 23, 'the-teal-mask': 24, 'the-indigo-disk': 25,
+  'legends-za': 26, 'mega-dimension': 27,
+}
+
+// Map version group → its generation number
+const versionGroupGeneration = {}
+for (const [gen, groups] of Object.entries(generationVersionGroups)) {
+  for (const vg of groups) {
+    versionGroupGeneration[vg] = Number(gen)
+  }
+}
+
+// Learn method priority (lower = easier/preferred)
+const LEARN_METHOD_PRIORITY = {
+  'level-up': 1,
+  'machine': 2,
+  'egg': 3,
+  'tutor': 4,
+  'form-change': 5,
+  'light-ball-egg': 5,
+  'stadium-surfing-pikachu': 5,
+  'colosseum-purification': 5,
+  'xd-shadow': 5,
+  'xd-purification': 5,
+}
+
+const LEARN_METHOD_LABELS = {
+  'level-up': 'Level',
+  'machine': 'TM',
+  'egg': 'Egg',
+  'tutor': 'Tutor',
+  'form-change': 'Special',
+  'light-ball-egg': 'Special',
+  'stadium-surfing-pikachu': 'Special',
+  'colosseum-purification': 'Special',
+  'xd-shadow': 'Special',
+  'xd-purification': 'Special',
+}
+
+const typeColors = {
+  normal: '#A8A878', fire: '#F08030', water: '#6890F0', electric: '#F8D030',
+  grass: '#78C850', ice: '#98D8D8', fighting: '#C03028', poison: '#A040A0',
+  ground: '#E0C068', flying: '#A890F0', psychic: '#F85888', bug: '#A8B820',
+  rock: '#B8A038', ghost: '#705898', dragon: '#7038F8', dark: '#705848',
+  steel: '#B8B8D0', fairy: '#EE99AC',
+}
+
+const categoryIcons = {
+  physical: '⚔️',
+  special: '🔮',
+  status: '📊',
+}
+
+function formatMoveName(name) {
+  return name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
+function formatPokemonName(name) {
+  return name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
+/**
+ * Get the best learn method for a Pokémon learning a given move in the selected version groups.
+ * Returns { method, label, level } for the highest-priority learn method.
+ */
+function getBestLearnMethod(pokemonData, moveName, selectedVersionGroups) {
+  const moveEntry = pokemonData.moves?.find(m => m.move.name === moveName)
+  if (!moveEntry) return null
+
+  let best = null
+  for (const vgd of moveEntry.version_group_details) {
+    const vgName = vgd.version_group?.name
+    if (!selectedVersionGroups.has(vgName)) continue
+
+    const method = vgd.move_learn_method?.name
+    const priority = LEARN_METHOD_PRIORITY[method] ?? 99
+    const level = vgd.level_learned_at || 0
+
+    if (!best || priority < best.priority) {
+      best = {
+        priority,
+        method,
+        label: LEARN_METHOD_LABELS[method] || method,
+        level,
+      }
+    }
+  }
+  return best
+}
+
+/**
+ * Get the move stats for the selected version, accounting for past_values.
+ */
+function getMoveStatsForVersion(moveData, selectedVersion) {
+  const gen = versionGeneration[selectedVersion] || 99
+
+  let power = moveData.power
+  let pp = moveData.pp
+  let accuracy = moveData.accuracy
+  let type = moveData.type?.name
+  let effectChance = moveData.effect_chance
+
+  // past_values is ordered oldest → newest; apply all patches whose generation
+  // is >= the selected gen (meaning the current values hadn't taken effect yet)
+  if (moveData.past_values) {
+    // Sort past_values by generation order descending so we find the
+    // closest applicable past snapshot
+    const sorted = [...moveData.past_values].sort((a, b) => {
+      const genA = a.version_group?.name ? (versionGroupOrder[a.version_group.name] || 0) : 0
+      const genB = b.version_group?.name ? (versionGroupOrder[b.version_group.name] || 0) : 0
+      return genB - genA
+    })
+
+    for (const pv of sorted) {
+      const pvGen = versionGroupGeneration[pv.version_group?.name] || 99
+      // This past_values entry covers all versions UP TO AND INCLUDING this version group
+      if (gen <= pvGen) {
+        if (pv.power !== null && pv.power !== undefined) power = pv.power
+        if (pv.pp !== null && pv.pp !== undefined) pp = pv.pp
+        if (pv.accuracy !== null && pv.accuracy !== undefined) accuracy = pv.accuracy
+        if (pv.type) type = pv.type.name
+        if (pv.effect_chance !== null && pv.effect_chance !== undefined) effectChance = pv.effect_chance
+        break // closest applicable snapshot found
+      }
+    }
+  }
+
+  return { power, pp, accuracy, type, effectChance }
+}
+
+export default function MovePage() {
+  const [moveList, setMoveList] = useState([])
+  const [searchInput, setSearchInput] = useState('')
+  const [suggestions, setSuggestions] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [activeSuggestion, setActiveSuggestion] = useState(0)
+  const containerRef = useRef(null)
+  const userIsTypingRef = useRef(false)
+
+  const [moveData, setMoveData] = useState(null)
+  const [moveLoading, setMoveLoading] = useState(false)
+  const [moveError, setMoveError] = useState(null)
+
+  const [selectedVersion, setSelectedVersion] = useState(null)
+  const [availableVersions, setAvailableVersions] = useState([]) // grouped
+
+  const [learners, setLearners] = useState([]) // { name, spriteUrl, method, label, level, id }
+  const [learnersLoading, setLearnersLoading] = useState(false)
+  const [learnersProgress, setLearnersProgress] = useState({ loaded: 0, total: 0 })
+
+  const abortRef = useRef(null)
+
+  // Fetch move names list for autocomplete
+  useEffect(() => {
+    const fetchMoveList = async () => {
+      try {
+        const first = await fetch('https://pokeapi.co/api/v2/move/').then(r => r.json())
+        const all = await fetch(`https://pokeapi.co/api/v2/move/?limit=${first.count}`).then(r => r.json())
+        setMoveList(all.results.map(m => m.name).sort())
+      } catch (err) {
+        console.error('Failed to fetch move list:', err)
+      }
+    }
+    fetchMoveList()
+  }, [])
+
+  // Autocomplete logic
+  useEffect(() => {
+    if (!searchInput.trim() || !userIsTypingRef.current) {
+      if (!searchInput.trim()) {
+        setSuggestions([])
+        setShowSuggestions(false)
+      }
+      return
+    }
+    const q = searchInput.toLowerCase()
+    const filtered = moveList.filter(n => n.includes(q)).slice(0, 8)
+    setSuggestions(filtered)
+    setShowSuggestions(filtered.length > 0)
+    setActiveSuggestion(0)
+  }, [searchInput, moveList])
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  // Compute available versions from move data
+  useEffect(() => {
+    if (!moveData) {
+      setAvailableVersions([])
+      return
+    }
+
+    // Collect version groups from flavor_text_entries
+    const vgSet = new Set()
+    moveData.flavor_text_entries?.forEach(fte => {
+      if (fte.language?.name === 'en') {
+        const vgName = fte.version_group?.name
+        if (vgName) vgSet.add(vgName)
+      }
+    })
+
+    // Also collect from machines
+    moveData.machines?.forEach(m => {
+      const vgName = m.version_group?.name
+      if (vgName) vgSet.add(vgName)
+    })
+
+    // Build version list from version groups
+    const versionSet = new Set()
+    const vgToVersions = {
+      'red-blue': ['red', 'blue'], 'yellow': ['yellow'],
+      'gold-silver': ['gold', 'silver'], 'crystal': ['crystal'],
+      'ruby-sapphire': ['ruby', 'sapphire'], 'emerald': ['emerald'],
+      'firered-leafgreen': ['firered', 'leafgreen'],
+      'colosseum': ['colosseum'], 'xd': ['xd'],
+      'diamond-pearl': ['diamond', 'pearl'], 'platinum': ['platinum'],
+      'heartgold-soulsilver': ['heartgold', 'soulsilver'],
+      'black-white': ['black', 'white'], 'black-2-white-2': ['black-2', 'white-2'],
+      'x-y': ['x', 'y'], 'omega-ruby-alpha-sapphire': ['omega-ruby', 'alpha-sapphire'],
+      'sun-moon': ['sun', 'moon'], 'ultra-sun-ultra-moon': ['ultra-sun', 'ultra-moon'],
+      'lets-go-pikachu-lets-go-eevee': ['lets-go-pikachu', 'lets-go-eevee'],
+      'sword-shield': ['sword', 'shield'],
+      'the-isle-of-armor': ['sword', 'shield'],
+      'the-crown-tundra': ['sword', 'shield'],
+      'brilliant-diamond-and-shining-pearl': ['brilliant-diamond', 'shining-pearl'],
+      'legends-arceus': ['legends-arceus'],
+      'scarlet-violet': ['scarlet', 'violet'],
+      'the-teal-mask': ['scarlet', 'violet'],
+      'the-indigo-disk': ['scarlet', 'violet'],
+      'legends-za': ['legends-za'],
+      'mega-dimension': ['legends-za'],
+    }
+
+    vgSet.forEach(vg => {
+      const versions = vgToVersions[vg]
+      if (versions) versions.forEach(v => versionSet.add(v))
+    })
+
+    // Build grouped/sorted version options (same pattern as VersionSelector)
+    const uniqueVersions = Array.from(versionSet)
+      .filter(v => versionDisplayNames[v] && (versionGeneration[v] || 0) < 8)
+      .sort((a, b) => {
+        const genA = versionGeneration[a] || 0
+        const genB = versionGeneration[b] || 0
+        if (genA !== genB) return genA - genB
+        return (versionDisplayNames[a] || a).localeCompare(versionDisplayNames[b] || b)
+      })
+
+    const grouped = new Map()
+    uniqueVersions.forEach(v => {
+      const gen = versionGeneration[v] || 0
+      if (!grouped.has(gen)) grouped.set(gen, [])
+      grouped.get(gen).push({ display: versionDisplayNames[v] || v, name: v, gen })
+    })
+
+    const options = Array.from(grouped.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([, items]) => items)
+
+    setAvailableVersions(options)
+  }, [moveData])
+
+  // Auto-select latest version when available versions change
+  useEffect(() => {
+    if (availableVersions.length === 0) return
+    const allNames = new Set(availableVersions.flat().map(v => v.name))
+    if (!selectedVersion || !allNames.has(selectedVersion)) {
+      const lastGroup = availableVersions[availableVersions.length - 1]
+      const fallback = lastGroup[lastGroup.length - 1]?.name
+      if (fallback) setSelectedVersion(fallback)
+    }
+  }, [availableVersions, selectedVersion])
+
+  // Fetch learner Pokémon when move or version changes
+  useEffect(() => {
+    if (!moveData || !selectedVersion) {
+      setLearners([])
+      return
+    }
+
+    // Abort previous learner fetch
+    if (abortRef.current) abortRef.current.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    const selectedVersionGroups = new Set(versionToVersionGroups[selectedVersion] || [])
+    const pokemonEntries = moveData.learned_by_pokemon || []
+
+    setLearnersLoading(true)
+    setLearnersProgress({ loaded: 0, total: pokemonEntries.length })
+    setLearners([])
+
+    let cancelled = false
+    const results = []
+
+    const fetchLearners = async () => {
+      // Fetch in batches of 25
+      const BATCH_SIZE = 25
+      for (let i = 0; i < pokemonEntries.length; i += BATCH_SIZE) {
+        if (controller.signal.aborted) return
+
+        const batch = pokemonEntries.slice(i, i + BATCH_SIZE)
+        const batchResults = await Promise.all(
+          batch.map(async (entry) => {
+            try {
+              const data = await fetchPokemonCached(entry.name)
+              if (!data || controller.signal.aborted) return null
+
+              const best = getBestLearnMethod(data, moveData.name, selectedVersionGroups)
+              if (!best) return null
+
+              // Get sprite (use small sprite)
+              const sprite = data.sprites?.front_default || null
+
+              return {
+                name: data.name,
+                id: data.id,
+                sprite,
+                method: best.method,
+                label: best.label,
+                level: best.level,
+              }
+            } catch {
+              return null
+            }
+          })
+        )
+
+        if (controller.signal.aborted) return
+
+        const valid = batchResults.filter(Boolean)
+        results.push(...valid)
+
+        // Sort results by dex number
+        const sorted = [...results].sort((a, b) => a.id - b.id)
+
+        if (!cancelled) {
+          setLearners(sorted)
+          setLearnersProgress({ loaded: Math.min(i + BATCH_SIZE, pokemonEntries.length), total: pokemonEntries.length })
+        }
+      }
+
+      if (!cancelled) {
+        setLearnersLoading(false)
+      }
+    }
+
+    fetchLearners()
+
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [moveData, selectedVersion])
+
+  const searchMove = async (name) => {
+    const query = String(name).trim().toLowerCase()
+    if (!query) return
+
+    userIsTypingRef.current = false
+    setSearchInput(query)
+    setShowSuggestions(false)
+    setMoveLoading(true)
+    setMoveError(null)
+    setMoveData(null)
+    setLearners([])
+
+    try {
+      const data = await fetchMoveCached(query)
+      if (!data) throw new Error('Move not found')
+      setMoveData(data)
+    } catch (err) {
+      setMoveError(err.message || 'Failed to fetch move')
+    } finally {
+      setMoveLoading(false)
+    }
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (searchInput.trim()) searchMove(searchInput)
+  }
+
+  const handleSuggestionClick = (name) => {
+    searchMove(name)
+  }
+
+  const handleKeyDown = (e) => {
+    if (!showSuggestions) return
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        setActiveSuggestion(prev => (prev + 1) % suggestions.length)
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        setActiveSuggestion(prev => (prev - 1 + suggestions.length) % suggestions.length)
+        break
+      case 'Enter':
+        e.preventDefault()
+        if (suggestions[activeSuggestion]) {
+          handleSuggestionClick(suggestions[activeSuggestion])
+        } else {
+          handleSubmit(e)
+        }
+        break
+      case 'Escape':
+        setShowSuggestions(false)
+        break
+      default:
+        break
+    }
+  }
+
+  // Get description for selected version
+  const getDescription = () => {
+    if (!moveData || !selectedVersion) return null
+    const vgs = versionToVersionGroups[selectedVersion] || []
+
+    // Try to find a flavor text for the selected version group(s)
+    for (const vg of vgs) {
+      const entry = moveData.flavor_text_entries?.find(
+        fte => fte.language?.name === 'en' && fte.version_group?.name === vg
+      )
+      if (entry) return entry.flavor_text?.replace(/\n/g, ' ')
+    }
+
+    // Fallback: latest English flavor text
+    const allEn = moveData.flavor_text_entries?.filter(fte => fte.language?.name === 'en') || []
+    if (allEn.length > 0) return allEn[allEn.length - 1].flavor_text?.replace(/\n/g, ' ')
+
+    // Fallback: effect entry
+    const effect = moveData.effect_entries?.find(e => e.language?.name === 'en')
+    return effect?.short_effect || null
+  }
+
+  const moveStats = moveData && selectedVersion ? getMoveStatsForVersion(moveData, selectedVersion) : null
+  const description = getDescription()
+
+  const getLearnDisplay = (learner) => {
+    if (learner.label === 'Level' && learner.level > 0) {
+      return `Lv. ${learner.level}`
+    }
+    return learner.label
+  }
+
+  return (
+    <div className="move-page">
+      {/* Search */}
+      <div className="search-container" ref={containerRef}>
+        <form onSubmit={handleSubmit} className="search-form">
+          <div className="search-input-wrapper">
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => { userIsTypingRef.current = true; setSearchInput(e.target.value) }}
+              onKeyDown={handleKeyDown}
+              onFocus={() => searchInput && setShowSuggestions(suggestions.length > 0)}
+              placeholder="Enter move name..."
+              autoComplete="off"
+            />
+            <button type="submit" disabled={moveLoading}>Search</button>
+          </div>
+          {showSuggestions && suggestions.length > 0 && (
+            <ul className="suggestions-list">
+              {suggestions.map((s, idx) => (
+                <li
+                  key={s}
+                  className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
+                  onClick={() => handleSuggestionClick(s)}
+                >
+                  {formatMoveName(s)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </form>
+      </div>
+
+      {moveError && <div className="error">{moveError}</div>}
+      {moveLoading && <div className="loading">Loading...</div>}
+
+      {moveData && moveStats && (
+        <>
+          {/* Version Selector */}
+          {availableVersions.length > 0 && (
+            <div className="version-selector-wrapper">
+              <div className="version-selector">
+                <label htmlFor="move-version-select">Game Version:</label>
+                <select
+                  id="move-version-select"
+                  value={selectedVersion || ''}
+                  onChange={(e) => setSelectedVersion(e.target.value)}
+                  className="version-dropdown"
+                >
+                  {availableVersions.map((group, idx) => {
+                    const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
+                    return (
+                      <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
+                        {group.map(({ display, name }) => (
+                          <option key={name} value={name}>{display}</option>
+                        ))}
+                      </optgroup>
+                    )
+                  })}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Move Details Box */}
+          <div className="move-detail-card">
+            <div className="move-detail-header">
+              <h2 className="move-detail-name">{formatMoveName(moveData.name)}</h2>
+              <div className="move-detail-tags">
+                <span
+                  className="type-badge-small"
+                  style={{ backgroundColor: typeColors[moveStats.type] || '#999' }}
+                >
+                  {moveStats.type}
+                </span>
+                <span className="move-category-badge" data-category={moveData.damage_class?.name}>
+                  {categoryIcons[moveData.damage_class?.name] || ''} {moveData.damage_class?.name}
+                </span>
+              </div>
+            </div>
+
+            <div className="move-detail-stats">
+              <div className="move-stat-item">
+                <span className="move-stat-label">Power</span>
+                <span className="move-stat-value">{moveStats.power ?? '—'}</span>
+              </div>
+              <div className="move-stat-item">
+                <span className="move-stat-label">PP</span>
+                <span className="move-stat-value">{moveStats.pp ?? '—'}</span>
+              </div>
+              <div className="move-stat-item">
+                <span className="move-stat-label">Accuracy</span>
+                <span className="move-stat-value">{moveStats.accuracy != null ? `${moveStats.accuracy}%` : '—'}</span>
+              </div>
+              <div className="move-stat-item">
+                <span className="move-stat-label">Priority</span>
+                <span className="move-stat-value">{moveData.priority != null ? (moveData.priority > 0 ? `+${moveData.priority}` : moveData.priority) : '—'}</span>
+              </div>
+            </div>
+
+            {description && (
+              <div className="move-detail-description">
+                {description}
+              </div>
+            )}
+          </div>
+
+          {/* Learners Table */}
+          <div className="move-learners-section">
+            <div className="move-learners-header">
+              <h3>Pokémon that learn {formatMoveName(moveData.name)}</h3>
+              {learnersLoading && (
+                <span className="move-learners-progress">
+                  Loading… {learnersProgress.loaded}/{learnersProgress.total}
+                </span>
+              )}
+            </div>
+
+            {learners.length > 0 ? (
+              <div className="move-learners-table-wrapper">
+                <table className="move-learners-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th></th>
+                      <th>Pokémon</th>
+                      <th>Method</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {learners.map(learner => (
+                      <tr key={learner.name}>
+                        <td className="learner-id">{learner.id}</td>
+                        <td className="learner-sprite">
+                          {learner.sprite && (
+                            <img
+                              src={learner.sprite}
+                              alt={learner.name}
+                              width={32}
+                              height={32}
+                              loading="lazy"
+                            />
+                          )}
+                        </td>
+                        <td className="learner-name">{formatPokemonName(learner.name)}</td>
+                        <td className="learner-method">
+                          <span className={`method-badge method-${learner.method}`}>
+                            {getLearnDisplay(learner)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              !learnersLoading && <div className="move-no-learners">No Pokémon learn this move in the selected version.</div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}

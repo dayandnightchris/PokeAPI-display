@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
 import PokemonCard from './components/PokemonCard'
 import PokemonSearch from './components/PokemonSearch'
+import MovePage from './components/MovePage'
 
 /**
  * Read URL path parameters on load.
@@ -273,7 +274,7 @@ function App() {
       )}
 
       {activeTab === 'moves' && (
-        <div className="tab-placeholder">Moves page coming soon.</div>
+        <MovePage />
       )}
 
       {activeTab === 'items' && (
