@@ -189,6 +189,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
   const [learners, setLearners] = useState([]) // { name, spriteUrl, method, label, level, id }
   const [learnersLoading, setLearnersLoading] = useState(false)
   const [learnersProgress, setLearnersProgress] = useState({ loaded: 0, total: 0 })
+  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'asc' })
 
   const abortRef = useRef(null)
 
@@ -223,8 +224,8 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
       }
       return
     }
-    const q = searchInput.toLowerCase()
-    const filtered = moveList.filter(n => n.includes(q)).slice(0, 8)
+    const q = searchInput.toLowerCase().replace(/[-\s]/g, '')
+    const filtered = moveList.filter(n => n.replace(/-/g, '').includes(q)).slice(0, 8)
     setSuggestions(filtered)
     setShowSuggestions(filtered.length > 0)
     setActiveSuggestion(0)
@@ -379,9 +380,14 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
               // Get sprite (use small sprite)
               const sprite = data.sprites?.front_default || null
 
+              // Use species dex number so forms show the base ID (e.g. Mega Gyarados → 130)
+              const speciesId = data.species?.url
+                ? Number(data.species.url.match(/\/(\d+)\/?$/)?.[1]) || data.id
+                : data.id
+
               return {
                 name: data.name,
-                id: data.id,
+                id: speciesId,
                 sprite,
                 method: best.method,
                 label: best.label,
@@ -518,6 +524,55 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
     return learner.label
   }
 
+  const LEARN_METHOD_SORT_ORDER = {
+    'level-up': 1, 'machine': 2, 'egg': 3, 'tutor': 4,
+    'form-change': 5, 'light-ball-egg': 5, 'stadium-surfing-pikachu': 5,
+    'colosseum-purification': 5, 'xd-shadow': 5, 'xd-purification': 5,
+  }
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+    }))
+  }
+
+  const getSortIndicator = (key) => {
+    if (sortConfig.key !== key) return ''
+    return sortConfig.direction === 'asc' ? ' ▲' : ' ▼'
+  }
+
+  const sortedLearners = [...learners].sort((a, b) => {
+    let valueA, valueB
+    switch (sortConfig.key) {
+      case 'id':
+        valueA = a.id; valueB = b.id; break
+      case 'name':
+        valueA = a.name; valueB = b.name; break
+      case 'method': {
+        const orderA = LEARN_METHOD_SORT_ORDER[a.method] ?? 99
+        const orderB = LEARN_METHOD_SORT_ORDER[b.method] ?? 99
+        if (orderA !== orderB) { valueA = orderA; valueB = orderB; break }
+        // Within same method, sort by level for level-up
+        valueA = a.level || 0; valueB = b.level || 0; break
+      }
+      default:
+        valueA = a.id; valueB = b.id
+    }
+
+    if (valueA == null && valueB == null) return 0
+    if (valueA == null) return 1
+    if (valueB == null) return -1
+
+    let result = 0
+    if (typeof valueA === 'number' && typeof valueB === 'number') {
+      result = valueA - valueB
+    } else {
+      result = String(valueA).localeCompare(String(valueB))
+    }
+    return sortConfig.direction === 'asc' ? result : -result
+  })
+
   return (
     <div className="move-page">
       {/* Search */}
@@ -641,14 +696,14 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
                 <table className="move-learners-table">
                   <thead>
                     <tr>
-                      <th>#</th>
+                      <th><button type="button" onClick={() => handleSort('id')}>#{ getSortIndicator('id')}</button></th>
                       <th></th>
-                      <th>Pokémon</th>
-                      <th>Method</th>
+                      <th><button type="button" onClick={() => handleSort('name')}>Pokémon{getSortIndicator('name')}</button></th>
+                      <th><button type="button" onClick={() => handleSort('method')}>Method{getSortIndicator('method')}</button></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {learners.map(learner => (
+                    {sortedLearners.map(learner => (
                       <tr key={learner.name}>
                         <td className="learner-id">{learner.id}</td>
                         <td className="learner-sprite">
@@ -656,8 +711,8 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
                             <img
                               src={learner.sprite}
                               alt={learner.name}
-                              width={32}
-                              height={32}
+                              width={40}
+                              height={40}
                               loading="lazy"
                             />
                           )}
