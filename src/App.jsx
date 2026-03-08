@@ -6,29 +6,34 @@ import MovePage from './components/MovePage'
 
 /**
  * Read URL path parameters on load.
- * Expected format: /pokemon/[version]/[form]  or  /pokemon/[form]
+ * Supported formats:
+ *   /pokemon/[version]/[form]  or  /pokemon/[form]
+ *   /moves/[version]/[name]    or  /moves/[name]
  */
 function getUrlParams() {
   const segments = window.location.pathname.split('/').filter(Boolean)
-  if (segments[0] === 'pokemon') {
+  const tab = segments[0] || null
+
+  if (tab === 'pokemon' || tab === 'moves') {
     if (segments.length >= 3) {
-      return { version: segments[1], form: segments[2] }
+      return { tab, version: segments[1], name: segments[2] }
     }
     if (segments.length === 2) {
-      return { version: null, form: segments[1] }
+      return { tab, version: null, name: segments[1] }
     }
+    return { tab, version: null, name: null }
   }
-  return { version: null, form: null }
+  return { tab: null, version: null, name: null }
 }
 
 /**
  * Update the URL path without triggering a page reload.
- * Produces paths like /pokemon/[version]/[form] or /pokemon/[form].
+ * Produces paths like /pokemon/[version]/[form], /moves/[version]/[name], etc.
  */
-function updateUrl({ version, form }) {
+function updateUrl(tab, { version, name }) {
   let path = '/'
-  if (form) {
-    path = version ? `/pokemon/${version}/${form}` : `/pokemon/${form}`
+  if (name && tab) {
+    path = version ? `/${tab}/${version}/${name}` : `/${tab}/${name}`
   }
   window.history.replaceState(null, '', path)
 }
@@ -41,7 +46,8 @@ const TABS = [
 ]
 
 function App() {
-  const [activeTab, setActiveTab] = useState('pokemon')
+  const urlParams = getUrlParams()
+  const [activeTab, setActiveTab] = useState(urlParams.tab || 'pokemon')
   const [pokemon, setPokemon] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -51,7 +57,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
 
   // Track current URL state so we can update it incrementally
-  const urlStateRef = useRef({ version: null, form: null })
+  const urlStateRef = useRef({ version: null, name: null })
 
   // Track the latest in-flight request
   const abortRef = useRef(null)
@@ -94,11 +100,10 @@ function App() {
   const hasLoadedFromUrl = useRef(false)
   useEffect(() => {
     if (hasLoadedFromUrl.current) return
-    const { version: urlVersion, form: urlForm } = getUrlParams()
-    if (urlForm) {
+    if (urlParams.tab === 'pokemon' && urlParams.name) {
       hasLoadedFromUrl.current = true
-      if (urlVersion) setInitialVersion(urlVersion)
-      fetchPokemon(urlForm)
+      if (urlParams.version) setInitialVersion(urlParams.version)
+      fetchPokemon(urlParams.name)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -109,8 +114,15 @@ function App() {
   const handleStateChange = useCallback(({ version, form }) => {
     const current = urlStateRef.current
     if (version !== undefined) current.version = version
-    if (form !== undefined) current.form = form
-    updateUrl(current)
+    if (form !== undefined) current.name = form
+    updateUrl('pokemon', current)
+  }, [])
+
+  const handleMoveStateChange = useCallback(({ version, move }) => {
+    const current = urlStateRef.current
+    if (version !== undefined) current.version = version
+    if (move !== undefined) current.name = move
+    updateUrl('moves', current)
   }, [])
 
   const fetchPokemon = async (nameOrId) => {
@@ -221,8 +233,8 @@ function App() {
         // Update URL with the form name (or base pokemon name as fallback).
         // Keep the current version — PokemonCard will update it via
         // onStateChange if it actually changes.
-        urlStateRef.current.form = requestedFormName || pokemonData.name
-        updateUrl(urlStateRef.current)
+        urlStateRef.current.name = requestedFormName || pokemonData.name
+        updateUrl('pokemon', urlStateRef.current)
       }
     } catch (err) {
       // Ignore abort errors
@@ -274,7 +286,11 @@ function App() {
       )}
 
       {activeTab === 'moves' && (
-        <MovePage />
+        <MovePage
+          initialMove={urlParams.tab === 'moves' ? urlParams.name : null}
+          initialVersion={urlParams.tab === 'moves' ? urlParams.version : null}
+          onStateChange={handleMoveStateChange}
+        />
       )}
 
       {activeTab === 'items' && (

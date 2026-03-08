@@ -169,9 +169,9 @@ function getMoveStatsForVersion(moveData, selectedVersion) {
   return { power, pp, accuracy, type, effectChance }
 }
 
-export default function MovePage() {
+export default function MovePage({ initialMove, initialVersion, onStateChange }) {
   const [moveList, setMoveList] = useState([])
-  const [searchInput, setSearchInput] = useState('')
+  const [searchInput, setSearchInput] = useState(initialMove || '')
   const [suggestions, setSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [activeSuggestion, setActiveSuggestion] = useState(0)
@@ -182,14 +182,23 @@ export default function MovePage() {
   const [moveLoading, setMoveLoading] = useState(false)
   const [moveError, setMoveError] = useState(null)
 
-  const [selectedVersion, setSelectedVersion] = useState(null)
+  const [selectedVersion, setSelectedVersion] = useState(initialVersion || null)
   const [availableVersions, setAvailableVersions] = useState([]) // grouped
+  const [pendingInitialVersion, setPendingInitialVersion] = useState(initialVersion || null)
 
   const [learners, setLearners] = useState([]) // { name, spriteUrl, method, label, level, id }
   const [learnersLoading, setLearnersLoading] = useState(false)
   const [learnersProgress, setLearnersProgress] = useState({ loaded: 0, total: 0 })
 
   const abortRef = useRef(null)
+
+  // Auto-load move from URL on mount
+  const hasLoadedFromUrl = useRef(false)
+  useEffect(() => {
+    if (hasLoadedFromUrl.current || !initialMove) return
+    hasLoadedFromUrl.current = true
+    searchMove(initialMove)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch move names list for autocomplete
   useEffect(() => {
@@ -313,12 +322,21 @@ export default function MovePage() {
   useEffect(() => {
     if (availableVersions.length === 0) return
     const allNames = new Set(availableVersions.flat().map(v => v.name))
+
+    // If there's a pending initial version from the URL, try to use it
+    if (pendingInitialVersion && allNames.has(pendingInitialVersion)) {
+      setSelectedVersion(pendingInitialVersion)
+      setPendingInitialVersion(null)
+      return
+    }
+    setPendingInitialVersion(null)
+
     if (!selectedVersion || !allNames.has(selectedVersion)) {
       const lastGroup = availableVersions[availableVersions.length - 1]
       const fallback = lastGroup[lastGroup.length - 1]?.name
       if (fallback) setSelectedVersion(fallback)
     }
-  }, [availableVersions, selectedVersion])
+  }, [availableVersions, selectedVersion, pendingInitialVersion])
 
   // Fetch learner Pokémon when move or version changes
   useEffect(() => {
@@ -401,6 +419,13 @@ export default function MovePage() {
       controller.abort()
     }
   }, [moveData, selectedVersion])
+
+  // Report state changes to parent for URL sync
+  useEffect(() => {
+    if (onStateChange && moveData) {
+      onStateChange({ version: selectedVersion, move: moveData.name })
+    }
+  }, [selectedVersion, moveData, onStateChange])
 
   const searchMove = async (name) => {
     const query = String(name).trim().toLowerCase()
