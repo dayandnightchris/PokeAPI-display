@@ -438,7 +438,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
     if (!query) return
 
     userIsTypingRef.current = false
-    setSearchInput(query)
+    setSearchInput(formatMoveName(query))
     setShowSuggestions(false)
     setMoveLoading(true)
     setMoveError(null)
@@ -711,8 +711,8 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
                             <img
                               src={learner.sprite}
                               alt={learner.name}
-                              width={40}
-                              height={40}
+                              width={48}
+                              height={48}
                               loading="lazy"
                             />
                           )}
