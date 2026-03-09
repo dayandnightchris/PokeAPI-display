@@ -518,7 +518,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
   const description = getDescription()
 
   const getLearnDisplay = (learner) => {
-    if (learner.label === 'Level' && learner.level > 0) {
+    if (learner.label === 'Level') {
       return `Lv. ${learner.level}`
     }
     return learner.label
