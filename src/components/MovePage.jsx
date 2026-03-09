@@ -789,7 +789,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
                         <td className="learner-id">{learner.id}</td>
                         <td className="learner-name">
                           {onPokemonClick
-                            ? <button type="button" className="pokemon-name-link" onClick={() => onPokemonClick(learner.name)}>{formatPokemonName(learner.name)}</button>
+                            ? <button type="button" className="pokemon-name-link" onClick={() => onPokemonClick(learner.name, selectedVersion)}>{formatPokemonName(learner.name)}</button>
                             : formatPokemonName(learner.name)
                           }
                         </td>

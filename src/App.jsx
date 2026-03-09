@@ -139,17 +139,19 @@ function App() {
 
   // Navigate from PokemonCard → MovePage
   const navigateToMove = useCallback((moveName) => {
-    urlStateRef.current = { version: null, name: moveName }
+    const currentVersion = urlStateRef.current.version
+    urlStateRef.current = { version: currentVersion, name: moveName }
     updateUrl('moves', urlStateRef.current)
-    setMovePageInit(prev => ({ move: moveName, version: null, key: prev.key + 1 }))
+    setMovePageInit(prev => ({ move: moveName, version: currentVersion, key: prev.key + 1 }))
     setActiveTab('moves')
   }, [])
 
   // Navigate from MovePage → PokemonCard
-  const navigateToPokemon = useCallback((pokemonName) => {
-    urlStateRef.current = { version: null, name: pokemonName }
+  const navigateToPokemon = useCallback((pokemonName, version) => {
+    urlStateRef.current = { version: version || null, name: pokemonName }
     updateUrl('pokemon', urlStateRef.current)
-    setPokemonPageInit(prev => ({ name: pokemonName, version: null, key: prev.key + 1 }))
+    if (version) setInitialVersion(version)
+    setPokemonPageInit(prev => ({ name: pokemonName, version: version || null, key: prev.key + 1 }))
     setActiveTab('pokemon')
     fetchPokemon(pokemonName)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps

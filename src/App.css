@@ -664,15 +664,15 @@
   border: none;
   padding: 0;
   font: inherit;
-  color: #4a90d9;
+  color: inherit;
   cursor: pointer;
-  text-decoration: none;
+  text-decoration: underline;
 }
 
 .move-name-link:hover,
 .pokemon-name-link:hover {
   text-decoration: underline;
-  color: #2a6cb8;
+  opacity: 0.7;
 }
 
 .move-no-learners {
