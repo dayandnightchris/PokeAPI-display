@@ -59,7 +59,7 @@ const getMoveEffectEntry = (details) => {
   return baseText.replaceAll('$effect_chance', details.effect_chance)
 }
 
-function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading }) {
+function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading, onMoveClick }) {
   const [sortConfig, setSortConfig] = useState({
     key: showLevel ? 'level' : showTmNumber ? 'tmNumber' : 'name',
     direction: 'asc'
@@ -162,9 +162,12 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading 
       case 'tmNumber':
         return move.tmLabel || (move.tmNumber ? String(move.tmNumber).padStart(2, '0') : 'N/A')
       case 'name':
-        return move.inheritedFrom
-          ? <>{formatMoveLabel(move.name)} <span style={{ fontSize: '10px', color: '#888' }}>({formatMoveLabel(move.inheritedFrom)})</span></>
+        const nameEl = onMoveClick
+          ? <button type="button" className="move-name-link" onClick={() => onMoveClick(move.name)}>{formatMoveLabel(move.name)}</button>
           : formatMoveLabel(move.name)
+        return move.inheritedFrom
+          ? <>{nameEl} <span style={{ fontSize: '10px', color: '#888' }}>({formatMoveLabel(move.inheritedFrom)})</span></>
+          : nameEl
       case 'type':
         return formatMoveLabel(move.details?.type?.name)
       case 'effect':
@@ -236,7 +239,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading 
   )
 }
 
-export default function PokemonCard({ pokemon, onEvolutionClick, initialForm, initialVersion, onStateChange }) {
+export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, initialForm, initialVersion, onStateChange }) {
   // UI state
   const [hoveredType, setHoveredType] = useState(null)
   const [versionInfo, setVersionInfo] = useState(null)
@@ -1065,27 +1068,27 @@ export default function PokemonCard({ pokemon, onEvolutionClick, initialForm, in
       {(movesLoading || moves.levelUp.length > 0 || moves.tm.length > 0 || moves.tutor.length > 0 || moves.special.length > 0 || moves.egg.length > 0 || moves.transfer.length > 0) && (
         <div className="container-flex">
           {(moves.levelUp.length > 0 || movesLoading) && (
-            <MoveTable title="Level Up Moves" moves={moves.levelUp} showLevel loading={movesLoading} />
+            <MoveTable title="Level Up Moves" moves={moves.levelUp} showLevel loading={movesLoading} onMoveClick={onMoveClick} />
           )}
 
           {(moves.tm.length > 0 || movesLoading) && (
-            <MoveTable title="TMs" moves={moves.tm} showTmNumber loading={movesLoading} />
+            <MoveTable title="TMs" moves={moves.tm} showTmNumber loading={movesLoading} onMoveClick={onMoveClick} />
           )}
 
           {(moves.tutor.length > 0 || movesLoading) && (
-            <MoveTable title="Tutor" moves={moves.tutor} loading={movesLoading} />
+            <MoveTable title="Tutor" moves={moves.tutor} loading={movesLoading} onMoveClick={onMoveClick} />
           )}
 
           {(moves.special.length > 0 || movesLoading) && (
-            <MoveTable title="Special" moves={moves.special} showMethod loading={movesLoading} />
+            <MoveTable title="Special" moves={moves.special} showMethod loading={movesLoading} onMoveClick={onMoveClick} />
           )}
 
           {(moves.transfer.length > 0 || movesLoading) && (
-            <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} />
+            <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} onMoveClick={onMoveClick} />
           )}
 
           {(moves.egg.length > 0 || movesLoading) && (
-            <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} />
+            <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} />
           )}
 
 

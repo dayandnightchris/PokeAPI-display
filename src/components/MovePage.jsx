@@ -168,7 +168,7 @@ function getMoveStatsForVersion(moveData, selectedVersion) {
   return { power, pp, accuracy, type, effectChance }
 }
 
-export default function MovePage({ initialMove, initialVersion, onStateChange }) {
+export default function MovePage({ initialMove, initialVersion, onStateChange, onPokemonClick }) {
   const [moveList, setMoveList] = useState([])
   const [searchInput, setSearchInput] = useState(initialMove || '')
   const [suggestions, setSuggestions] = useState([])
@@ -787,7 +787,12 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
                     {sortedLearners.map(learner => (
                       <tr key={learner.name}>
                         <td className="learner-id">{learner.id}</td>
-                        <td className="learner-name">{formatPokemonName(learner.name)}</td>
+                        <td className="learner-name">
+                          {onPokemonClick
+                            ? <button type="button" className="pokemon-name-link" onClick={() => onPokemonClick(learner.name)}>{formatPokemonName(learner.name)}</button>
+                            : formatPokemonName(learner.name)
+                          }
+                        </td>
                         <td className="learner-method">
                           <span className={`method-badge method-${learner.method}`}>
                             {getLearnDisplay(learner)}

@@ -657,6 +657,24 @@
   color: #e65100;
 }
 
+/* Cross-tab navigation links */
+.move-name-link,
+.pokemon-name-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: #4a90d9;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.move-name-link:hover,
+.pokemon-name-link:hover {
+  text-decoration: underline;
+  color: #2a6cb8;
+}
+
 .move-no-learners {
   text-align: center;
   padding: 2rem;

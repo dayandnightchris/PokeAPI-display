@@ -56,6 +56,18 @@ function App() {
   const [initialVersion, setInitialVersion] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Cross-tab navigation state
+  const [movePageInit, setMovePageInit] = useState({
+    move: urlParams.tab === 'moves' ? urlParams.name : null,
+    version: urlParams.tab === 'moves' ? urlParams.version : null,
+    key: 0,
+  })
+  const [pokemonPageInit, setPokemonPageInit] = useState({
+    name: urlParams.tab === 'pokemon' ? urlParams.name : null,
+    version: urlParams.tab === 'pokemon' ? urlParams.version : null,
+    key: 0,
+  })
+
   // Track current URL state so we can update it incrementally
   const urlStateRef = useRef({ version: null, name: null })
 
@@ -124,6 +136,23 @@ function App() {
     if (move !== undefined) current.name = move
     updateUrl('moves', current)
   }, [])
+
+  // Navigate from PokemonCard → MovePage
+  const navigateToMove = useCallback((moveName) => {
+    urlStateRef.current = { version: null, name: moveName }
+    updateUrl('moves', urlStateRef.current)
+    setMovePageInit(prev => ({ move: moveName, version: null, key: prev.key + 1 }))
+    setActiveTab('moves')
+  }, [])
+
+  // Navigate from MovePage → PokemonCard
+  const navigateToPokemon = useCallback((pokemonName) => {
+    urlStateRef.current = { version: null, name: pokemonName }
+    updateUrl('pokemon', urlStateRef.current)
+    setPokemonPageInit(prev => ({ name: pokemonName, version: null, key: prev.key + 1 }))
+    setActiveTab('pokemon')
+    fetchPokemon(pokemonName)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPokemon = async (nameOrId) => {
     const query = String(nameOrId).trim().toLowerCase()
@@ -277,7 +306,7 @@ function App() {
           
           {error && <div className="error">{error}</div>}
           {loading && <div className="loading">Loading...</div>}
-          {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} />}
+          {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} onMoveClick={navigateToMove} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} />}
         </>
       )}
 
@@ -287,9 +316,11 @@ function App() {
 
       {activeTab === 'moves' && (
         <MovePage
-          initialMove={urlParams.tab === 'moves' ? urlParams.name : null}
-          initialVersion={urlParams.tab === 'moves' ? urlParams.version : null}
+          key={movePageInit.key}
+          initialMove={movePageInit.move}
+          initialVersion={movePageInit.version}
           onStateChange={handleMoveStateChange}
+          onPokemonClick={navigateToPokemon}
         />
       )}
 
