@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { versionDisplayNames, versionGeneration, versionGroupDisplayNames, generationVersionGroups, versionGroupOrder, getTransferSourceVersionGroups } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, versionGroupDisplayNames, generationVersionGroups, generationOrder, versionGroupOrder, getTransferSourceVersionGroups } from '../utils/versionInfo'
 import { fetchPokemonCached, fetchMoveCached, fetchSpeciesCached } from '../utils/pokeCache'
 
 // Map individual version names to the version groups that cover them
@@ -248,19 +248,44 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
       return
     }
 
-    // Collect version groups from flavor_text_entries
+    // Collect version groups from flavor_text_entries (all languages, not just
+    // English — Gen 1 moves often lack English flavor texts for red-blue/yellow)
     const vgSet = new Set()
     moveData.flavor_text_entries?.forEach(fte => {
-      if (fte.language?.name === 'en') {
-        const vgName = fte.version_group?.name
-        if (vgName) vgSet.add(vgName)
-      }
+      const vgName = fte.version_group?.name
+      if (vgName) vgSet.add(vgName)
     })
 
-    // Also collect from machines
+    // Also collect from machines and past_values
     moveData.machines?.forEach(m => {
       const vgName = m.version_group?.name
       if (vgName) vgSet.add(vgName)
+    })
+    moveData.past_values?.forEach(pv => {
+      const vgName = pv.version_group?.name
+      if (vgName) vgSet.add(vgName)
+    })
+
+    // Use the move's generation field to ensure the intro generation's VGs
+    // are included (the API has no flavor texts for Gen 1 or Colosseum/XD)
+    if (moveData.generation?.name) {
+      const introGen = generationOrder[moveData.generation.name]
+      if (introGen) {
+        const introVgs = generationVersionGroups[introGen] || []
+        introVgs.forEach(vg => vgSet.add(vg))
+      }
+    }
+
+    // Fill in ALL version groups for each generation that has at least one
+    // entry (e.g. if ruby-sapphire is present, also add colosseum, xd, etc.)
+    const presentGens = new Set()
+    vgSet.forEach(vg => {
+      for (const [gen, groups] of Object.entries(generationVersionGroups)) {
+        if (groups.includes(vg)) presentGens.add(Number(gen))
+      }
+    })
+    presentGens.forEach(gen => {
+      (generationVersionGroups[gen] || []).forEach(vg => vgSet.add(vg))
     })
 
     // Build version list from version groups
@@ -353,6 +378,8 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
     const selectedVersionGroups = new Set(versionToVersionGroups[selectedVersion] || [])
     const primaryVersionGroup = (versionToVersionGroups[selectedVersion] || [])[0]
     const transferSourceVgs = getTransferSourceVersionGroups(selectedVersion, primaryVersionGroup)
+    const selectedGen = versionGeneration[selectedVersion]
+    const currentGenVgs = new Set(generationVersionGroups[selectedGen] || [])
     const pokemonEntries = moveData.learned_by_pokemon || []
 
     setLearnersLoading(true)
@@ -378,8 +405,15 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
               // 1. Try direct learn method in current gen
               let best = getBestLearnMethod(data, moveData.name, selectedVersionGroups)
 
+              // Before transfer/inheritance, verify the Pokémon actually exists
+              // in the selected generation (has any move data in current gen VGs).
+              // This prevents e.g. Marill (Gen 2) from showing in Blue (Gen 1).
+              const existsInCurrentGen = !best && data.moves?.some(m =>
+                m.version_group_details?.some(vgd => currentGenVgs.has(vgd.version_group?.name))
+              )
+
               // 2. Try transfer from prior gens
-              if (!best && transferSourceVgs) {
+              if (!best && existsInCurrentGen && transferSourceVgs) {
                 const moveEntry = data.moves?.find(m => m.move.name === moveData.name)
                 const hasInTransferSource = moveEntry?.version_group_details?.some(
                   vgd => transferSourceVgs.has(vgd.version_group?.name)
@@ -390,7 +424,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
               }
 
               // 3. Try inheritance from pre-evolution chain
-              if (!best) {
+              if (!best && existsInCurrentGen) {
                 const speciesName = data.species?.name
                 if (speciesName) {
                   const species = await fetchSpeciesCached(speciesName)
