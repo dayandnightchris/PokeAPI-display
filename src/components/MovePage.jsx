@@ -377,9 +377,6 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
               const best = getBestLearnMethod(data, moveData.name, selectedVersionGroups)
               if (!best) return null
 
-              // Get sprite (use small sprite)
-              const sprite = data.sprites?.front_default || null
-
               // Use species dex number so forms show the base ID (e.g. Mega Gyarados → 130)
               const speciesId = data.species?.url
                 ? Number(data.species.url.match(/\/(\d+)\/?$/)?.[1]) || data.id
@@ -388,7 +385,6 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
               return {
                 name: data.name,
                 id: speciesId,
-                sprite,
                 method: best.method,
                 label: best.label,
                 level: best.level,
@@ -697,7 +693,6 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
                   <thead>
                     <tr>
                       <th><button type="button" onClick={() => handleSort('id')}>#{ getSortIndicator('id')}</button></th>
-                      <th></th>
                       <th><button type="button" onClick={() => handleSort('name')}>Pokémon{getSortIndicator('name')}</button></th>
                       <th><button type="button" onClick={() => handleSort('method')}>Method{getSortIndicator('method')}</button></th>
                     </tr>
@@ -706,17 +701,6 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
                     {sortedLearners.map(learner => (
                       <tr key={learner.name}>
                         <td className="learner-id">{learner.id}</td>
-                        <td className="learner-sprite">
-                          {learner.sprite && (
-                            <img
-                              src={learner.sprite}
-                              alt={learner.name}
-                              width={48}
-                              height={48}
-                              loading="lazy"
-                            />
-                          )}
-                        </td>
                         <td className="learner-name">{formatPokemonName(learner.name)}</td>
                         <td className="learner-method">
                           <span className={`method-badge method-${learner.method}`}>

@@ -601,16 +601,6 @@
   min-width: 40px;
 }
 
-.learner-sprite {
-  width: 56px;
-  padding: 2px !important;
-}
-
-.learner-sprite img {
-  display: block;
-  image-rendering: pixelated;
-}
-
 .learner-name {
   font-weight: 500;
 }
