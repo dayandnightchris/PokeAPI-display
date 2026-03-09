@@ -647,6 +647,16 @@
   color: #c62828;
 }
 
+.method-badge.method-transfer {
+  background: #e0f2f1;
+  color: #00695c;
+}
+
+.method-badge.method-inherited {
+  background: #fff3e0;
+  color: #e65100;
+}
+
 .move-no-learners {
   text-align: center;
   padding: 2rem;

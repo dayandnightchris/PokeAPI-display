@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { versionDisplayNames, versionGeneration, versionGroupDisplayNames, generationVersionGroups } from '../utils/versionInfo'
-import { fetchPokemonCached, fetchMoveCached } from '../utils/pokeCache'
+import { versionDisplayNames, versionGeneration, versionGroupDisplayNames, generationVersionGroups, versionGroupOrder, getTransferSourceVersionGroups } from '../utils/versionInfo'
+import { fetchPokemonCached, fetchMoveCached, fetchSpeciesCached } from '../utils/pokeCache'
 
 // Map individual version names to the version groups that cover them
 const versionToVersionGroups = {
@@ -28,21 +28,6 @@ const versionToVersionGroups = {
   'legends-za': ['legends-za', 'mega-dimension'],
 }
 
-// Version group → version group canonical order
-const versionGroupOrder = {
-  'red-blue': 1, 'yellow': 2,
-  'gold-silver': 3, 'crystal': 4,
-  'ruby-sapphire': 5, 'emerald': 6, 'firered-leafgreen': 7, 'colosseum': 7.5, 'xd': 7.6,
-  'diamond-pearl': 8, 'platinum': 9, 'heartgold-soulsilver': 10,
-  'black-white': 11, 'black-2-white-2': 12,
-  'x-y': 13, 'omega-ruby-alpha-sapphire': 14,
-  'sun-moon': 15, 'ultra-sun-ultra-moon': 16, 'lets-go-pikachu-lets-go-eevee': 17,
-  'sword-shield': 18, 'the-isle-of-armor': 19, 'the-crown-tundra': 20,
-  'brilliant-diamond-and-shining-pearl': 21, 'legends-arceus': 22,
-  'scarlet-violet': 23, 'the-teal-mask': 24, 'the-indigo-disk': 25,
-  'legends-za': 26, 'mega-dimension': 27,
-}
-
 // Map version group → its generation number
 const versionGroupGeneration = {}
 for (const [gen, groups] of Object.entries(generationVersionGroups)) {
@@ -63,6 +48,8 @@ const LEARN_METHOD_PRIORITY = {
   'colosseum-purification': 5,
   'xd-shadow': 5,
   'xd-purification': 5,
+  'transfer': 6,
+  'inherited': 7,
 }
 
 const LEARN_METHOD_LABELS = {
@@ -76,6 +63,8 @@ const LEARN_METHOD_LABELS = {
   'colosseum-purification': 'Special',
   'xd-shadow': 'Special',
   'xd-purification': 'Special',
+  'transfer': 'Transfer',
+  'inherited': 'Inherited',
 }
 
 const typeColors = {
@@ -100,9 +89,17 @@ function formatPokemonName(name) {
   return name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
+// Learn methods that are "special" — shown regardless of version group
+const SPECIAL_METHODS = new Set([
+  'form-change', 'light-ball-egg', 'stadium-surfing-pikachu',
+  'colosseum-purification', 'xd-shadow', 'xd-purification', 'zygarde-cube',
+])
+
 /**
  * Get the best learn method for a Pokémon learning a given move in the selected version groups.
  * Returns { method, label, level } for the highest-priority learn method.
+ * Special methods (xd-purification, colosseum-purification, etc.) are included
+ * regardless of version group, matching the Pokemon page's behavior.
  */
 function getBestLearnMethod(pokemonData, moveName, selectedVersionGroups) {
   const moveEntry = pokemonData.moves?.find(m => m.move.name === moveName)
@@ -111,9 +108,11 @@ function getBestLearnMethod(pokemonData, moveName, selectedVersionGroups) {
   let best = null
   for (const vgd of moveEntry.version_group_details) {
     const vgName = vgd.version_group?.name
-    if (!selectedVersionGroups.has(vgName)) continue
-
     const method = vgd.move_learn_method?.name
+
+    // Allow special methods from any version group; others must match selected
+    if (!SPECIAL_METHODS.has(method) && !selectedVersionGroups.has(vgName)) continue
+
     const priority = LEARN_METHOD_PRIORITY[method] ?? 99
     const level = vgd.level_learned_at || 0
 
@@ -352,6 +351,8 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
     abortRef.current = controller
 
     const selectedVersionGroups = new Set(versionToVersionGroups[selectedVersion] || [])
+    const primaryVersionGroup = (versionToVersionGroups[selectedVersion] || [])[0]
+    const transferSourceVgs = getTransferSourceVersionGroups(selectedVersion, primaryVersionGroup)
     const pokemonEntries = moveData.learned_by_pokemon || []
 
     setLearnersLoading(true)
@@ -374,7 +375,57 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
               const data = await fetchPokemonCached(entry.name)
               if (!data || controller.signal.aborted) return null
 
-              const best = getBestLearnMethod(data, moveData.name, selectedVersionGroups)
+              // 1. Try direct learn method in current gen
+              let best = getBestLearnMethod(data, moveData.name, selectedVersionGroups)
+
+              // 2. Try transfer from prior gens
+              if (!best && transferSourceVgs) {
+                const moveEntry = data.moves?.find(m => m.move.name === moveData.name)
+                const hasInTransferSource = moveEntry?.version_group_details?.some(
+                  vgd => transferSourceVgs.has(vgd.version_group?.name)
+                )
+                if (hasInTransferSource) {
+                  best = { priority: 6, method: 'transfer', label: 'Transfer', level: 0 }
+                }
+              }
+
+              // 3. Try inheritance from pre-evolution chain
+              if (!best) {
+                const speciesName = data.species?.name
+                if (speciesName) {
+                  const species = await fetchSpeciesCached(speciesName)
+                  let currentSpecies = species
+                  while (currentSpecies?.evolves_from_species && !best) {
+                    if (controller.signal.aborted) return null
+                    const preEvoName = currentSpecies.evolves_from_species.name
+                    const preEvoPokemon = await fetchPokemonCached(preEvoName)
+                    if (!preEvoPokemon) break
+
+                    // Check if pre-evo learns the move in current gen
+                    const preEvoDirect = getBestLearnMethod(preEvoPokemon, moveData.name, selectedVersionGroups)
+                    if (preEvoDirect) {
+                      best = { priority: 7, method: 'inherited', label: 'Inherited', level: 0 }
+                      break
+                    }
+
+                    // Check if pre-evo has the move via transfer
+                    if (transferSourceVgs) {
+                      const preEvoMoveEntry = preEvoPokemon.moves?.find(m => m.move.name === moveData.name)
+                      const preEvoHasTransfer = preEvoMoveEntry?.version_group_details?.some(
+                        vgd => transferSourceVgs.has(vgd.version_group?.name)
+                      )
+                      if (preEvoHasTransfer) {
+                        best = { priority: 7, method: 'inherited', label: 'Inherited', level: 0 }
+                        break
+                      }
+                    }
+
+                    // Walk further up the chain
+                    currentSpecies = await fetchSpeciesCached(preEvoName)
+                  }
+                }
+              }
+
               if (!best) return null
 
               // Use species dex number so forms show the base ID (e.g. Mega Gyarados → 130)
@@ -524,6 +575,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange })
     'level-up': 1, 'machine': 2, 'egg': 3, 'tutor': 4,
     'form-change': 5, 'light-ball-egg': 5, 'stadium-surfing-pikachu': 5,
     'colosseum-purification': 5, 'xd-shadow': 5, 'xd-purification': 5,
+    'transfer': 6, 'inherited': 7,
   }
 
   const handleSort = (key) => {

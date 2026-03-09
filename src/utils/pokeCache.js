@@ -147,3 +147,48 @@ export async function fetchMachineCached(url) {
     return null
   }
 }
+
+const speciesMemoryCache = new Map()
+
+export async function fetchSpeciesCached(name) {
+  name = String(name).trim().toLowerCase()
+  if (!name) return null
+
+  if (speciesMemoryCache.has(name)) return speciesMemoryCache.get(name)
+
+  const key = `pokeapi:species:${name}`
+  try {
+    const stored = localStorage.getItem(key)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      const ts = parsed?.ts
+      const data = parsed?.data ?? parsed
+      const fresh = typeof ts === 'number' ? (Date.now() - ts) < TTL_MS : true
+
+      if (data && fresh) {
+        speciesMemoryCache.set(name, data)
+        return data
+      }
+    }
+  } catch (err) {
+    console.warn('localStorage read failed:', err)
+  }
+
+  try {
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${name}/`)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+
+    speciesMemoryCache.set(name, data)
+    try {
+      localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }))
+    } catch (err) {
+      console.warn('localStorage write failed:', err)
+    }
+
+    return data
+  } catch (err) {
+    console.error('Failed to fetch species:', name, err)
+    return null
+  }
+}
