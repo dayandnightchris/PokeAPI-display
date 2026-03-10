@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { versionDisplayNames, versionGeneration, versionGroupDisplayNames, generationVersionGroups, generationOrder, versionGroupOrder, getTransferSourceVersionGroups } from '../utils/versionInfo'
 import { fetchPokemonCached, fetchMoveCached, fetchSpeciesCached } from '../utils/pokeCache'
+import gen1TradebackMoves from '../utils/tradebackMoves'
 
 // Map individual version names to the version groups that cover them
 const versionToVersionGroups = {
@@ -98,10 +99,11 @@ const SPECIAL_METHODS = new Set([
 /**
  * Get the best learn method for a Pokémon learning a given move in the selected version groups.
  * Returns { method, label, level } for the highest-priority learn method.
- * Special methods (xd-purification, colosseum-purification, etc.) are included
- * regardless of version group, matching the Pokemon page's behavior.
+ * Special methods (xd-purification, colosseum-purification, etc.) are only
+ * shown as "Special" when their version group is in the same generation;
+ * otherwise they are left for the transfer logic to handle.
  */
-function getBestLearnMethod(pokemonData, moveName, selectedVersionGroups) {
+function getBestLearnMethod(pokemonData, moveName, selectedVersionGroups, currentGenVgs) {
   const moveEntry = pokemonData.moves?.find(m => m.move.name === moveName)
   if (!moveEntry) return null
 
@@ -110,8 +112,13 @@ function getBestLearnMethod(pokemonData, moveName, selectedVersionGroups) {
     const vgName = vgd.version_group?.name
     const method = vgd.move_learn_method?.name
 
-    // Allow special methods from any version group; others must match selected
-    if (!SPECIAL_METHODS.has(method) && !selectedVersionGroups.has(vgName)) continue
+    if (SPECIAL_METHODS.has(method)) {
+      // Special methods only count when their version group is in the current generation
+      if (!currentGenVgs || !currentGenVgs.has(vgName)) continue
+    } else {
+      // Normal methods must match the selected version groups
+      if (!selectedVersionGroups.has(vgName)) continue
+    }
 
     const priority = LEARN_METHOD_PRIORITY[method] ?? 99
     const level = vgd.level_learned_at || 0
@@ -380,6 +387,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
     const transferSourceVgs = getTransferSourceVersionGroups(selectedVersion, primaryVersionGroup)
     const selectedGen = versionGeneration[selectedVersion]
     const currentGenVgs = new Set(generationVersionGroups[selectedGen] || [])
+    const isGen1Tradeback = selectedGen === 1
     const pokemonEntries = moveData.learned_by_pokemon || []
 
     setLearnersLoading(true)
@@ -402,29 +410,37 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
               const data = await fetchPokemonCached(entry.name)
               if (!data || controller.signal.aborted) return null
 
-              // 1. Try direct learn method in current gen
-              let best = getBestLearnMethod(data, moveData.name, selectedVersionGroups)
-
-              // Before transfer/inheritance, verify the Pokémon actually exists
-              // in the selected generation (has any move data in current gen VGs).
-              // This prevents e.g. Marill (Gen 2) from showing in Blue (Gen 1).
-              const existsInCurrentGen = !best && data.moves?.some(m =>
+              // Check if the Pokémon actually exists in the selected generation
+              // (has any move data in current gen VGs). This prevents e.g. Gulpin
+              // (Gen 3) from appearing in Gen 1-2 tables.
+              const existsInCurrentGen = data.moves?.some(m =>
                 m.version_group_details?.some(vgd => currentGenVgs.has(vgd.version_group?.name))
               )
+              if (!existsInCurrentGen) return null
+
+              // 1. Try direct learn method in current gen
+              let best = getBestLearnMethod(data, moveData.name, selectedVersionGroups, currentGenVgs)
 
               // 2. Try transfer from prior gens
-              if (!best && existsInCurrentGen && transferSourceVgs) {
-                const moveEntry = data.moves?.find(m => m.move.name === moveData.name)
-                const hasInTransferSource = moveEntry?.version_group_details?.some(
-                  vgd => transferSourceVgs.has(vgd.version_group?.name)
-                )
-                if (hasInTransferSource) {
-                  best = { priority: 6, method: 'transfer', label: 'Transfer', level: 0 }
+              if (!best && transferSourceVgs) {
+                // Gen 1 tradeback: only allow moves in the whitelist for this Pokémon
+                const pokemonName = data.species?.name || data.name
+                const tradebackAllowed = !isGen1Tradeback ||
+                  (gen1TradebackMoves[pokemonName]?.includes(moveData.name))
+
+                if (tradebackAllowed) {
+                  const moveEntry = data.moves?.find(m => m.move.name === moveData.name)
+                  const hasInTransferSource = moveEntry?.version_group_details?.some(
+                    vgd => transferSourceVgs.has(vgd.version_group?.name)
+                  )
+                  if (hasInTransferSource) {
+                    best = { priority: 6, method: 'transfer', label: 'Transfer', level: 0 }
+                  }
                 }
               }
 
               // 3. Try inheritance from pre-evolution chain
-              if (!best && existsInCurrentGen) {
+              if (!best) {
                 const speciesName = data.species?.name
                 if (speciesName) {
                   const species = await fetchSpeciesCached(speciesName)
@@ -436,7 +452,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
                     if (!preEvoPokemon) break
 
                     // Check if pre-evo learns the move in current gen
-                    const preEvoDirect = getBestLearnMethod(preEvoPokemon, moveData.name, selectedVersionGroups)
+                    const preEvoDirect = getBestLearnMethod(preEvoPokemon, moveData.name, selectedVersionGroups, currentGenVgs)
                     if (preEvoDirect) {
                       best = { priority: 7, method: 'inherited', label: 'Inherited', level: 0 }
                       break
@@ -444,13 +460,19 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
 
                     // Check if pre-evo has the move via transfer
                     if (transferSourceVgs) {
-                      const preEvoMoveEntry = preEvoPokemon.moves?.find(m => m.move.name === moveData.name)
-                      const preEvoHasTransfer = preEvoMoveEntry?.version_group_details?.some(
-                        vgd => transferSourceVgs.has(vgd.version_group?.name)
-                      )
-                      if (preEvoHasTransfer) {
-                        best = { priority: 7, method: 'inherited', label: 'Inherited', level: 0 }
-                        break
+                      const preEvoSpeciesName = preEvoPokemon.species?.name || preEvoPokemon.name
+                      const preEvoTradebackAllowed = !isGen1Tradeback ||
+                        (gen1TradebackMoves[preEvoSpeciesName]?.includes(moveData.name))
+
+                      if (preEvoTradebackAllowed) {
+                        const preEvoMoveEntry = preEvoPokemon.moves?.find(m => m.move.name === moveData.name)
+                        const preEvoHasTransfer = preEvoMoveEntry?.version_group_details?.some(
+                          vgd => transferSourceVgs.has(vgd.version_group?.name)
+                        )
+                        if (preEvoHasTransfer) {
+                          best = { priority: 7, method: 'inherited', label: 'Inherited', level: 0 }
+                          break
+                        }
                       }
                     }
 
