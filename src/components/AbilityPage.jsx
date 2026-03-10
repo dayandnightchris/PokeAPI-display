@@ -503,7 +503,7 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
               <div className="ability-detail-tags">
                 <span className="ability-gen-badge">
                   {abilityData.generation?.name
-                    ? `Generation ${generationOrder[abilityData.generation.name] || '?'}`
+                    ? `Introduced in Generation ${generationOrder[abilityData.generation.name] || '?'}`
                     : ''}
                 </span>
                 {abilityData.is_main_series === false && (
