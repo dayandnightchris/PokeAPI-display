@@ -239,7 +239,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
   )
 }
 
-export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, initialForm, initialVersion, onStateChange }) {
+export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, onAbilityClick, initialForm, initialVersion, onStateChange }) {
   // UI state
   const [hoveredType, setHoveredType] = useState(null)
   const [versionInfo, setVersionInfo] = useState(null)
@@ -809,7 +809,10 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, in
               filteredAbilities.map((ability, idx) => (
                 <div key={idx} className="ability-item">
                   <span className="tooltip-trigger">
-                    {ability.ability.name}
+                    {onAbilityClick
+                      ? <button type="button" className="ability-name-link" onClick={() => onAbilityClick(ability.ability.name)}>{ability.ability.name}</button>
+                      : ability.ability.name
+                    }
                     {abilityDescriptions[ability.ability.name]?.description && (
                       <span className="tooltip-text">{abilityDescriptions[ability.ability.name].description}</span>
                     )}

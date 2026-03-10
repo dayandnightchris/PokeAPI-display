@@ -148,6 +148,51 @@ export async function fetchMachineCached(url) {
   }
 }
 
+const abilityMemoryCache = new Map()
+
+export async function fetchAbilityCached(name) {
+  name = String(name).trim().toLowerCase()
+  if (!name) return null
+
+  if (abilityMemoryCache.has(name)) return abilityMemoryCache.get(name)
+
+  const key = `pokeapi:ability:${name}`
+  try {
+    const stored = localStorage.getItem(key)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      const ts = parsed?.ts
+      const data = parsed?.data ?? parsed
+      const fresh = typeof ts === 'number' ? (Date.now() - ts) < TTL_MS : true
+
+      if (data && fresh) {
+        abilityMemoryCache.set(name, data)
+        return data
+      }
+    }
+  } catch (err) {
+    console.warn('localStorage read failed:', err)
+  }
+
+  try {
+    const res = await fetch(`https://pokeapi.co/api/v2/ability/${name}/`)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+
+    abilityMemoryCache.set(name, data)
+    try {
+      localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }))
+    } catch (err) {
+      console.warn('localStorage write failed:', err)
+    }
+
+    return data
+  } catch (err) {
+    console.error('Failed to fetch ability:', name, err)
+    return null
+  }
+}
+
 const speciesMemoryCache = new Map()
 
 export async function fetchSpeciesCached(name) {

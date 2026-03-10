@@ -3,6 +3,7 @@ import './App.css'
 import PokemonCard from './components/PokemonCard'
 import PokemonSearch from './components/PokemonSearch'
 import MovePage from './components/MovePage'
+import AbilityPage from './components/AbilityPage'
 
 /**
  * Read URL path parameters on load.
@@ -14,7 +15,7 @@ function getUrlParams() {
   const segments = window.location.pathname.split('/').filter(Boolean)
   const tab = segments[0] || null
 
-  if (tab === 'pokemon' || tab === 'moves') {
+  if (tab === 'pokemon' || tab === 'moves' || tab === 'abilities') {
     if (segments.length >= 3) {
       return { tab, version: segments[1], name: segments[2] }
     }
@@ -65,6 +66,11 @@ function App() {
   const [pokemonPageInit, setPokemonPageInit] = useState({
     name: urlParams.tab === 'pokemon' ? urlParams.name : null,
     version: urlParams.tab === 'pokemon' ? urlParams.version : null,
+    key: 0,
+  })
+  const [abilityPageInit, setAbilityPageInit] = useState({
+    ability: urlParams.tab === 'abilities' ? urlParams.name : null,
+    version: urlParams.tab === 'abilities' ? urlParams.version : null,
     key: 0,
   })
 
@@ -137,6 +143,13 @@ function App() {
     updateUrl('moves', current)
   }, [])
 
+  const handleAbilityStateChange = useCallback(({ version, ability }) => {
+    const current = urlStateRef.current
+    if (version !== undefined) current.version = version
+    if (ability !== undefined) current.name = ability
+    updateUrl('abilities', current)
+  }, [])
+
   // Navigate from PokemonCard → MovePage
   const navigateToMove = useCallback((moveName) => {
     const currentVersion = urlStateRef.current.version
@@ -144,6 +157,15 @@ function App() {
     updateUrl('moves', urlStateRef.current)
     setMovePageInit(prev => ({ move: moveName, version: currentVersion, key: prev.key + 1 }))
     setActiveTab('moves')
+  }, [])
+
+  // Navigate from PokemonCard → AbilityPage
+  const navigateToAbility = useCallback((abilityName) => {
+    const currentVersion = urlStateRef.current.version
+    urlStateRef.current = { version: currentVersion, name: abilityName }
+    updateUrl('abilities', urlStateRef.current)
+    setAbilityPageInit(prev => ({ ability: abilityName, version: currentVersion, key: prev.key + 1 }))
+    setActiveTab('abilities')
   }, [])
 
   // Navigate from MovePage → PokemonCard
@@ -308,12 +330,18 @@ function App() {
           
           {error && <div className="error">{error}</div>}
           {loading && <div className="loading">Loading...</div>}
-          {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} onMoveClick={navigateToMove} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} />}
+          {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} onMoveClick={navigateToMove} onAbilityClick={navigateToAbility} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} />}
         </>
       )}
 
       {activeTab === 'abilities' && (
-        <div className="tab-placeholder">Abilities page coming soon.</div>
+        <AbilityPage
+          key={abilityPageInit.key}
+          initialAbility={abilityPageInit.ability}
+          initialVersion={abilityPageInit.version}
+          onStateChange={handleAbilityStateChange}
+          onPokemonClick={navigateToPokemon}
+        />
       )}
 
       {activeTab === 'moves' && (

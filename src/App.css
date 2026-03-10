@@ -659,7 +659,8 @@
 
 /* Cross-tab navigation links */
 .move-name-link,
-.pokemon-name-link {
+.pokemon-name-link,
+.ability-name-link {
   background: none;
   border: none;
   padding: 0;
@@ -670,12 +671,192 @@
 }
 
 .move-name-link:hover,
-.pokemon-name-link:hover {
+.pokemon-name-link:hover,
+.ability-name-link:hover {
   text-decoration: underline;
   opacity: 0.7;
 }
 
 .move-no-learners {
+  text-align: center;
+  padding: 2rem;
+  color: #888;
+  font-size: 14px;
+}
+
+/* ===== Ability Page ===== */
+.ability-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.ability-detail-card {
+  background: var(--box-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.ability-detail-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ability-detail-name {
+  font-size: 1.6rem;
+  color: var(--text-color);
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.ability-detail-tags {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ability-gen-badge {
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.ability-non-main-badge {
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.ability-detail-description,
+.ability-detail-effect {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #555;
+  padding: 12px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  margin-bottom: 12px;
+}
+
+.ability-detail-effect {
+  margin-bottom: 0;
+}
+
+.ability-description-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #777;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+/* Ability Pokémon Section */
+.ability-pokemon-section {
+  background: var(--box-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  padding: 20px;
+}
+
+.ability-pokemon-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ability-pokemon-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-color);
+}
+
+.ability-pokemon-progress {
+  font-size: 13px;
+  color: #888;
+}
+
+.ability-pokemon-table-wrapper {
+  max-height: 600px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.ability-pokemon-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ability-pokemon-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.ability-pokemon-table th {
+  background: #e8e8e8;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #555;
+  border-bottom: 2px solid #ccc;
+}
+
+.ability-pokemon-table th button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ability-pokemon-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+.ability-pokemon-table tbody tr:hover {
+  background: #f5f5f5;
+}
+
+.ability-type-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ability-type-badge.ability-regular {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.ability-type-badge.ability-hidden {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.ability-no-pokemon {
   text-align: center;
   padding: 2rem;
   color: #888;
