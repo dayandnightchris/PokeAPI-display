@@ -10,6 +10,55 @@ function formatPokemonName(name) {
   return name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
+/**
+ * Determine if a Pokémon actually has the given ability in the selected generation.
+ * Uses the Pokémon's past_abilities data to reconstruct what abilities it had
+ * at that point in time, mirroring PokemonCard's getGenerationAbilities logic.
+ * Returns { hasAbility, isHidden } or null if the Pokémon doesn't have it.
+ */
+function pokemonHasAbilityInGen(pokemonData, abilityName, selectedGen) {
+  const selectedGenRank = selectedGen
+
+  // Abilities didn't exist before Gen 3
+  if (selectedGenRank < 3) return null
+
+  // Build a slot map from current abilities
+  const slotMap = new Map()
+  for (const ability of (pokemonData.abilities || [])) {
+    slotMap.set(ability.slot, ability)
+  }
+
+  // Apply past_abilities overrides for the selected generation
+  const pastAbilities = pokemonData.past_abilities || []
+  for (const pastAbility of pastAbilities) {
+    const pastGenRank = pastAbility.generation?.name
+      ? generationOrder[pastAbility.generation.name]
+      : null
+
+    if (pastGenRank && pastGenRank >= selectedGenRank) {
+      for (const entry of pastAbility.abilities) {
+        if (entry.ability === null) {
+          slotMap.delete(entry.slot)
+        } else {
+          slotMap.set(entry.slot, entry)
+        }
+      }
+    }
+  }
+
+  // Check if the target ability is in any slot
+  for (const ability of slotMap.values()) {
+    if (ability.ability?.name === abilityName) {
+      const isHidden = ability.is_hidden
+      // Hidden abilities didn't exist before Gen 5
+      if (isHidden && selectedGenRank < 5) continue
+      return { hasAbility: true, isHidden }
+    }
+  }
+
+  return null
+}
+
 export default function AbilityPage({ initialAbility, initialVersion, onStateChange, onPokemonClick }) {
   const [abilityList, setAbilityList] = useState([])
   const [searchInput, setSearchInput] = useState(initialAbility || '')
@@ -191,9 +240,12 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
               )
               if (!existsInCurrentGen) return null
 
-              // Check if the Pokémon actually has this ability
-              // (the ability API lists all Pokémon, but we verify)
-              const isHidden = entry.is_hidden
+              // Check if the Pokémon actually has this ability in the selected
+              // generation by reconstructing abilities from past_abilities data
+              const abilityCheck = pokemonHasAbilityInGen(data, abilityData.name, selectedGen)
+              if (!abilityCheck) return null
+
+              const isHidden = abilityCheck.isHidden
               const slot = entry.slot
 
               // Use species dex number so forms show the base ID
