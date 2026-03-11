@@ -385,6 +385,17 @@ function App() {
           onPokemonClick={navigateToPokemon}
         />
       )}
+
+      <footer className="app-footer">
+        <div className="footer-disclaimer">
+          Pokémon and all related names, characters, and imagery are trademarks and © of Nintendo, Game Freak, and The Pokémon Company. This is an unofficial project and is not affiliated with or endorsed by Nintendo, Game Freak, or The Pokémon Company.
+        </div>
+        <div className="footer-api-credit">
+          <a href="https://pokeapi.co/" target="_blank" rel="noopener noreferrer">
+            <img src="/pokeapi_logo.png" alt="PokéAPI" className="footer-api-logo" />
+          </a>
+        </div>
+      </footer>
     </div>
   )
 }

@@ -1066,3 +1066,38 @@
   color: #888;
   font-size: 14px;
 }
+
+/* =========================
+   Footer
+   ========================= */
+
+.app-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  margin-top: 48px;
+  border-top: 1px solid var(--border-color);
+  gap: 24px;
+}
+
+.footer-disclaimer {
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #888;
+}
+
+.footer-api-credit {
+  flex-shrink: 0;
+}
+
+.footer-api-logo {
+  height: 30px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.footer-api-logo:hover {
+  opacity: 1;
+}
