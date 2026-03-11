@@ -330,7 +330,7 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>PokéAPI Display</h1>
+        <h1>BlisyDex</h1>
         <p>A better way to view Pokemon information</p>
       </header>
 
