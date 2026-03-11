@@ -12,8 +12,15 @@ import ItemPage from './components/ItemPage'
  *   /pokemon/[version]/[form]  or  /pokemon/[form]
  *   /moves/[version]/[name]    or  /moves/[name]
  */
+const BASE_PATH = import.meta.env.BASE_URL.replace(/\/+$/, '') // e.g. '/PokeAPI-display'
+
 function getUrlParams() {
-  const segments = window.location.pathname.split('/').filter(Boolean)
+  // Strip the base path prefix so routing works on GitHub Pages
+  let pathname = window.location.pathname
+  if (BASE_PATH && pathname.startsWith(BASE_PATH)) {
+    pathname = pathname.slice(BASE_PATH.length)
+  }
+  const segments = pathname.split('/').filter(Boolean)
   const tab = segments[0] || null
 
   if (tab === 'pokemon' || tab === 'moves' || tab === 'abilities' || tab === 'items') {
@@ -30,12 +37,14 @@ function getUrlParams() {
 
 /**
  * Update the URL path without triggering a page reload.
- * Produces paths like /pokemon/[version]/[form], /moves/[version]/[name], etc.
+ * Produces paths like /PokeAPI-display/pokemon/[version]/[form], etc.
  */
 function updateUrl(tab, { version, name }) {
-  let path = '/'
+  let path = BASE_PATH + '/'
   if (name && tab) {
-    path = version ? `/${tab}/${version}/${name}` : `/${tab}/${name}`
+    path = version
+      ? `${BASE_PATH}/${tab}/${version}/${name}`
+      : `${BASE_PATH}/${tab}/${name}`
   }
   window.history.replaceState(null, '', path)
 }
@@ -65,7 +74,7 @@ function App() {
   // Apply theme to document
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('theme', theme)
+    try { localStorage.setItem('theme', theme) } catch { /* storage full or unavailable */ }
   }, [theme])
 
   const toggleTheme = useCallback(() => {
