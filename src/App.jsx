@@ -47,9 +47,13 @@ const TABS = [
   { id: 'items', label: 'Items' },
 ]
 
+const SOLROCK_SPRITE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/338.png'
+const LUNATONE_SPRITE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/337.png'
+
 function App() {
   const urlParams = getUrlParams()
   const [activeTab, setActiveTab] = useState(urlParams.tab || 'pokemon')
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
   const [pokemon, setPokemon] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -57,6 +61,16 @@ function App() {
   const [requestedForm, setRequestedForm] = useState(null)
   const [initialVersion, setInitialVersion] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Apply theme to document
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light')
+  }, [])
 
   // Cross-tab navigation state
   const [movePageInit, setMovePageInit] = useState({
@@ -332,6 +346,18 @@ function App() {
       <header className="app-header">
         <h1>BlisyDex</h1>
         <p>A better way to view Pokemon information</p>
+        <button
+          className="theme-toggle"
+          onClick={toggleTheme}
+          aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+        >
+          <img
+            src={theme === 'light' ? LUNATONE_SPRITE : SOLROCK_SPRITE}
+            alt={theme === 'light' ? 'Lunatone - Dark mode' : 'Solrock - Light mode'}
+            className="theme-toggle-sprite"
+          />
+        </button>
       </header>
 
       <nav className="tab-nav">

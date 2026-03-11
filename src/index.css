@@ -6,6 +6,95 @@
   --text-color: #333;
   --padding: 10px;
   --gap: 5px;
+
+  /* Semantic colors for theming */
+  --bg-color: #f5f5f5;
+  --content-bg: white;
+  --text-secondary: #666;
+  --text-muted: #888;
+  --text-subtle: #555;
+  --text-label: #777;
+  --border-light: #ddd;
+  --border-lighter: #eee;
+  --border-row: #f0f0f0;
+  --table-header-bg: #e8e8e8;
+  --table-header-border: #ccc;
+  --table-row-hover: #f5f5f5;
+  --input-bg: white;
+  --control-bg: #f9f9f9;
+  --stat-bar-bg: #e0e0e0;
+  --stat-id-color: #999;
+  --tooltip-bg: #333;
+  --tooltip-color: #fff;
+  --suggestion-active: #ffeb3b;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --ev-over-bg: #ffebee;
+  --ev-ok-bg: #e8f5e9;
+}
+
+[data-theme="dark"] {
+  --primary-color: #ff4444;
+  --secondary-color: #ffd600;
+  --box-bg: #1e1e2e;
+  --border-color: #444;
+  --text-color: #e0e0e0;
+  --bg-color: #121220;
+  --content-bg: #252538;
+  --text-secondary: #aaa;
+  --text-muted: #888;
+  --text-subtle: #bbb;
+  --text-label: #999;
+  --border-light: #3a3a4a;
+  --border-lighter: #2e2e3e;
+  --border-row: #2a2a3a;
+  --table-header-bg: #2a2a3e;
+  --table-header-border: #444;
+  --table-row-hover: #2e2e42;
+  --input-bg: #1e1e2e;
+  --control-bg: #1a1a2a;
+  --stat-bar-bg: #333348;
+  --stat-id-color: #777;
+  --tooltip-bg: #e0e0e0;
+  --tooltip-color: #1e1e2e;
+  --suggestion-active: #5c5c00;
+  --shadow-color: rgba(0, 0, 0, 0.4);
+  --ev-over-bg: #3a1010;
+  --ev-ok-bg: #1a3a1a;
+}
+
+/* Dark mode overrides for elements with hardcoded colored backgrounds */
+[data-theme="dark"] .error {
+  background-color: #3a1010;
+  border-color: #ff4444;
+  color: #ff6666;
+}
+
+[data-theme="dark"] .form-button:hover {
+  background-color: #2a1a1a;
+}
+
+[data-theme="dark"] .evo-button:hover {
+  background-color: var(--secondary-color);
+  color: #1a1a1a;
+}
+
+[data-theme="dark"] .move-table tr:nth-child(even) {
+  background: rgba(255, 107, 107, 0.15);
+}
+
+[data-theme="dark"] .control-group select,
+[data-theme="dark"] .control-group input {
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  border-color: var(--border-light);
+}
+
+[data-theme="dark"] .footer-api-logo {
+  filter: brightness(0.85);
+}
+
+[data-theme="dark"] .suggestions-list {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -20,7 +109,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f5f5;
+  background-color: var(--bg-color);
   color: var(--text-color);
 }
 
@@ -38,6 +127,7 @@ body {
 .app-header {
   text-align: center;
   margin-bottom: 2rem;
+  position: relative;
 }
 
 .app-header h1 {
@@ -48,7 +138,37 @@ body {
 
 .app-header p {
   font-size: 1rem;
-  color: #666;
+  color: var(--text-secondary);
+}
+
+/* Theme Toggle */
+.theme-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: none;
+  border: 2px solid var(--border-light);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  transition: border-color 0.3s, transform 0.3s;
+  background-color: var(--content-bg);
+}
+
+.theme-toggle:hover {
+  border-color: var(--primary-color);
+  transform: scale(1.1) rotate(15deg);
+}
+
+.theme-toggle-sprite {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
 }
 
 /* Tab Navigation */
@@ -56,7 +176,7 @@ body {
   display: flex;
   gap: 4px;
   margin-bottom: 1.5rem;
-  border-bottom: 2px solid #ddd;
+  border-bottom: 2px solid var(--border-light);
   padding-bottom: 0;
 }
 
@@ -64,7 +184,7 @@ body {
   padding: 10px 20px;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary);
   background: none;
   border: none;
   border-bottom: 3px solid transparent;
@@ -86,7 +206,7 @@ body {
   text-align: center;
   padding: 4rem 2rem;
   font-size: 1.1rem;
-  color: #888;
+  color: var(--text-muted);
 }
 
 .error {
@@ -103,7 +223,7 @@ body {
 .loading {
   text-align: center;
   font-size: 1.2rem;
-  color: #666;
+  color: var(--text-secondary);
   padding: 2rem;
   animation: pulse 1.5s infinite;
 }
@@ -278,12 +398,12 @@ body {
 
 .label {
   font-weight: 600;
-  color: #555;
+  color: var(--text-subtle);
   min-width: 60px;
 }
 
 .value {
-  color: #333;
+  color: var(--text-color);
   text-align: right;
 }
 
@@ -314,7 +434,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 5px;
-  background: white;
+  background: var(--content-bg);
   border-radius: 3px;
   border-left: 2px solid var(--primary-color);
 }
@@ -343,7 +463,7 @@ body {
 
 .stat-label {
   font-weight: bold;
-  color: #555;
+  color: var(--text-subtle);
 }
 
 .stat-bar-mini {
@@ -356,7 +476,7 @@ body {
 .stat-number {
   font-weight: bold;
   text-align: right;
-  color: #333;
+  color: var(--text-color);
 }
 
 /* Evolution Display */
@@ -379,13 +499,13 @@ body {
 
 .evolution-method-label {
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
   font-style: italic;
 }
 
 .evo-button {
   padding: 8px 12px;
-  background: white;
+  background: var(--content-bg);
   border: 2px solid var(--text-color);
   border-radius: 4px;
   cursor: pointer;
@@ -418,7 +538,7 @@ body {
 
 .egg-group-item {
   padding: 5px;
-  background: white;
+  background: var(--content-bg);
   border-radius: 3px;
   border-left: 2px solid var(--secondary-color);
 }
@@ -428,7 +548,7 @@ body {
   justify-content: space-between;
   gap: 10px;
   padding: 5px;
-  background: white;
+  background: var(--content-bg);
   border-radius: 3px;
 }
 
@@ -440,7 +560,7 @@ body {
 
 .location-item {
   padding: 5px;
-  background: white;
+  background: var(--content-bg);
   border-radius: 3px;
   border-left: 2px solid var(--primary-color);
   font-size: 13px;
@@ -458,7 +578,7 @@ body {
   display: flex;
   gap: 10px;
   padding: 6px;
-  background: white;
+  background: var(--content-bg);
   border-radius: 3px;
   border-left: 2px solid var(--primary-color);
   font-size: 12px;
@@ -481,8 +601,8 @@ body {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
+  background-color: var(--control-bg);
+  border: 1px solid var(--border-light);
   border-radius: 4px;
   margin-bottom: 16px;
 }
@@ -501,8 +621,8 @@ body {
 
 .form-button {
   padding: 6px 12px;
-  border: 2px solid #ddd;
-  background-color: white;
+  border: 2px solid var(--border-light);
+  background-color: var(--content-bg);
   border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
@@ -526,7 +646,7 @@ body {
 .pokedex-entry {
   font-size: 13px;
   line-height: 1.5;
-  color: #555;
+  color: var(--text-subtle);
   white-space: pre-wrap;
   word-wrap: break-word;
 }

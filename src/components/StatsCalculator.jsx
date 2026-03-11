@@ -212,7 +212,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
         {!isLegacy && (
           <div style={{ 
             padding: '0.5rem 1rem', 
-            background: evRemaining < 0 ? '#ffebee' : '#e8f5e9',
+            background: evRemaining < 0 ? 'var(--ev-over-bg, #ffebee)' : 'var(--ev-ok-bg, #e8f5e9)',
             borderRadius: '4px',
             fontWeight: 'bold',
             fontSize: '0.9rem'
@@ -233,7 +233,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
               gap: '0.5rem',
               alignItems: 'center',
               padding: '0.5rem',
-              background: '#fafafa',
+              background: 'var(--control-bg, #fafafa)',
               borderRadius: '4px'
             }}>
               <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{stat.shortName}</span>
@@ -246,7 +246,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
               </span>
               <div style={{ 
                 height: '20px', 
-                backgroundColor: '#e0e0e0', 
+                backgroundColor: 'var(--stat-bar-bg, #e0e0e0)', 
                 borderRadius: '10px',
                 overflow: 'hidden',
                 position: 'relative'
@@ -267,10 +267,12 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
                 style={{ 
                   padding: '0.3rem', 
                   width: '100%',
-                  border: '1px solid #ddd',
+                  border: '1px solid var(--border-light, #ddd)',
                   borderRadius: '3px',
                   fontSize: '0.85rem',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  backgroundColor: 'var(--input-bg, white)',
+                  color: 'var(--text-color, #333)'
                 }}
                 title={isLegacy ? 'DV (0-15)' : 'IV (0-31)'}
               />
@@ -284,10 +286,12 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
                 style={{ 
                   padding: '0.3rem', 
                   width: '100%',
-                  border: '1px solid #ddd',
+                  border: '1px solid var(--border-light, #ddd)',
                   borderRadius: '3px',
                   fontSize: '0.85rem',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  backgroundColor: 'var(--input-bg, white)',
+                  color: 'var(--text-color, #333)'
                 }}
                 title={isLegacy ? 'EV (0-255)' : 'EV (0-252)'}
               />
@@ -308,7 +312,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
         marginTop: '0.25rem', 
         padding: '0.25rem 0.5rem',
         fontSize: '0.85rem',
-        color: '#666',
+        color: 'var(--text-secondary, #666)',
         display: 'grid',
         gridTemplateColumns: '80px 60px 1fr 80px 80px 80px',
         gap: '0.5rem'

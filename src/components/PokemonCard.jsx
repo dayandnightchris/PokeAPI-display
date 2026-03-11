@@ -821,7 +821,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                 </div>
               ))
             ) : (
-              <p style={{ margin: '0', color: '#888', fontSize: '12px' }}>No abilities in this version.</p>
+              <p style={{ margin: '0', color: 'var(--text-muted, #888)', fontSize: '12px' }}>No abilities in this version.</p>
             )}
           </div>
         </div>
@@ -869,7 +869,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                     ))}
                   </ul>
                 ) : selectedGenerationRank && selectedGenerationRank < 3 ? (
-                  <span style={{ margin: '0', color: '#888' }}>N/A (Stat Exp. system)</span>
+                  <span style={{ margin: '0', color: 'var(--text-muted, #888)' }}>N/A (Stat Exp. system)</span>
                 ) : (
                   <span style={{ margin: '0' }}>None</span>
                 )}</div>
@@ -1021,7 +1021,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
             {evolutions.length > 0 ? (
               renderEvolutionForest(evolutions, selectedForm || pokemon.name, onEvolutionClick)
             ) : (
-              <p style={{ margin: 0, color: '#888', fontSize: '12px' }}>No evolution available.</p>
+              <p style={{ margin: 0, color: 'var(--text-muted, #888)', fontSize: '12px' }}>No evolution available.</p>
             )}
           </div>
         </div>
@@ -1047,7 +1047,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                     <div style={{ 
                       flex: 1, 
                       height: '14px', 
-                      backgroundColor: '#e0e0e0', 
+                      backgroundColor: 'var(--stat-bar-bg, #e0e0e0)', 
                       borderRadius: '7px',
                       overflow: 'hidden',
                       margin: '0 8px'

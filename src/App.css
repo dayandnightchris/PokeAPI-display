@@ -8,26 +8,27 @@
   align-items: center;
   gap: 10px;
   padding: 12px;
-  background: #f5f5f5;
+  background: var(--bg-color);
   border-radius: 4px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-light);
 }
 
 .version-selector label {
   font-weight: 600;
   font-size: 14px;
-  color: #333;
+  color: var(--text-color);
   white-space: nowrap;
 }
 
 .version-dropdown {
   flex: 1;
   padding: 8px 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-light);
   border-radius: 4px;
   font-size: 13px;
   cursor: pointer;
-  background-color: white;
+  background-color: var(--input-bg);
+  color: var(--text-color);
   transition: border-color 0.2s;
 }
 
@@ -45,22 +46,22 @@
   flex: 1;
   padding: 8px 10px;
   font-size: 13px;
-  color: #666;
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
+  color: var(--text-secondary);
+  background-color: var(--control-bg);
+  border: 1px solid var(--border-light);
   border-radius: 4px;
 }
 
 .version-info {
   padding: 8px 0 10px 0;
   font-size: 13px;
-  color: #666;
-  border-bottom: 1px solid #ddd;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-light);
   margin-bottom: 10px;
 }
 
 .version-info strong {
-  color: #333;
+  color: var(--text-color);
 }
 
 /* Stats Calculator Styles */
@@ -75,7 +76,7 @@
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
   padding: 1rem;
-  background: #f9f9f9;
+  background: var(--control-bg);
   border-radius: 6px;
 }
 
@@ -88,7 +89,7 @@
 .control-group label {
   font-weight: 600;
   font-size: 0.9rem;
-  color: #333;
+  color: var(--text-color);
 }
 
 .control-group input[type="range"] {
@@ -98,7 +99,7 @@
 
 .control-group select {
   padding: 0.5rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-light);
   border-radius: 4px;
   font-size: 0.9rem;
   cursor: pointer;
@@ -116,20 +117,20 @@
   gap: 1rem;
   align-items: center;
   padding: 0.75rem;
-  background: #fafafa;
+  background: var(--control-bg);
   border-radius: 4px;
 }
 
 .stat-name {
   font-weight: 600;
   font-size: 0.9rem;
-  color: #555;
+  color: var(--text-subtle);
   text-transform: uppercase;
 }
 
 .stat-bar-container {
   height: 20px;
-  background: #e0e0e0;
+  background: var(--stat-bar-bg);
   border-radius: 10px;
   overflow: hidden;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -145,7 +146,7 @@
 .stat-value {
   font-weight: bold;
   font-size: 1rem;
-  color: #333;
+  color: var(--text-color);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -153,7 +154,7 @@
 
 .stat-base {
   font-size: 0.75rem;
-  color: #999;
+  color: var(--stat-id-color);
   font-weight: normal;
   margin-left: 0.5rem;
 }
@@ -174,9 +175,11 @@
   flex: 1;
   padding: 0.75rem;
   font-size: 1rem;
-  border: 2px solid #ddd;
+  border: 2px solid var(--border-light);
   border-radius: 4px;
   transition: border-color 0.3s;
+  background-color: var(--input-bg);
+  color: var(--text-color);
 }
 
 .search-container input:focus {
@@ -212,8 +215,8 @@
   right: auto;
   width: 100%;
   margin-top: 0.5rem;
-  background: white;
-  border: 1px solid #ddd;
+  background: var(--content-bg);
+  border: 1px solid var(--border-light);
   border-radius: 4px;
   list-style: none;
   padding: 0;
@@ -227,7 +230,8 @@
   padding: 0.75rem 1rem;
   cursor: pointer;
   transition: background-color 0.2s;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-row);
+  color: var(--text-color);
 }
 
 .suggestion-item:last-child {
@@ -236,11 +240,11 @@
 
 .suggestion-item:hover,
 .suggestion-item.active {
-  background-color: #f0f0f0;
+  background-color: var(--border-row);
 }
 
 .suggestion-item.active {
-  background-color: #ffeb3b;
+  background-color: var(--suggestion-active);
 }
 
 /* Evolution Line box */
@@ -256,15 +260,15 @@
 .tooltip-trigger {
   position: relative;
   cursor: help;
-  border-bottom: 1px dotted #999;
+  border-bottom: 1px dotted var(--stat-id-color);
   display: inline-block;
 }
 
 .tooltip-text {
   visibility: hidden;
   width: 250px;
-  background-color: #333;
-  color: #fff;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-color);
   text-align: center;
   border-radius: 6px;
   padding: 10px;
@@ -288,7 +292,7 @@
   margin-left: -5px;
   border-width: 5px;
   border-style: solid;
-  border-color: #333 transparent transparent transparent;
+  border-color: var(--tooltip-bg) transparent transparent transparent;
 }
 
 .tooltip-trigger:hover .tooltip-text {
@@ -299,6 +303,7 @@
 .move-table {
   width: 100%;
   border-collapse: collapse;
+  color: var(--text-color);
 }
 
 .move-table tr:nth-child(even) {
@@ -318,6 +323,7 @@
   border: none;
   padding: 0;
   font: inherit;
+  color: inherit;
   cursor: pointer;
   text-align: left;
 }
@@ -456,8 +462,8 @@
   font-size: 13px;
   font-weight: 600;
   text-transform: capitalize;
-  background: #e0e0e0;
-  color: #333;
+  background: var(--stat-bar-bg);
+  color: var(--text-color);
 }
 
 .move-category-badge[data-category="physical"] {
@@ -481,9 +487,9 @@
   flex-wrap: wrap;
   margin-bottom: 16px;
   padding: 12px;
-  background: white;
+  background: var(--content-bg);
   border-radius: 4px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-light);
 }
 
 .move-stat-item {
@@ -497,7 +503,7 @@
 .move-stat-label {
   font-size: 12px;
   font-weight: 600;
-  color: #777;
+  color: var(--text-label);
   text-transform: uppercase;
   margin-bottom: 4px;
 }
@@ -511,11 +517,11 @@
 .move-detail-description {
   font-size: 14px;
   line-height: 1.6;
-  color: #555;
+  color: var(--text-subtle);
   padding: 12px;
-  background: white;
+  background: var(--content-bg);
   border-radius: 4px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-light);
 }
 
 /* Move Learners Section */
@@ -543,13 +549,13 @@
 
 .move-learners-progress {
   font-size: 13px;
-  color: #888;
+  color: var(--text-muted);
 }
 
 .move-learners-table-wrapper {
   max-height: 600px;
   overflow-y: auto;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-light);
   border-radius: 4px;
 }
 
@@ -566,12 +572,12 @@
 }
 
 .move-learners-table th {
-  background: #e8e8e8;
+  background: var(--table-header-bg);
   padding: 10px 12px;
   text-align: left;
   font-weight: 600;
-  color: #555;
-  border-bottom: 2px solid #ccc;
+  color: var(--text-subtle);
+  border-bottom: 2px solid var(--table-header-border);
 }
 
 .move-learners-table th button {
@@ -580,23 +586,23 @@
   padding: 0;
   font: inherit;
   font-weight: 600;
-  color: #555;
+  color: var(--text-subtle);
   cursor: pointer;
   text-align: left;
 }
 
 .move-learners-table td {
   padding: 6px 12px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-lighter);
   vertical-align: middle;
 }
 
 .move-learners-table tbody tr:hover {
-  background: #f5f5f5;
+  background: var(--table-row-hover);
 }
 
 .learner-id {
-  color: #999;
+  color: var(--stat-id-color);
   font-size: 13px;
   min-width: 40px;
 }
@@ -682,7 +688,7 @@
 .move-no-learners {
   text-align: center;
   padding: 2rem;
-  color: #888;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
@@ -743,11 +749,11 @@
 .ability-detail-effect {
   font-size: 14px;
   line-height: 1.6;
-  color: #555;
+  color: var(--text-subtle);
   padding: 12px;
-  background: white;
+  background: var(--content-bg);
   border-radius: 4px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-light);
   margin-bottom: 12px;
 }
 
@@ -758,7 +764,7 @@
 .ability-description-label {
   font-size: 12px;
   font-weight: 600;
-  color: #777;
+  color: var(--text-label);
   text-transform: uppercase;
   margin-bottom: 6px;
 }
@@ -788,13 +794,13 @@
 
 .ability-pokemon-progress {
   font-size: 13px;
-  color: #888;
+  color: var(--text-muted);
 }
 
 .ability-pokemon-table-wrapper {
   max-height: 600px;
   overflow-y: auto;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-light);
   border-radius: 4px;
 }
 
@@ -811,12 +817,12 @@
 }
 
 .ability-pokemon-table th {
-  background: #e8e8e8;
+  background: var(--table-header-bg);
   padding: 10px 12px;
   text-align: left;
   font-weight: 600;
-  color: #555;
-  border-bottom: 2px solid #ccc;
+  color: var(--text-subtle);
+  border-bottom: 2px solid var(--table-header-border);
 }
 
 .ability-pokemon-table th button {
@@ -825,19 +831,19 @@
   padding: 0;
   font: inherit;
   font-weight: 600;
-  color: #555;
+  color: var(--text-subtle);
   cursor: pointer;
   text-align: left;
 }
 
 .ability-pokemon-table td {
   padding: 6px 12px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-lighter);
   vertical-align: middle;
 }
 
 .ability-pokemon-table tbody tr:hover {
-  background: #f5f5f5;
+  background: var(--table-row-hover);
 }
 
 .ability-type-badge {
@@ -861,7 +867,7 @@
 .ability-no-pokemon {
   text-align: center;
   padding: 2rem;
-  color: #888;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
@@ -954,11 +960,11 @@
 .item-detail-effect {
   font-size: 14px;
   line-height: 1.6;
-  color: #555;
+  color: var(--text-subtle);
   padding: 12px;
-  background: white;
+  background: var(--content-bg);
   border-radius: 4px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-light);
   margin-bottom: 12px;
 }
 
@@ -969,7 +975,7 @@
 .item-description-label {
   font-size: 12px;
   font-weight: 600;
-  color: #777;
+  color: var(--text-label);
   text-transform: uppercase;
   margin-bottom: 6px;
 }
@@ -1000,7 +1006,7 @@
 .item-holders-table-wrapper {
   max-height: 600px;
   overflow-y: auto;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-light);
   border-radius: 4px;
 }
 
@@ -1017,12 +1023,12 @@
 }
 
 .item-holders-table th {
-  background: #e8e8e8;
+  background: var(--table-header-bg);
   padding: 10px 12px;
   text-align: left;
   font-weight: 600;
-  color: #555;
-  border-bottom: 2px solid #ccc;
+  color: var(--text-subtle);
+  border-bottom: 2px solid var(--table-header-border);
 }
 
 .item-holders-table th button {
@@ -1031,19 +1037,19 @@
   padding: 0;
   font: inherit;
   font-weight: 600;
-  color: #555;
+  color: var(--text-subtle);
   cursor: pointer;
   text-align: left;
 }
 
 .item-holders-table td {
   padding: 6px 12px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-lighter);
   vertical-align: middle;
 }
 
 .item-holders-table tbody tr:hover {
-  background: #f5f5f5;
+  background: var(--table-row-hover);
 }
 
 .item-rarity-cell {
@@ -1063,7 +1069,7 @@
 .item-no-holders {
   text-align: center;
   padding: 2rem;
-  color: #888;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
@@ -1085,7 +1091,7 @@
   flex: 1;
   font-size: 12px;
   line-height: 1.5;
-  color: #888;
+  color: var(--text-muted);
 }
 
 .footer-api-credit {
@@ -1100,4 +1106,97 @@
 
 .footer-api-logo:hover {
   opacity: 1;
+}
+
+/* =========================
+   Dark mode badge overrides
+   ========================= */
+
+[data-theme="dark"] .ability-gen-badge,
+[data-theme="dark"] .item-gen-badge {
+  background: #1a2a4a;
+  color: #64b5f6;
+}
+
+[data-theme="dark"] .ability-non-main-badge {
+  background: #3a2a10;
+  color: #ffb74d;
+}
+
+[data-theme="dark"] .item-category-badge,
+[data-theme="dark"] .ability-type-badge.ability-regular {
+  background: #1a3a1a;
+  color: #81c784;
+}
+
+[data-theme="dark"] .item-cost-badge {
+  background: #3a3010;
+  color: #ffd54f;
+}
+
+[data-theme="dark"] .item-fling-badge {
+  background: #3a1a1a;
+  color: #ef9a9a;
+}
+
+[data-theme="dark"] .item-rarity-badge {
+  background: #1a1a3a;
+  color: #9fa8da;
+}
+
+[data-theme="dark"] .ability-type-badge.ability-hidden {
+  background: #2a1a3a;
+  color: #ce93d8;
+}
+
+[data-theme="dark"] .method-badge.method-level-up {
+  background: #1a3a1a;
+  color: #81c784;
+}
+
+[data-theme="dark"] .method-badge.method-machine {
+  background: #1a2a4a;
+  color: #64b5f6;
+}
+
+[data-theme="dark"] .method-badge.method-egg {
+  background: #3a3010;
+  color: #ffd54f;
+}
+
+[data-theme="dark"] .method-badge.method-tutor {
+  background: #2a1a3a;
+  color: #ce93d8;
+}
+
+[data-theme="dark"] .method-badge.method-form-change,
+[data-theme="dark"] .method-badge.method-light-ball-egg,
+[data-theme="dark"] .method-badge.method-stadium-surfing-pikachu,
+[data-theme="dark"] .method-badge.method-colosseum-purification,
+[data-theme="dark"] .method-badge.method-xd-shadow,
+[data-theme="dark"] .method-badge.method-xd-purification {
+  background: #3a1a1a;
+  color: #ef9a9a;
+}
+
+[data-theme="dark"] .method-badge.method-transfer {
+  background: #1a2a2a;
+  color: #80cbc4;
+}
+
+[data-theme="dark"] .method-badge.method-inherited {
+  background: #3a2a10;
+  color: #ffb74d;
+}
+
+[data-theme="dark"] .move-category-badge[data-category="physical"] {
+  background: #8b1a1a;
+}
+
+[data-theme="dark"] .move-category-badge[data-category="special"] {
+  background: #0d47a1;
+}
+
+[data-theme="dark"] .move-category-badge[data-category="status"] {
+  background: #424242;
 }
