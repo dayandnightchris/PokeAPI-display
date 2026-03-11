@@ -140,6 +140,51 @@ async function cachedFetch(cacheKey, url, memCache) {
   }
 }
 
+// ---- Batch preload from IndexedDB -----------------------------------------
+// Loads many keys in a single IDB transaction and populates the memory cache.
+// This avoids opening 200+ individual transactions when loading learners.
+
+async function batchPreload(keys, memCache) {
+  // Filter out keys already in memory
+  const missing = keys.filter(k => !memCache.has(k))
+  if (missing.length === 0) return
+
+  try {
+    const db = await openDB()
+    if (!db) return
+    const tx = db.transaction(STORE_NAME, 'readonly')
+    const store = tx.objectStore(STORE_NAME)
+    const promises = missing.map(key => new Promise(resolve => {
+      const req = store.get(key)
+      req.onsuccess = () => resolve({ key, value: req.result })
+      req.onerror = () => resolve({ key, value: undefined })
+    }))
+    const results = await Promise.all(promises)
+    const now = Date.now()
+    for (const { key, value } of results) {
+      if (!value) continue
+      const ts = value?.ts
+      const data = value?.data ?? value
+      const fresh = typeof ts === 'number' ? (now - ts) < TTL_MS : true
+      if (data && fresh) {
+        memCache.set(key, data)
+      }
+    }
+  } catch {
+    // Best-effort; individual fetches will still work
+  }
+}
+
+/**
+ * Preload Pokemon data for a list of names into the memory cache.
+ * Call this before doing many individual fetchPokemonCached() calls
+ * (e.g. when loading move learners) to avoid per-key IDB transactions.
+ */
+export async function preloadPokemonCache(names) {
+  const keys = names.map(n => `pokeapi:pokemon:${String(n).trim().toLowerCase()}`)
+  await batchPreload(keys, memoryCache)
+}
+
 // ---- Public API (unchanged signatures) ------------------------------------
 
 export async function fetchPokemonCached(name) {

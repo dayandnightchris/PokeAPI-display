@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { versionDisplayNames, versionGeneration, versionGroupDisplayNames, generationVersionGroups, generationOrder, versionGroupOrder, getTransferSourceVersionGroups } from '../utils/versionInfo'
-import { fetchPokemonCached, fetchMoveCached, fetchSpeciesCached } from '../utils/pokeCache'
+import { fetchPokemonCached, fetchMoveCached, fetchSpeciesCached, preloadPokemonCache } from '../utils/pokeCache'
 import gen1TradebackMoves from '../utils/tradebackMoves'
 
 // Map individual version names to the version groups that cover them
@@ -450,8 +450,13 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
     const results = []
 
     const fetchLearners = async () => {
-      // Fetch in batches of 25
-      const BATCH_SIZE = 25
+      // Preload all learner Pokemon from IndexedDB in a single transaction
+      // so individual fetchPokemonCached calls hit the in-memory cache instantly.
+      await preloadPokemonCache(pokemonEntries.map(e => e.name))
+      if (controller.signal.aborted) return
+
+      // Fetch in batches of 50
+      const BATCH_SIZE = 50
       for (let i = 0; i < pokemonEntries.length; i += BATCH_SIZE) {
         if (controller.signal.aborted) return
 
