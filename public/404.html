@@ -7,7 +7,7 @@
       // Single Page App redirect for GitHub Pages
       // Converts the path into a query string so index.html can restore it.
       // Based on https://github.com/rafgraph/spa-github-pages
-      var pathSegmentsToKeep = 1; // keep '/PokeAPI-display'
+      var pathSegmentsToKeep = 0; // custom domain serves at root
       var l = window.location;
       l.replace(
         l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
