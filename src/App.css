@@ -660,7 +660,8 @@
 /* Cross-tab navigation links */
 .move-name-link,
 .pokemon-name-link,
-.ability-name-link {
+.ability-name-link,
+.item-name-link {
   background: none;
   border: none;
   padding: 0;
@@ -672,7 +673,8 @@
 
 .move-name-link:hover,
 .pokemon-name-link:hover,
-.ability-name-link:hover {
+.ability-name-link:hover,
+.item-name-link:hover {
   text-decoration: underline;
   opacity: 0.7;
 }
@@ -863,4 +865,204 @@
   font-size: 14px;
 }
 
+/* =========================
+   Item Page Styles
+   ========================= */
 
+.item-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.item-detail-card {
+  background: var(--box-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.item-detail-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+  gap: 10px;
+}
+
+.item-detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.item-detail-sprite {
+  width: 30px;
+  height: 30px;
+  image-rendering: pixelated;
+}
+
+.item-detail-name {
+  font-size: 1.6rem;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.item-detail-tags {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.item-gen-badge {
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.item-category-badge {
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.item-cost-badge {
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #fff8e1;
+  color: #f57f17;
+}
+
+.item-fling-badge {
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #fce4ec;
+  color: #c62828;
+}
+
+.item-detail-description,
+.item-detail-effect {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #555;
+  padding: 12px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  margin-bottom: 12px;
+}
+
+.item-detail-effect {
+  margin-bottom: 0;
+}
+
+.item-description-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #777;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+/* Item Holders Section */
+.item-holders-section {
+  background: var(--box-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  padding: 20px;
+}
+
+.item-holders-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.item-holders-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-color);
+}
+
+.item-holders-table-wrapper {
+  max-height: 600px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.item-holders-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.item-holders-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.item-holders-table th {
+  background: #e8e8e8;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #555;
+  border-bottom: 2px solid #ccc;
+}
+
+.item-holders-table th button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  text-align: left;
+}
+
+.item-holders-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+.item-holders-table tbody tr:hover {
+  background: #f5f5f5;
+}
+
+.item-rarity-cell {
+  text-align: center;
+}
+
+.item-rarity-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #e8eaf6;
+  color: #283593;
+}
+
+.item-no-holders {
+  text-align: center;
+  padding: 2rem;
+  color: #888;
+  font-size: 14px;
+}

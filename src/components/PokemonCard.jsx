@@ -239,7 +239,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
   )
 }
 
-export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, onAbilityClick, initialForm, initialVersion, onStateChange }) {
+export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, onAbilityClick, onItemClick, initialForm, initialVersion, onStateChange }) {
   // UI state
   const [hoveredType, setHoveredType] = useState(null)
   const [versionInfo, setVersionInfo] = useState(null)
@@ -841,14 +841,19 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                       ? hi.version_details?.find(v => v.version?.name === selectedVersion)
                       : hi.version_details?.[0]
                     if (!vd) return null
-                    return { name: hi.item.name.replace(/-/g, ' '), rarity: vd.rarity }
+                    return { name: hi.item.name, displayName: hi.item.name.replace(/-/g, ' '), rarity: vd.rarity }
                   })
                   .filter(Boolean)
                 if (items.length === 0) return 'None'
                 return (
                   <ul style={{ padding: '0 20px', margin: '0' }}>
                     {items.map(item => (
-                      <li key={item.name}>{item.name} ({item.rarity}%)</li>
+                      <li key={item.name}>
+                        {onItemClick
+                          ? <button type="button" className="item-name-link" onClick={() => onItemClick(item.name)}>{item.displayName}</button>
+                          : item.displayName
+                        } ({item.rarity}%)
+                      </li>
                     ))}
                   </ul>
                 )
