@@ -67,7 +67,7 @@
 .stats-calculator {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  /* gap: 1.5rem; removing this because it looks kinda ugly tbh*/
 }
 
 .calculator-controls {

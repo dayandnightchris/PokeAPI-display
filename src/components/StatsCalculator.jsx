@@ -305,9 +305,9 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
       </div>
       
       <div style={{ 
-        marginTop: '0.5rem', 
-        padding: '0.5rem',
-        fontSize: '0.75rem',
+        marginTop: '0.25rem', 
+        padding: '0.25rem 0.5rem',
+        fontSize: '0.85rem',
         color: '#666',
         display: 'grid',
         gridTemplateColumns: '80px 60px 1fr 80px 80px 80px',
