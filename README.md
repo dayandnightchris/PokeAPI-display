@@ -40,6 +40,7 @@ A modern Pokémon information website built with React and Vite, powered by [Pok
 - **Form Clamping**: Mega, Primal, G-Max, and Totem forms only appear in games where they exist
 - **Caching**: Dual-layer cache (memory + localStorage with 7-day TTL) for fast repeat lookups
 - **Responsive Design**: Works on desktop and tablet
+- **Dark mode**: For those who appreciate it
 
 ## Project Structure
 
