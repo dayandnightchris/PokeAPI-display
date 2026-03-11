@@ -126,18 +126,30 @@ async function cachedFetch(cacheKey, url, memCache) {
     }
   }
 
-  // 3. Network
-  try {
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const data = await res.json()
-    memCache.set(cacheKey, data)
-    idbSet(cacheKey, { ts: Date.now(), data }) // fire-and-forget
-    return data
-  } catch (err) {
-    console.error('Failed to fetch:', url, err)
-    return null
+  // 3. Network (with retry for transient 5xx errors)
+  const MAX_RETRIES = 2
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(url)
+      if (res.status >= 500 && attempt < MAX_RETRIES) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
+        continue
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      memCache.set(cacheKey, data)
+      idbSet(cacheKey, { ts: Date.now(), data }) // fire-and-forget
+      return data
+    } catch (err) {
+      if (attempt < MAX_RETRIES && !err.message?.startsWith('HTTP 4')) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
+        continue
+      }
+      console.error('Failed to fetch:', url, err)
+      return null
+    }
   }
+  return null
 }
 
 // ---- Batch preload from IndexedDB -----------------------------------------
