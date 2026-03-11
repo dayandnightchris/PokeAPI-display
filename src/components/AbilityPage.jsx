@@ -11,6 +11,46 @@ function formatPokemonName(name) {
 }
 
 /**
+ * Check if a specific Pokémon form is available in the selected version.
+ * Filters out megas, primals, gmax, etc. from games that don't support them.
+ */
+function isFormAvailableInVersion(pokemonName, selectedVersion) {
+  const lower = pokemonName.toLowerCase()
+  const gen = versionGeneration[selectedVersion]
+  if (!gen) return true
+
+  // Mega forms: only in XY, ORAS, SM, USUM, LGPE, and Legends Z-A
+  if (lower.includes('-mega')) {
+    const megaVersions = new Set([
+      'x', 'y', 'omega-ruby', 'alpha-sapphire',
+      'sun', 'moon', 'ultra-sun', 'ultra-moon',
+      'lets-go-pikachu', 'lets-go-eevee', 'legends-za',
+    ])
+    return megaVersions.has(selectedVersion)
+  }
+
+  // Primal forms: only in ORAS (and later gens that re-introduce them)
+  if (lower.includes('-primal')) {
+    const primalVersions = new Set([
+      'omega-ruby', 'alpha-sapphire',
+    ])
+    return primalVersions.has(selectedVersion)
+  }
+
+  // Gigantamax: Sword/Shield only
+  if (lower.includes('-gmax')) {
+    return selectedVersion === 'sword' || selectedVersion === 'shield'
+  }
+
+  // Totem forms: Gen 7 only
+  if (lower.includes('-totem')) {
+    return gen === 7
+  }
+
+  return true
+}
+
+/**
  * Determine if a Pokémon actually has the given ability in the selected generation.
  * Uses the Pokémon's past_abilities data to reconstruct what abilities it had
  * at that point in time, mirroring PokemonCard's getGenerationAbilities logic.
@@ -91,13 +131,25 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
     searchAbility(initialAbility)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch ability names list for autocomplete
+  // Fetch ability names list for autocomplete (gen 3-7 only, main series only)
   useEffect(() => {
     const fetchAbilityList = async () => {
       try {
-        const first = await fetch('https://pokeapi.co/api/v2/ability/').then(r => r.json())
-        const all = await fetch(`https://pokeapi.co/api/v2/ability/?limit=${first.count}`).then(r => r.json())
-        setAbilityList(all.results.map(a => a.name).sort())
+        const genPromises = []
+        for (let g = 3; g <= 7; g++) {
+          genPromises.push(fetch(`https://pokeapi.co/api/v2/generation/${g}/`).then(r => r.json()))
+        }
+        const genData = await Promise.all(genPromises)
+        const names = new Set()
+        for (const gen of genData) {
+          for (const ability of (gen.abilities || [])) {
+            // Filter out non-main-series abilities (IDs >= 10001)
+            const idMatch = ability.url?.match(/\/(\d+)\/?$/)
+            if (idMatch && Number(idMatch[1]) >= 10001) continue
+            names.add(ability.name)
+          }
+        }
+        setAbilityList(Array.from(names).sort())
       } catch (err) {
         console.error('Failed to fetch ability list:', err)
       }
@@ -233,6 +285,10 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
               const data = await fetchPokemonCached(pokemonName)
               if (!data || controller.signal.aborted) return null
 
+              // Skip form-specific Pokémon not available in selected version
+              // (e.g. primals outside ORAS, megas outside XY/ORAS/etc.)
+              if (!isFormAvailableInVersion(pokemonName, selectedVersion)) return null
+
               // Check if the Pokémon exists in the selected generation
               // by verifying it has move data in the current gen's version groups
               const existsInCurrentGen = data.moves?.some(m =>
@@ -249,13 +305,13 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
               const slot = entry.slot
 
               // Use species dex number so forms show the base ID
-              const speciesId = data.species?.url
+              const finalSpeciesId = data.species?.url
                 ? Number(data.species.url.match(/\/(\d+)\/?$/)?.[1]) || data.id
                 : data.id
 
               return {
                 name: data.name,
-                id: speciesId,
+                id: finalSpeciesId,
                 isHidden,
                 slot,
               }
@@ -313,6 +369,7 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
     try {
       const data = await fetchAbilityCached(query)
       if (!data) throw new Error('Ability not found')
+      if (data.is_main_series === false) throw new Error('This ability is from a non-main series game and is not supported.')
       setAbilityData(data)
     } catch (err) {
       setAbilityError(err.message || 'Failed to fetch ability')

@@ -90,6 +90,46 @@ function formatPokemonName(name) {
   return name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
+/**
+ * Check if a specific Pokémon form is available in the selected version.
+ * Filters out megas, primals, gmax, etc. from games that don't support them.
+ */
+function isFormAvailableInVersion(pokemonName, selectedVersion) {
+  const lower = pokemonName.toLowerCase()
+  const gen = versionGeneration[selectedVersion]
+  if (!gen) return true
+
+  // Mega forms: only in XY, ORAS, SM, USUM, LGPE, and Legends Z-A
+  if (lower.includes('-mega')) {
+    const megaVersions = new Set([
+      'x', 'y', 'omega-ruby', 'alpha-sapphire',
+      'sun', 'moon', 'ultra-sun', 'ultra-moon',
+      'lets-go-pikachu', 'lets-go-eevee', 'legends-za',
+    ])
+    return megaVersions.has(selectedVersion)
+  }
+
+  // Primal forms: only in ORAS
+  if (lower.includes('-primal')) {
+    const primalVersions = new Set([
+      'omega-ruby', 'alpha-sapphire',
+    ])
+    return primalVersions.has(selectedVersion)
+  }
+
+  // Gigantamax: Sword/Shield only
+  if (lower.includes('-gmax')) {
+    return selectedVersion === 'sword' || selectedVersion === 'shield'
+  }
+
+  // Totem forms: Gen 7 only
+  if (lower.includes('-totem')) {
+    return gen === 7
+  }
+
+  return true
+}
+
 // Learn methods that are "special" — shown regardless of version group
 const SPECIAL_METHODS = new Set([
   'form-change', 'light-ball-egg', 'stadium-surfing-pikachu',
@@ -207,13 +247,25 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
     searchMove(initialMove)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch move names list for autocomplete
+  // Fetch move names list for autocomplete (gen 1-7 only, main series only)
   useEffect(() => {
     const fetchMoveList = async () => {
       try {
-        const first = await fetch('https://pokeapi.co/api/v2/move/').then(r => r.json())
-        const all = await fetch(`https://pokeapi.co/api/v2/move/?limit=${first.count}`).then(r => r.json())
-        setMoveList(all.results.map(m => m.name).sort())
+        const genPromises = []
+        for (let g = 1; g <= 7; g++) {
+          genPromises.push(fetch(`https://pokeapi.co/api/v2/generation/${g}/`).then(r => r.json()))
+        }
+        const genData = await Promise.all(genPromises)
+        const names = new Set()
+        for (const gen of genData) {
+          for (const move of (gen.moves || [])) {
+            // Filter out non-main-series moves (IDs >= 10001)
+            const idMatch = move.url?.match(/\/(\d+)\/?$/)
+            if (idMatch && Number(idMatch[1]) >= 10001) continue
+            names.add(move.name)
+          }
+        }
+        setMoveList(Array.from(names).sort())
       } catch (err) {
         console.error('Failed to fetch move list:', err)
       }
@@ -409,6 +461,10 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
             try {
               const data = await fetchPokemonCached(entry.name)
               if (!data || controller.signal.aborted) return null
+
+              // Skip form-specific Pokémon not available in selected version
+              // (e.g. primals outside ORAS, megas outside XY/ORAS/etc.)
+              if (!isFormAvailableInVersion(entry.name, selectedVersion)) return null
 
               // Check if the Pokémon actually exists in the selected generation
               // (has any move data in current gen VGs). This prevents e.g. Gulpin
