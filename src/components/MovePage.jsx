@@ -29,14 +29,6 @@ const versionToVersionGroups = {
   'legends-za': ['legends-za', 'mega-dimension'],
 }
 
-// Map version group → its generation number
-const versionGroupGeneration = {}
-for (const [gen, groups] of Object.entries(generationVersionGroups)) {
-  for (const vg of groups) {
-    versionGroupGeneration[vg] = Number(gen)
-  }
-}
-
 // Learn method priority (lower = easier/preferred)
 const LEARN_METHOD_PRIORITY = {
   'level-up': 1,
@@ -177,37 +169,38 @@ function getBestLearnMethod(pokemonData, moveName, selectedVersionGroups, curren
 
 /**
  * Get the move stats for the selected version, accounting for past_values.
+ * Mirrors the applyPastValues logic in useGroupedMoves — iterate ALL entries
+ * without breaking so that every applicable past change is applied.
  */
 function getMoveStatsForVersion(moveData, selectedVersion) {
-  const gen = versionGeneration[selectedVersion] || 99
-
   let power = moveData.power
   let pp = moveData.pp
   let accuracy = moveData.accuracy
   let type = moveData.type?.name
   let effectChance = moveData.effect_chance
 
-  // past_values is ordered oldest → newest; apply all patches whose generation
-  // is >= the selected gen (meaning the current values hadn't taken effect yet)
-  if (moveData.past_values) {
-    // Sort past_values by generation order descending so we find the
-    // closest applicable past snapshot
-    const sorted = [...moveData.past_values].sort((a, b) => {
-      const genA = a.version_group?.name ? (versionGroupOrder[a.version_group.name] || 0) : 0
-      const genB = b.version_group?.name ? (versionGroupOrder[b.version_group.name] || 0) : 0
-      return genB - genA
-    })
+  if (moveData.past_values?.length && selectedVersion) {
+    // Resolve the selected version to a version-group order number
+    const vgs = versionToVersionGroups[selectedVersion]
+    const selectedOrder = vgs
+      ? Math.min(...vgs.map(vg => versionGroupOrder[vg] ?? 999))
+      : null
 
-    for (const pv of sorted) {
-      const pvGen = versionGroupGeneration[pv.version_group?.name] || 99
-      // This past_values entry covers all versions UP TO AND INCLUDING this version group
-      if (gen <= pvGen) {
-        if (pv.power !== null && pv.power !== undefined) power = pv.power
-        if (pv.pp !== null && pv.pp !== undefined) pp = pv.pp
-        if (pv.accuracy !== null && pv.accuracy !== undefined) accuracy = pv.accuracy
-        if (pv.type) type = pv.type.name
-        if (pv.effect_chance !== null && pv.effect_chance !== undefined) effectChance = pv.effect_chance
-        break // closest applicable snapshot found
+    if (selectedOrder != null) {
+      // Each past_values entry marks a change point — the listed (old) values
+      // were in effect BEFORE that version group.  Apply every entry whose
+      // change point is AFTER our selected version.
+      for (const pv of moveData.past_values) {
+        const entryOrder = versionGroupOrder[pv.version_group?.name]
+        if (entryOrder == null) continue
+
+        if (selectedOrder < entryOrder) {
+          if (pv.power != null) power = pv.power
+          if (pv.pp != null) pp = pv.pp
+          if (pv.accuracy != null) accuracy = pv.accuracy
+          if (pv.type) type = pv.type.name
+          if (pv.effect_chance != null) effectChance = pv.effect_chance
+        }
       }
     }
   }
