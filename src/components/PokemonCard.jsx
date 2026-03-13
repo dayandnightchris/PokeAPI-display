@@ -15,29 +15,59 @@ import {
 
 function CollapsibleInfoBox({ title, children, className = '', style, contentClassName = '', contentStyle }) {
   const [collapsed, setCollapsed] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+
+  const hasMaxHeight = contentStyle && contentStyle.maxHeight != null
+
+  const effectiveContentStyle = expanded && hasMaxHeight
+    ? { ...contentStyle, maxHeight: 'none', overflowY: 'visible' }
+    : contentStyle
 
   return (
     <div className={`info-box ${className}`} style={style}>
       <div className="box-title collapsible-title">
         <span>{title}</span>
-        <button
-          type="button"
-          className="collapse-toggle"
-          onClick={() => setCollapsed(prev => !prev)}
-          title={collapsed ? 'Expand' : 'Collapse'}
-        >
-          <svg className={`collapse-toggle-icon${collapsed ? ' collapse-toggle-flipped' : ''}`} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="48" fill="none" stroke="#333" strokeWidth="4" />
-            <path d="M2,50 A48,48 0 0,1 98,50 Z" fill="#ff0000" stroke="#333" strokeWidth="4" />
-            <path d="M2,50 A48,48 0 0,0 98,50 Z" fill="#fff" stroke="#333" strokeWidth="4" />
-            <rect x="2" y="47" width="96" height="6" fill="#333" />
-            <circle cx="50" cy="50" r="12" fill="#fff" stroke="#333" strokeWidth="4" />
-            <circle cx="50" cy="50" r="5" fill="#333" />
-          </svg>
-        </button>
+        <div className="collapsible-title-buttons">
+          {hasMaxHeight && !collapsed && (
+            <button
+              type="button"
+              className="expand-toggle"
+              onClick={() => setExpanded(prev => !prev)}
+              title={expanded ? 'Collapse to scrollable view' : 'Expand to show all rows'}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                {expanded ? (
+                  <>
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </>
+                ) : (
+                  <>
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </>
+                )}
+              </svg>
+            </button>
+          )}
+          <button
+            type="button"
+            className="collapse-toggle"
+            onClick={() => setCollapsed(prev => !prev)}
+            title={collapsed ? 'Expand' : 'Collapse'}
+          >
+            <svg className={`collapse-toggle-icon${collapsed ? ' collapse-toggle-flipped' : ''}`} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="48" fill="none" stroke="#333" strokeWidth="4" />
+              <path d="M2,50 A48,48 0 0,1 98,50 Z" fill="#ff0000" stroke="#333" strokeWidth="4" />
+              <path d="M2,50 A48,48 0 0,0 98,50 Z" fill="#fff" stroke="#333" strokeWidth="4" />
+              <rect x="2" y="47" width="96" height="6" fill="#333" />
+              <circle cx="50" cy="50" r="12" fill="#fff" stroke="#333" strokeWidth="4" />
+              <circle cx="50" cy="50" r="5" fill="#333" />
+            </svg>
+          </button>
+        </div>
       </div>
       {!collapsed && (
-        <div className={`box-content ${contentClassName}`} style={contentStyle}>
+        <div className={`box-content ${contentClassName}`} style={effectiveContentStyle}>
           {children}
         </div>
       )}

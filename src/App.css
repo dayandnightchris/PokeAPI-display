@@ -396,6 +396,42 @@
   flex: 1;
 }
 
+.collapsible-title-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.expand-toggle {
+  background: none;
+  border: 1px solid var(--border-light, #ccc);
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary, #666);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.expand-toggle:hover {
+  color: var(--text-color, #333);
+  border-color: var(--text-color, #999);
+  background: var(--control-bg, #f0f0f0);
+}
+
+[data-theme="dark"] .expand-toggle {
+  border-color: #555;
+  color: #aaa;
+}
+
+[data-theme="dark"] .expand-toggle:hover {
+  color: #fff;
+  border-color: #888;
+  background: #333;
+}
+
 .collapse-toggle {
   background: none;
   border: none;
