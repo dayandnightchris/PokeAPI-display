@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import StatsCalculator from './StatsCalculator'
 import VersionSelector from './VersionSelector'
 import { renderEvolutionForest } from './EvolutionTree'
@@ -243,6 +243,10 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   // UI state
   const [hoveredType, setHoveredType] = useState(null)
   const [versionInfo, setVersionInfo] = useState(null)
+
+  // Refs for scroll navigation
+  const cardTopRef = useRef(null)
+  const statsCalcRef = useRef(null)
 
   // Data fetching hooks
   const { species, selectedVersion, setSelectedVersion, allEncounters, availableVersions, pokedexVersions } = usePokemonSpecies(pokemon, initialVersion)
@@ -620,7 +624,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   const nationalDexNumber = species?.pokedex_numbers?.find(entry => entry.pokedex?.name === 'national')?.entry_number
 
   return (
-    <div className="pokemon-card-container">
+    <div className="pokemon-card-container" ref={cardTopRef}>
       {/* Version Selector */}
       <div className="version-selector-wrapper">
         <VersionSelector
@@ -1028,7 +1032,24 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
 
         {/* Stats Box */}
         <div className="info-box">
-          <div className="box-title">Base Stats</div>
+          <div className="box-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>Base Stats</span>
+            <button
+              type="button"
+              className="scroll-to-calc-btn"
+              onClick={() => statsCalcRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              title="Jump to Stats Calculator"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="4" y="4" width="16" height="16" rx="2" />
+                <line x1="8" y1="10" x2="16" y2="10" />
+                <line x1="8" y1="14" x2="13" y2="14" />
+              </svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+          </div>
           <div className="box-content stats-compact">
             {generationStats.map(stat => {
               const maxStat = 255 // Maximum possible stat value in Pokemon
@@ -1170,7 +1191,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
       )}
 
       {/* Stats Calculator Section */}
-      <div className="info-box full-width" style={{ marginTop: '10px' }}>
+      <div className="info-box full-width" style={{ marginTop: '10px' }} ref={statsCalcRef}>
         <div className="box-title">Stats Calculator</div>
         <div className="box-content">
           <StatsCalculator pokemon={displayPokemon} stats={generationStats} selectedVersion={selectedVersion} />
@@ -1212,6 +1233,19 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
           </div>
         </div>
       )}
+
+      {/* Back to Top Button */}
+      <button
+        type="button"
+        className="back-to-top-btn"
+        onClick={() => cardTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        title="Back to top"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="18 15 12 9 6 15" />
+        </svg>
+        Back to Top
+      </button>
     </div>
   )
 }

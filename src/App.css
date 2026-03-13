@@ -1200,3 +1200,128 @@
 [data-theme="dark"] .move-category-badge[data-category="status"] {
   background: #424242;
 }
+
+/* Scroll-to-Calculator Button (next to Base Stats title) */
+.scroll-to-calc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: 1px solid var(--border-light, #ccc);
+  border-radius: 6px;
+  padding: 2px 6px;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.scroll-to-calc-btn:hover {
+  color: var(--text-color, #333);
+  border-color: var(--text-color, #999);
+  background: var(--control-bg, #f0f0f0);
+}
+
+/* Back to Top Button */
+.back-to-top-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 16px auto 0;
+  padding: 8px 20px;
+  background: var(--control-bg, #f5f5f5);
+  border: 1px solid var(--border-light, #ccc);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary, #666);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.back-to-top-btn:hover {
+  color: var(--text-color, #333);
+  border-color: var(--text-color, #999);
+  background: var(--stat-bar-bg, #e0e0e0);
+}
+
+/* EV Max Button */
+.ev-max-btn {
+  width: 32px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-light, #ccc);
+  border-radius: 4px;
+  background: var(--control-bg, #f5f5f5);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: var(--text-secondary, #666);
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.ev-max-btn:hover {
+  background: #4caf50;
+  color: white;
+  border-color: #388e3c;
+}
+
+.ev-max-btn.ev-max-active {
+  background: #4caf50;
+  color: white;
+  border-color: #388e3c;
+}
+
+.ev-max-btn.ev-max-active:hover {
+  background: #e53935;
+  border-color: #c62828;
+}
+
+[data-theme="dark"] .scroll-to-calc-btn {
+  border-color: #555;
+  color: #aaa;
+}
+
+[data-theme="dark"] .scroll-to-calc-btn:hover {
+  color: #fff;
+  border-color: #888;
+  background: #333;
+}
+
+[data-theme="dark"] .back-to-top-btn {
+  background: #2a2a2a;
+  border-color: #555;
+  color: #aaa;
+}
+
+[data-theme="dark"] .back-to-top-btn:hover {
+  color: #fff;
+  border-color: #888;
+  background: #333;
+}
+
+[data-theme="dark"] .ev-max-btn {
+  background: #333;
+  border-color: #555;
+  color: #aaa;
+}
+
+[data-theme="dark"] .ev-max-btn:hover {
+  background: #388e3c;
+  color: white;
+  border-color: #2e7d32;
+}
+
+[data-theme="dark"] .ev-max-btn.ev-max-active {
+  background: #388e3c;
+  color: white;
+  border-color: #2e7d32;
+}
+
+[data-theme="dark"] .ev-max-btn.ev-max-active:hover {
+  background: #c62828;
+  border-color: #b71c1c;
+}

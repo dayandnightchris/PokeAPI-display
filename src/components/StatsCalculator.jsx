@@ -6,6 +6,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
   const [nature, setNature] = useState('neutral')
   const [ivs, setIvs] = useState({ hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31, spc: 15 })
   const [evs, setEvs] = useState({ hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0, spc: 0 })
+  const [maxedOrder, setMaxedOrder] = useState([]) // FILO tracking for maxed EVs
 
   // Determine if we're in a legacy generation (Gen 1-2)
   const currentGen = selectedVersion ? versionGeneration[selectedVersion] : null
@@ -29,6 +30,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
       }
       return updated
     })
+    setMaxedOrder([])
   }, [maxIv])
 
   // All natures with their stat modifiers
@@ -134,6 +136,38 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
       const finalValue = currentTotal + clampedValue > 508 ? 508 - currentTotal : clampedValue
       setEvs({ ...evs, [statKey]: finalValue })
     }
+    // Remove from maxed order if manually changed
+    setMaxedOrder(prev => prev.filter(k => k !== statKey))
+  }
+
+  const handleMaxEv = (statKey) => {
+    // If already maxed via button, toggle it off
+    if (maxedOrder.includes(statKey) && evs[statKey] === 252) {
+      setEvs(prev => ({ ...prev, [statKey]: 0 }))
+      setMaxedOrder(prev => prev.filter(k => k !== statKey))
+      return
+    }
+
+    const newEvs = { ...evs, [statKey]: 252 }
+    let newOrder = maxedOrder.filter(k => k !== statKey)
+    let total = Object.values(newEvs).reduce((sum, val) => sum + val, 0)
+
+    // FILO: zero out the oldest maxed stats until we fit within 508
+    while (total > 508 && newOrder.length > 0) {
+      const oldest = newOrder.shift()
+      newEvs[oldest] = 0
+      total = Object.values(newEvs).reduce((sum, val) => sum + val, 0)
+    }
+
+    // If still over (manual EVs filling the budget), give whatever remains
+    if (total > 508) {
+      const othersTotal = total - newEvs[statKey]
+      newEvs[statKey] = Math.max(0, 508 - othersTotal)
+    }
+
+    newOrder.push(statKey)
+    setEvs(newEvs)
+    setMaxedOrder(newOrder)
   }
 
   const handleIvChange = (statKey, value) => {
@@ -229,7 +263,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
           return (
             <div key={stat.name} style={{ 
               display: 'grid', 
-              gridTemplateColumns: '80px 60px 1fr 80px 80px 80px',
+              gridTemplateColumns: isLegacy ? '80px 60px 1fr 80px 80px 80px' : '80px 60px 1fr 80px 80px 40px 80px',
               gap: '0.5rem',
               alignItems: 'center',
               padding: '0.5rem',
@@ -295,6 +329,16 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
                 }}
                 title={isLegacy ? 'EV (0-255)' : 'EV (0-252)'}
               />
+              {!isLegacy && (
+                <button
+                  type="button"
+                  className={`ev-max-btn${maxedOrder.includes(stat.key) && evs[stat.key] === 252 ? ' ev-max-active' : ''}`}
+                  onClick={() => handleMaxEv(stat.key)}
+                  title={maxedOrder.includes(stat.key) && evs[stat.key] === 252 ? 'Clear this EV' : 'Max this EV to 252'}
+                >
+                  {maxedOrder.includes(stat.key) && evs[stat.key] === 252 ? '✕' : '▲'}
+                </button>
+              )}
               <span style={{ 
                 fontWeight: 'bold', 
                 fontSize: '1rem',
@@ -314,7 +358,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
         fontSize: '0.85rem',
         color: 'var(--text-secondary, #666)',
         display: 'grid',
-        gridTemplateColumns: '80px 60px 1fr 80px 80px 80px',
+        gridTemplateColumns: isLegacy ? '80px 60px 1fr 80px 80px 80px' : '80px 60px 1fr 80px 80px 40px 80px',
         gap: '0.5rem'
       }}>
         <span></span>
@@ -322,6 +366,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
         <span></span>
         <span style={{ fontWeight: 'bold', textAlign: 'center' }}>{isLegacy ? 'DV' : 'IV'}</span>
         <span style={{ fontWeight: 'bold', textAlign: 'center' }}>EV</span>
+        {!isLegacy && <span></span>}
         <span style={{ fontWeight: 'bold', textAlign: 'right' }}>Final</span>
       </div>
     </div>
