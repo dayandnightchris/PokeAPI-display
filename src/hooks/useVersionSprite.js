@@ -66,6 +66,14 @@ function findSprite(versions, genKey, spriteKey) {
   return group?.front_default || null
 }
 
+function findShinySprite(versions, genKey, spriteKey) {
+  const genSprites = versions[genKey]
+  if (!genSprites) return null
+  if (!spriteKey) return null
+  const group = genSprites[spriteKey]
+  return group?.front_shiny || null
+}
+
 function findAnySprite(versions, genKey) {
   const genSprites = versions[genKey]
   if (!genSprites) return null
@@ -77,12 +85,25 @@ function findAnySprite(versions, genKey) {
   return null
 }
 
+function findAnyShinySprite(versions, genKey) {
+  const genSprites = versions[genKey]
+  if (!genSprites) return null
+  for (const key of Object.keys(genSprites)) {
+    if (key === 'icons') continue
+    const sprite = genSprites[key]?.front_shiny
+    if (sprite) return sprite
+  }
+  return null
+}
+
 export function useVersionSprite(displayPokemon, selectedVersion) {
   const [versionSprite, setVersionSprite] = useState(null)
+  const [versionShinySprite, setVersionShinySprite] = useState(null)
 
   useEffect(() => {
     if (!displayPokemon?.sprites?.versions || !selectedVersion) {
       setVersionSprite(null)
+      setVersionShinySprite(null)
       return
     }
 
@@ -91,6 +112,7 @@ export function useVersionSprite(displayPokemon, selectedVersion) {
 
     if (!mapping) {
       setVersionSprite(null)
+      setVersionShinySprite(null)
       return
     }
 
@@ -98,15 +120,19 @@ export function useVersionSprite(displayPokemon, selectedVersion) {
 
     // 1. Try the exact sprite key for this version
     let sprite = findSprite(versions, genKey, spriteKey)
+    let shiny = findShinySprite(versions, genKey, spriteKey)
     if (sprite) {
       setVersionSprite(sprite)
+      setVersionShinySprite(shiny)
       return
     }
 
     // 2. Try any sprite in the same generation
     sprite = findAnySprite(versions, genKey)
+    shiny = findAnyShinySprite(versions, genKey)
     if (sprite) {
       setVersionSprite(sprite)
+      setVersionShinySprite(shiny)
       return
     }
 
@@ -115,15 +141,18 @@ export function useVersionSprite(displayPokemon, selectedVersion) {
     if (startIdx !== -1) {
       for (let i = startIdx + 1; i < generationFallback.length; i++) {
         sprite = findAnySprite(versions, generationFallback[i])
+        shiny = findAnyShinySprite(versions, generationFallback[i])
         if (sprite) {
           setVersionSprite(sprite)
+          setVersionShinySprite(shiny)
           return
         }
       }
     }
 
     setVersionSprite(null)
+    setVersionShinySprite(null)
   }, [displayPokemon?.sprites?.versions, selectedVersion])
 
-  return versionSprite
+  return { versionSprite, versionShinySprite }
 }

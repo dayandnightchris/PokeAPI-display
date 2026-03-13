@@ -288,7 +288,10 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   // For forms with empty moves (e.g. PLZA megas), fall back to base pokemon's moves
   const movesSource = (formPokemon && formPokemon.moves?.length > 0) ? formPokemon : pokemon
   const { moves, loading: movesLoading } = useGroupedMoves(movesSource, selectedVersion, species)
-  const versionSprite = useVersionSprite(formPokemon || pokemon, selectedVersion)
+  const { versionSprite, versionShinySprite } = useVersionSprite(formPokemon || pokemon, selectedVersion)
+
+  // Shiny toggle state
+  const [showShiny, setShowShiny] = useState(false)
 
   // Derive display pokemon
   const displayPokemon = formPokemon || pokemon
@@ -688,13 +691,23 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
       <div className="main-info-grid">
         {/* Image Box */}
         <div className="info-box image-box">
-          {(versionSprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_default || displayPokemon?.sprites?.front_default) && (
-            <img
-              src={versionSprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_default || displayPokemon?.sprites?.front_default}
-              alt={displayPokemon.name}
-              className="pokemon-main-image"
-            />
-          )}
+          {(() => {
+            const isGen1 = selectedVersion && versionGeneration[selectedVersion] === 1
+            const normalSrc = versionSprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_default || displayPokemon?.sprites?.front_default
+            const shinySrc = isGen1 ? null : (versionShinySprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_shiny || displayPokemon?.sprites?.front_shiny)
+            const currentSrc = showShiny && shinySrc ? shinySrc : normalSrc
+            return currentSrc ? (
+              <img
+                src={currentSrc}
+                alt={`${displayPokemon.name}${showShiny ? ' (shiny)' : ''}`}
+                className="pokemon-main-image"
+                onClick={() => shinySrc && setShowShiny(prev => !prev)}
+                style={{ cursor: shinySrc ? 'pointer' : 'default' }}
+                title={shinySrc ? (showShiny ? 'Click for normal' : 'Click for shiny') : ''}
+              />
+            ) : null
+          })()}
+          {showShiny && <span className="shiny-badge">✨ Shiny</span>}
         </div>
 
         {/* Species Info Box */}
