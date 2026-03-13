@@ -350,6 +350,21 @@ function App() {
     }
   }
 
+  // Switch tabs, carrying the most recently set game version to the destination tab
+  const handleTabSwitch = useCallback((tabId) => {
+    const currentVersion = urlStateRef.current.version
+    if (tabId === 'pokemon') {
+      setInitialVersion(currentVersion)
+    } else if (tabId === 'moves') {
+      setMovePageInit(prev => ({ ...prev, version: currentVersion }))
+    } else if (tabId === 'abilities') {
+      setAbilityPageInit(prev => ({ ...prev, version: currentVersion }))
+    } else if (tabId === 'items') {
+      setItemPageInit(prev => ({ ...prev, version: currentVersion }))
+    }
+    setActiveTab(tabId)
+  }, [])
+
   return (
     <div className="app">
       <header className="app-header">
@@ -374,7 +389,7 @@ function App() {
           <button
             key={tab.id}
             className={`tab-button${activeTab === tab.id ? ' tab-button--active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabSwitch(tab.id)}
           >
             {tab.label}
           </button>
