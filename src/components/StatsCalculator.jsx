@@ -152,7 +152,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
     let newOrder = maxedOrder.filter(k => k !== statKey)
     let total = Object.values(newEvs).reduce((sum, val) => sum + val, 0)
 
-    // FILO: zero out the oldest maxed stats until we fit within 508
+    // FIFO: zero out the oldest maxed stats until we fit within 508
     while (total > 508 && newOrder.length > 0) {
       const oldest = newOrder.shift()
       newEvs[oldest] = 0
