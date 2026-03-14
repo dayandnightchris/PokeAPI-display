@@ -3,7 +3,7 @@ import { versionGeneration } from '../utils/versionInfo'
 
 export default function StatsCalculator({ pokemon, stats: statsProp, selectedVersion }) {
   const [level, setLevel] = useState(50)
-  const [nature, setNature] = useState('neutral')
+  const [nature, setNature] = useState('hardy')
   const [ivs, setIvs] = useState({ hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31, spc: 15 })
   const [evs, setEvs] = useState({ hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0, spc: 0 })
   const [maxedOrder, setMaxedOrder] = useState([]) // FILO tracking for maxed EVs
@@ -35,7 +35,6 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
 
   // All natures with their stat modifiers
   const natures = {
-    neutral: { atk: 1, def: 1, spa: 1, spd: 1, spe: 1, display: 'Neutral' },
     hardy: { atk: 1, def: 1, spa: 1, spd: 1, spe: 1, display: 'Hardy' },
     lonely: { atk: 1.1, def: 0.9, spa: 1, spd: 1, spe: 1, display: 'Lonely (+Atk, -Def)' },
     brave: { atk: 1.1, def: 1, spa: 1, spd: 1, spe: 0.9, display: 'Brave (+Atk, -Spe)' },
