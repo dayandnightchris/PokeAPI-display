@@ -301,8 +301,23 @@ body {
   margin: 5px 0;
 }
 
-.main-info-grid .image-box {
+.main-info-grid .image-breeding-stack {
   grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  height: 0;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+.image-breeding-stack .info-box.image-box {
+  flex: 1 1 auto;
+  min-height: 180px;
+}
+
+.image-breeding-stack .breeding-info-box {
+  flex: 0 0 auto;
 }
 
 .main-info-grid .encounter-location-stack {
@@ -379,16 +394,14 @@ body {
 }
 
 .pokemon-main-image {
-  width: 100%;
-  height: auto;
+  width: auto;
+  height: 100%;
+  max-width: 100%;
   max-height: 100%;
   object-fit: contain;
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
-  /*max-width: 150px;
-  border: 3px solid grey;
-  padding: 3px;*/
 }
 
 .image-box {

@@ -689,25 +689,78 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
       )}
 
       <div className="main-info-grid">
-        {/* Image Box */}
-        <div className="info-box image-box">
-          {(() => {
-            const isGen1 = selectedVersion && versionGeneration[selectedVersion] === 1
-            const normalSrc = versionSprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_default || displayPokemon?.sprites?.front_default
-            const shinySrc = isGen1 ? null : (versionShinySprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_shiny || displayPokemon?.sprites?.front_shiny)
-            const currentSrc = showShiny && shinySrc ? shinySrc : normalSrc
-            return currentSrc ? (
-              <img
-                src={currentSrc}
-                alt={`${displayPokemon.name}${showShiny ? ' (shiny)' : ''}`}
-                className="pokemon-main-image"
-                onClick={() => shinySrc && setShowShiny(prev => !prev)}
-                style={{ cursor: shinySrc ? 'pointer' : 'default' }}
-                title={shinySrc ? (showShiny ? 'Click for normal' : 'Click for shiny') : ''}
-              />
-            ) : null
-          })()}
-          {showShiny && <span className="shiny-badge">✨ Shiny</span>}
+        {/* Image + Breeding Info Stack */}
+        <div className="image-breeding-stack">
+          <div className="info-box image-box">
+            {(() => {
+              const isGen1 = selectedVersion && versionGeneration[selectedVersion] === 1
+              const normalSrc = versionSprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_default || displayPokemon?.sprites?.front_default
+              const shinySrc = isGen1 ? null : (versionShinySprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_shiny || displayPokemon?.sprites?.front_shiny)
+              const currentSrc = showShiny && shinySrc ? shinySrc : normalSrc
+              return currentSrc ? (
+                <img
+                  src={currentSrc}
+                  alt={`${displayPokemon.name}${showShiny ? ' (shiny)' : ''}`}
+                  className="pokemon-main-image"
+                  onClick={() => shinySrc && setShowShiny(prev => !prev)}
+                  style={{ cursor: shinySrc ? 'pointer' : 'default' }}
+                  title={shinySrc ? (showShiny ? 'Click for normal' : 'Click for shiny') : ''}
+                />
+              ) : null
+            })()}
+            {showShiny && <span className="shiny-badge">✨ Shiny</span>}
+          </div>
+
+          {/* Breeding Info Box */}
+          {species && (!selectedGenerationRank || selectedGenerationRank >= 2) && (
+            <div className="info-box breeding-info-box">
+              <div className="box-title">Breeding Info</div>
+              <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>
+                <div className="info-row">
+                  <span className="label">Egg Groups:</span>
+                  <span className="value">
+                    {species.egg_groups?.length > 0
+                      ? species.egg_groups.map(g => g.name).join(', ')
+                      : 'N/A'}
+                  </span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Hatch Steps:</span>
+                  <span className="value">{species.hatch_counter ? (species.hatch_counter * 255).toLocaleString() : 'N/A'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Hatch Cycles:</span>
+                  <span className="value">{species.hatch_counter ? species.hatch_counter.toLocaleString() : 'N/A'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Gender:</span>
+                  <span className="value">
+                    {species.gender_rate === -1 ? 'Genderless'
+                      : species.gender_rate === 0 ? '♂ 100% Male'
+                      : species.gender_rate === 8 ? '♀ 100% Female'
+                      : `♂ ${100 - species.gender_rate * 12.5}% / ♀ ${species.gender_rate * 12.5}%`}
+                  </span>
+                </div>
+                {species.gender_rate > 0 && species.gender_rate < 8 && (
+                  <div style={{
+                    width: '100%',
+                    height: '6px',
+                    backgroundColor: '#EE99AC',
+                    borderRadius: '3px',
+                    overflow: 'hidden',
+                    marginTop: '2px'
+                  }}>
+                    <div style={{
+                      width: `${100 - species.gender_rate * 12.5}%`,
+                      height: '100%',
+                      backgroundColor: '#6890F0',
+                      borderRadius: '3px 0 0 3px'
+                    }} />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Species Info Box */}
@@ -1167,71 +1220,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
         </div>
       )}
 
-      {/* Egg Groups, Hatch Steps, Gender, EV Yield Grid (moved to separate section) */}
-      {species && (!selectedGenerationRank || selectedGenerationRank >= 2) && (
-        <div className="grid-3">
-          <div className="info-box">
-            <div className="box-title">Egg Groups</div>
-            <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>
-              {species.egg_groups?.length > 0 ? (
-                <ul style={{ padding: '0 20px', margin: '0', fontSize: '16px' }}>
-                  {species.egg_groups.map(group => (
-                    <li key={group.name}>{group.name}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p style={{ margin: '0' }}>N/A</p>
-              )}
-            </div>
-          </div>
 
-          <div className="info-box">
-            <div className="box-title">Hatch Time</div>
-            <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>
-              <div style={{ margin: '0', fontSize: '16px' }}>
-              <ul style={{ padding: '0 20px', margin: '0' }}><li>  <b>Steps:</b> {species.hatch_counter ? (species.hatch_counter * 255).toLocaleString() : 'N/A'}</li></ul>
-              </div>
-               <div style={{ margin: '0', fontSize: '16px'}}>
-               <ul style={{ padding: '0 20px', margin: '0' }}><li> <b>Cycles:</b> {species.hatch_counter ? (species.hatch_counter).toLocaleString() : 'N/A'} </li></ul>
-              </div>
-            </div>
-          </div>
-
-          <div className="info-box">
-            <div className="box-title">Gender Ratio</div>
-            <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>
-              {species.gender_rate === -1 ? (
-                <p style={{ margin: '0' }}>Genderless</p>
-              ) : species.gender_rate === 0 ? (
-                <p style={{ margin: '0' }}>♂ 100% Male</p>
-              ) : species.gender_rate === 8 ? (
-                <p style={{ margin: '0' }}>♀ 100% Female</p>
-              ) : (
-                <div style={{ margin: '0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ color: '#6890F0', fontWeight: 'bold' }}>♂ {(100 - species.gender_rate * 12.5)}% Male</span>
-                    <span style={{ color: '#EE99AC', fontWeight: 'bold' }}>♀ {species.gender_rate * 12.5}% Female</span>
-                  </div>
-                  <div style={{
-                    width: '100%',
-                    height: '8px',
-                    backgroundColor: '#EE99AC',
-                    borderRadius: '4px',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      width: `${100 - species.gender_rate * 12.5}%`,
-                      height: '100%',
-                      backgroundColor: '#6890F0',
-                      borderRadius: '4px 0 0 4px'
-                    }} />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Stats Calculator Section */}
       <div className="info-box full-width" style={{ marginTop: '10px' }} ref={statsCalcRef}>
