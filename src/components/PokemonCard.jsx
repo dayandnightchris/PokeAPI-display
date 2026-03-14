@@ -288,10 +288,10 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   // For forms with empty moves (e.g. PLZA megas), fall back to base pokemon's moves
   const movesSource = (formPokemon && formPokemon.moves?.length > 0) ? formPokemon : pokemon
   const { moves, loading: movesLoading } = useGroupedMoves(movesSource, selectedVersion, species)
-  const { versionSprite, versionShinySprite } = useVersionSprite(formPokemon || pokemon, selectedVersion)
+  const { versionSprite, versionShinySprite, versionFemaleSprite, versionAnimSprite, versionAnimShiny, versionAnimFemale } = useVersionSprite(formPokemon || pokemon, selectedVersion)
 
-  // Shiny toggle state
-  const [showShiny, setShowShiny] = useState(false)
+  // Sprite mode: 0 = normal, 1 = shiny, 2 = female
+  const [spriteMode, setSpriteMode] = useState(0)
 
   // Derive display pokemon
   const displayPokemon = formPokemon || pokemon
@@ -693,22 +693,40 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
         <div className="image-breeding-stack">
           <div className="info-box image-box">
             {(() => {
-              const isGen1 = selectedVersion && versionGeneration[selectedVersion] === 1
-              const normalSrc = versionSprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_default || displayPokemon?.sprites?.front_default
-              const shinySrc = isGen1 ? null : (versionShinySprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_shiny || displayPokemon?.sprites?.front_shiny)
-              const currentSrc = showShiny && shinySrc ? shinySrc : normalSrc
-              return currentSrc ? (
-                <img
-                  src={currentSrc}
-                  alt={`${displayPokemon.name}${showShiny ? ' (shiny)' : ''}`}
-                  className="pokemon-main-image"
-                  onClick={() => shinySrc && setShowShiny(prev => !prev)}
-                  style={{ cursor: shinySrc ? 'pointer' : 'default' }}
-                  title={shinySrc ? (showShiny ? 'Click for normal' : 'Click for shiny') : ''}
-                />
-              ) : null
+              const currentGen = selectedVersion ? versionGeneration[selectedVersion] : null
+              const isGen1 = currentGen === 1
+              const hasFemaleSprites = !currentGen || currentGen >= 4
+              // Use API animated sprites (Gen 5 BW) when available, prefer over static
+              const normalSrc = versionAnimSprite || versionSprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_default || displayPokemon?.sprites?.front_default
+              const shinySrc = isGen1 ? null : (versionAnimShiny || versionShinySprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_shiny || displayPokemon?.sprites?.front_shiny)
+              const femaleSrc = hasFemaleSprites ? (versionAnimFemale || versionFemaleSprite || displayPokemon?.sprites?.front_female || null) : null
+
+              // Build available modes
+              const modes = [{ key: 'normal', src: normalSrc, label: '' }]
+              if (shinySrc) modes.push({ key: 'shiny', src: shinySrc, label: '✨ Shiny' })
+              if (femaleSrc) modes.push({ key: 'female', src: femaleSrc, label: '♀ Female' })
+
+              const safeMode = spriteMode % modes.length
+              const current = modes[safeMode]
+              const canCycle = modes.length > 1
+              const nextLabel = modes[(safeMode + 1) % modes.length]?.key
+
+              return (
+                <>
+                  {current.src && (
+                    <img
+                      src={current.src}
+                      alt={`${displayPokemon.name}${current.label ? ` (${current.label})` : ''}`}
+                      className="pokemon-main-image"
+                      onClick={() => canCycle && setSpriteMode(prev => prev + 1)}
+                      style={{ cursor: canCycle ? 'pointer' : 'default' }}
+                      title={canCycle ? `Click for ${nextLabel}` : ''}
+                    />
+                  )}
+                  {current.label && <span className="shiny-badge">{current.label}</span>}
+                </>
+              )
             })()}
-            {showShiny && <span className="shiny-badge">✨ Shiny</span>}
           </div>
 
           {/* Breeding Info Box */}

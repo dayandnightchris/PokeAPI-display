@@ -96,14 +96,41 @@ function findAnyShinySprite(versions, genKey) {
   return null
 }
 
+function findFemaleSprite(versions, genKey, spriteKey) {
+  const genSprites = versions[genKey]
+  if (!genSprites) return null
+  if (!spriteKey) return null
+  const group = genSprites[spriteKey]
+  return group?.front_female || null
+}
+
+function findAnyFemaleSprite(versions, genKey) {
+  const genSprites = versions[genKey]
+  if (!genSprites) return null
+  for (const key of Object.keys(genSprites)) {
+    if (key === 'icons') continue
+    const sprite = genSprites[key]?.front_female
+    if (sprite) return sprite
+  }
+  return null
+}
+
 export function useVersionSprite(displayPokemon, selectedVersion) {
   const [versionSprite, setVersionSprite] = useState(null)
   const [versionShinySprite, setVersionShinySprite] = useState(null)
+  const [versionFemaleSprite, setVersionFemaleSprite] = useState(null)
+  const [versionAnimSprite, setVersionAnimSprite] = useState(null)
+  const [versionAnimShiny, setVersionAnimShiny] = useState(null)
+  const [versionAnimFemale, setVersionAnimFemale] = useState(null)
 
   useEffect(() => {
     if (!displayPokemon?.sprites?.versions || !selectedVersion) {
       setVersionSprite(null)
       setVersionShinySprite(null)
+      setVersionFemaleSprite(null)
+      setVersionAnimSprite(null)
+      setVersionAnimShiny(null)
+      setVersionAnimFemale(null)
       return
     }
 
@@ -113,26 +140,41 @@ export function useVersionSprite(displayPokemon, selectedVersion) {
     if (!mapping) {
       setVersionSprite(null)
       setVersionShinySprite(null)
+      setVersionFemaleSprite(null)
+      setVersionAnimSprite(null)
+      setVersionAnimShiny(null)
+      setVersionAnimFemale(null)
       return
     }
 
     const [genKey, spriteKey] = mapping
 
+    // Only use Gen 5 BW animated sprites when the selected version IS Gen 5
+    const bwAnimated = versions['generation-v']?.['black-white']?.animated
+    const useAnimated = genKey === 'generation-v' && bwAnimated
+    setVersionAnimSprite(useAnimated ? (bwAnimated.front_default || null) : null)
+    setVersionAnimShiny(useAnimated ? (bwAnimated.front_shiny || null) : null)
+    setVersionAnimFemale(useAnimated ? (bwAnimated.front_female || null) : null)
+
     // 1. Try the exact sprite key for this version
     let sprite = findSprite(versions, genKey, spriteKey)
     let shiny = findShinySprite(versions, genKey, spriteKey)
+    let female = findFemaleSprite(versions, genKey, spriteKey)
     if (sprite) {
       setVersionSprite(sprite)
       setVersionShinySprite(shiny)
+      setVersionFemaleSprite(female)
       return
     }
 
     // 2. Try any sprite in the same generation
     sprite = findAnySprite(versions, genKey)
     shiny = findAnyShinySprite(versions, genKey)
+    female = findAnyFemaleSprite(versions, genKey)
     if (sprite) {
       setVersionSprite(sprite)
       setVersionShinySprite(shiny)
+      setVersionFemaleSprite(female)
       return
     }
 
@@ -142,9 +184,11 @@ export function useVersionSprite(displayPokemon, selectedVersion) {
       for (let i = startIdx + 1; i < generationFallback.length; i++) {
         sprite = findAnySprite(versions, generationFallback[i])
         shiny = findAnyShinySprite(versions, generationFallback[i])
+        female = findAnyFemaleSprite(versions, generationFallback[i])
         if (sprite) {
           setVersionSprite(sprite)
           setVersionShinySprite(shiny)
+          setVersionFemaleSprite(female)
           return
         }
       }
@@ -152,7 +196,8 @@ export function useVersionSprite(displayPokemon, selectedVersion) {
 
     setVersionSprite(null)
     setVersionShinySprite(null)
+    setVersionFemaleSprite(null)
   }, [displayPokemon?.sprites?.versions, selectedVersion])
 
-  return { versionSprite, versionShinySprite }
+  return { versionSprite, versionShinySprite, versionFemaleSprite, versionAnimSprite, versionAnimShiny, versionAnimFemale }
 }
