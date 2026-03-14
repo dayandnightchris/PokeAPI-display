@@ -704,7 +704,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
               // Build available modes
               const modes = [{ key: 'normal', src: normalSrc, label: '' }]
               if (shinySrc) modes.push({ key: 'shiny', src: shinySrc, label: '✨ Shiny' })
-              if (femaleSrc) modes.push({ key: 'female', src: femaleSrc, label: '♀ Female' })
+              if (femaleSrc) modes.push({ key: 'female', src: femaleSrc, label: 'Female' })
 
               const safeMode = spriteMode % modes.length
               const current = modes[safeMode]
