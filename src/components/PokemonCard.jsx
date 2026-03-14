@@ -564,6 +564,19 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
 
   const getTypeColor = (typeName) => typeColors[typeName?.toLowerCase()] || '#999'
 
+  // Returns dark or white text based on background luminance for readability
+  const getTypeTextColor = (typeName) => {
+    const hex = getTypeColor(typeName)
+    const r = parseInt(hex.slice(1,3), 16) / 255
+    const g = parseInt(hex.slice(3,5), 16) / 255
+    const b = parseInt(hex.slice(5,7), 16) / 255
+    // Relative luminance (WCAG formula)
+    const lum = 0.2126 * (r <= 0.03928 ? r/12.92 : ((r+0.055)/1.055)**2.4)
+              + 0.7152 * (g <= 0.03928 ? g/12.92 : ((g+0.055)/1.055)**2.4)
+              + 0.0722 * (b <= 0.03928 ? b/12.92 : ((b+0.055)/1.055)**2.4)
+    return lum > 0.35 ? '#333' : '#fff'
+  }
+
   const typeEffectiveness = {
     normal: { resists: [], weak: ['fighting'], immune: ['ghost'], veryWeak: [] },
     fire: { resists: ['fire', 'grass', 'ice', 'bug', 'steel', 'fairy'], weak: ['water', 'ground', 'rock'], immune: [], veryWeak: [] },
@@ -803,7 +816,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                     className="type-badge-small"
                     style={{
                       backgroundColor: getTypeColor(type.type.name),
-                      color: '#fff',
+                      color: getTypeTextColor(type.type.name),
                       padding: '4px 8px',
                       borderRadius: '3px',
                       textTransform: 'capitalize',
@@ -838,7 +851,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                               {getCombinedTypeMatchups().immune.length > 0 ? (
                                 getCombinedTypeMatchups().immune.map(t => (
-                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: '#fff', padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t), padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
                                     {t}
                                   </span>
                                 ))
@@ -852,7 +865,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                               {getCombinedTypeMatchups().veryResistant.length > 0 ? (
                                 getCombinedTypeMatchups().veryResistant.map(t => (
-                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: '#fff', padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t), padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
                                     {t}
                                   </span>
                                 ))
@@ -866,7 +879,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                               {getCombinedTypeMatchups().resists.length > 0 ? (
                                 getCombinedTypeMatchups().resists.map(t => (
-                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: '#fff', padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t), padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
                                     {t}
                                   </span>
                                 ))
@@ -880,7 +893,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                               {getCombinedTypeMatchups().weak.length > 0 ? (
                                 getCombinedTypeMatchups().weak.map(t => (
-                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: '#fff', padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t), padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
                                     {t}
                                   </span>
                                 ))
@@ -894,7 +907,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                               {getCombinedTypeMatchups().veryWeak.length > 0 ? (
                                 getCombinedTypeMatchups().veryWeak.map(t => (
-                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: '#fff', padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t), padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
                                     {t}
                                   </span>
                                 ))
