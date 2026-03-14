@@ -257,23 +257,41 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
         <tbody>
           {sortedMoves.map(move => {
             const rowKey = showLevel ? `${move.name}-${move.level}` : showTmNumber ? `${move.name}-${move.tmNumber}` : move.name
-            return (
-              <React.Fragment key={rowKey}>
-                <tr>
-                  {columns.map(column => (
-                    <td key={column.key} className={`move-col-${column.key}${column.numeric ? ' move-col-number' : ''}`}>
-                      {renderCell(move, column.key)}
-                    </td>
-                  ))}
-                </tr>
-                {compact && (
+            if (compact) {
+              // Serebii-style: level/tm + name span both rows; effect sits under the remaining columns
+              const spanKeys = new Set(['level', 'tmNumber', 'learnMethod', 'name'])
+              const spanCols = columns.filter(c => spanKeys.has(c.key))
+              const restCols = columns.filter(c => !spanKeys.has(c.key))
+              return (
+                <React.Fragment key={rowKey}>
+                  <tr>
+                    {spanCols.map(column => (
+                      <td key={column.key} rowSpan={2} className={`move-col-${column.key}${column.numeric ? ' move-col-number' : ''} move-span-cell`}>
+                        {renderCell(move, column.key)}
+                      </td>
+                    ))}
+                    {restCols.map(column => (
+                      <td key={column.key} className={`move-col-${column.key}${column.numeric ? ' move-col-number' : ''}`}>
+                        {renderCell(move, column.key)}
+                      </td>
+                    ))}
+                  </tr>
                   <tr className="move-effect-subrow">
-                    <td colSpan={columns.length} className="move-effect-subrow-cell">
+                    <td colSpan={restCols.length} className="move-effect-subrow-cell">
                       {getMoveEffectEntry(move.details)}
                     </td>
                   </tr>
-                )}
-              </React.Fragment>
+                </React.Fragment>
+              )
+            }
+            return (
+              <tr key={rowKey}>
+                {columns.map(column => (
+                  <td key={column.key} className={`move-col-${column.key}${column.numeric ? ' move-col-number' : ''}`}>
+                    {renderCell(move, column.key)}
+                  </td>
+                ))}
+              </tr>
             )
           })}
         </tbody>

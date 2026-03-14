@@ -384,9 +384,12 @@ body {
 .move-effect-subrow-cell {
   padding: 2px 6px 6px;
   font-size: 11px;
-  color: var(--text-secondary, #aaa);
+  color: var(--text-color, #333);
   line-height: 1.4;
-  border-bottom: 1px solid var(--border-color, #444);
+}
+
+.move-span-cell {
+  vertical-align: middle;
 }
 
 @media (max-width: 900px) {
