@@ -68,6 +68,17 @@ const typeColors = {
   steel: '#B8B8D0', fairy: '#EE99AC',
 }
 
+const getTypeTextColor = (typeName) => {
+  const hex = typeColors[typeName?.toLowerCase()] || '#999'
+  const r = parseInt(hex.slice(1,3), 16) / 255
+  const g = parseInt(hex.slice(3,5), 16) / 255
+  const b = parseInt(hex.slice(5,7), 16) / 255
+  const lum = 0.2126 * (r <= 0.03928 ? r/12.92 : ((r+0.055)/1.055)**2.4)
+            + 0.7152 * (g <= 0.03928 ? g/12.92 : ((g+0.055)/1.055)**2.4)
+            + 0.0722 * (b <= 0.03928 ? b/12.92 : ((b+0.055)/1.055)**2.4)
+  return lum > 0.35 ? '#333' : '#fff'
+}
+
 const categoryIcons = {
   physical: '⚔️',
   special: '🔮',
@@ -802,7 +813,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
               <div className="move-detail-tags">
                 <span
                   className="type-badge-small"
-                  style={{ backgroundColor: typeColors[moveStats.type] || '#999' }}
+                  style={{ backgroundColor: typeColors[moveStats.type] || '#999', color: getTypeTextColor(moveStats.type) }}
                 >
                   {moveStats.type}
                 </span>
