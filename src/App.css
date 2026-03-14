@@ -310,6 +310,16 @@
   background: #ff6b6b79;
 }
 
+/* Compact mode: every 4th row pattern (data+effect pairs) */
+.move-table-compact tr:nth-child(even) {
+  background: none;
+}
+
+.move-table-compact tr:nth-child(4n+3),
+.move-table-compact tr:nth-child(4n+4) {
+  background: #ff6b6b79;
+}
+
 .move-table th,
 .move-table td {
   padding: 4px 6px;
@@ -354,7 +364,6 @@
 
 .move-col-effect {
   width: auto;
-  cursor: default;
 }
 
 .move-col-category {

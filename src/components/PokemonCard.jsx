@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import StatsCalculator from './StatsCalculator'
 import VersionSelector from './VersionSelector'
 import { renderEvolutionForest } from './EvolutionTree'
@@ -89,7 +89,7 @@ const getMoveEffectEntry = (details) => {
   return baseText.replaceAll('$effect_chance', details.effect_chance)
 }
 
-function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading, onMoveClick }) {
+function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading, onMoveClick, compact }) {
   const [sortConfig, setSortConfig] = useState({
     key: showLevel ? 'level' : showTmNumber ? 'tmNumber' : 'name',
     direction: 'asc'
@@ -106,7 +106,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
     'zygarde-cube': 'Zygarde Cube',
   }
 
-  const columns = [
+  const allColumns = [
     ...(showLevel ? [{ key: 'level', label: 'Level', numeric: true }] : []),
     ...(showTmNumber ? [{ key: 'tmNumber', label: 'TM#', numeric: true }] : []),
     ...(showMethod ? [{ key: 'learnMethod', label: 'Method' }] : []),
@@ -119,8 +119,10 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
     { key: 'accuracy', label: 'Accuracy', numeric: true },
     { key: 'priority', label: 'Priority', numeric: true },
     ...(hasSourceGames ? [{ key: 'sourceGames', label: 'Game' }] : []),
-    //{ key: 'introduced', label: 'Introduced' }
   ]
+
+  // In compact mode, effect becomes a sub-row instead of a column
+  const columns = compact ? allColumns.filter(c => c.key !== 'effect') : allColumns
 
   const handleSort = (key) => {
     setSortConfig(prev => {
@@ -240,7 +242,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
           <video src="/simple_pokeball.webm" autoPlay loop muted className="move-loading-gif" />
         </div>
       ) : (
-      <table className="move-table" style={{ margin: '0' }}>
+      <table className={`move-table${compact ? ' move-table-compact' : ''}`} style={{ margin: '0' }}>
         <thead>
           <tr>
             {columns.map(column => (
@@ -253,15 +255,27 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
           </tr>
         </thead>
         <tbody>
-          {sortedMoves.map(move => (
-            <tr key={showLevel ? `${move.name}-${move.level}` : showTmNumber ? `${move.name}-${move.tmNumber}` : move.name}>
-              {columns.map(column => (
-                <td key={column.key} className={`move-col-${column.key}${column.numeric ? ' move-col-number' : ''}`}>
-                  {renderCell(move, column.key)}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {sortedMoves.map(move => {
+            const rowKey = showLevel ? `${move.name}-${move.level}` : showTmNumber ? `${move.name}-${move.tmNumber}` : move.name
+            return (
+              <React.Fragment key={rowKey}>
+                <tr>
+                  {columns.map(column => (
+                    <td key={column.key} className={`move-col-${column.key}${column.numeric ? ' move-col-number' : ''}`}>
+                      {renderCell(move, column.key)}
+                    </td>
+                  ))}
+                </tr>
+                {compact && (
+                  <tr className="move-effect-subrow">
+                    <td colSpan={columns.length} className="move-effect-subrow-cell">
+                      {getMoveEffectEntry(move.details)}
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            )
+          })}
         </tbody>
       </table>
       )}
@@ -1192,31 +1206,21 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
       {/* Moves Flex Container */}
       {(movesLoading || moves.levelUp.length > 0 || moves.tm.length > 0 || moves.tutor.length > 0 || moves.special.length > 0 || moves.egg.length > 0 || moves.transfer.length > 0) && (
         <div className="container-flex">
-          {(moves.levelUp.length > 0 || movesLoading) && (
-            <MoveTable title="Level Up Moves" moves={moves.levelUp} showLevel loading={movesLoading} onMoveClick={onMoveClick} />
-          )}
-
-          {(moves.tm.length > 0 || movesLoading) && (
-            <MoveTable title="TMs" moves={moves.tm} showTmNumber loading={movesLoading} onMoveClick={onMoveClick} />
-          )}
-
-          {(moves.tutor.length > 0 || movesLoading) && (
-            <MoveTable title="Tutor" moves={moves.tutor} loading={movesLoading} onMoveClick={onMoveClick} />
-          )}
-
-          {(moves.special.length > 0 || movesLoading) && (
-            <MoveTable title="Special" moves={moves.special} showMethod loading={movesLoading} onMoveClick={onMoveClick} />
-          )}
-
-          {(moves.transfer.length > 0 || movesLoading) && (
-            <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} onMoveClick={onMoveClick} />
-          )}
-
-          {(moves.egg.length > 0 || movesLoading) && (
-            <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} />
-          )}
-
-
+          {(() => {
+            const tables = []
+            if (moves.levelUp.length > 0 || movesLoading) tables.push(<MoveTable key="levelup" title="Level Up Moves" moves={moves.levelUp} showLevel loading={movesLoading} onMoveClick={onMoveClick} />)
+            if (moves.tm.length > 0 || movesLoading) tables.push(<MoveTable key="tm" title="TMs" moves={moves.tm} showTmNumber loading={movesLoading} onMoveClick={onMoveClick} />)
+            if (moves.tutor.length > 0 || movesLoading) tables.push(<MoveTable key="tutor" title="Tutor" moves={moves.tutor} loading={movesLoading} onMoveClick={onMoveClick} />)
+            if (moves.special.length > 0 || movesLoading) tables.push(<MoveTable key="special" title="Special" moves={moves.special} showMethod loading={movesLoading} onMoveClick={onMoveClick} />)
+            if (moves.transfer.length > 0 || movesLoading) tables.push(<MoveTable key="transfer" title="Transfer Only" moves={moves.transfer} loading={movesLoading} onMoveClick={onMoveClick} />)
+            if (moves.egg.length > 0 || movesLoading) tables.push(<MoveTable key="egg" title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} />)
+            const isOdd = tables.length % 2 !== 0
+            return tables.map((table, idx) => {
+              const isLast = idx === tables.length - 1
+              const compact = !(isLast && isOdd)
+              return React.cloneElement(table, { compact })
+            })
+          })()}
         </div>
       )}
 
