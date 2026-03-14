@@ -354,6 +354,7 @@
 
 .move-col-effect {
   width: auto;
+  cursor: default;
 }
 
 .move-col-category {

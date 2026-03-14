@@ -348,14 +348,47 @@ body {
 }
 
 .container-flex {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 5px;
   margin: 5px 0;
 }
 
 .container-flex .info-box {
-  flex: 1;
+  min-width: 0;
+}
+
+.container-flex .info-box:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.container-flex .info-box:not(:last-child:nth-child(odd)) .move-table {
+  table-layout: auto;
+}
+
+.container-flex .info-box:not(:last-child:nth-child(odd)) .move-col-effect {
+  max-width: 150px;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.container-flex .info-box:not(:last-child:nth-child(odd)) .move-col-name {
+  width: auto;
+  min-width: 70px;
+}
+
+.container-flex .info-box:not(:last-child:nth-child(odd)) .move-col-sourceGames {
+  width: auto;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .container-flex {
+    grid-template-columns: 1fr;
+  }
 }
 
 .card-section.flex-layout {

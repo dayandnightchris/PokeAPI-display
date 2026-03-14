@@ -240,7 +240,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
           <video src="/simple_pokeball.webm" autoPlay loop muted className="move-loading-gif" />
         </div>
       ) : (
-      <table className="move-table" style={{ margin: '0', tableLayout: 'fixed' }}>
+      <table className="move-table" style={{ margin: '0' }}>
         <thead>
           <tr>
             {columns.map(column => (
