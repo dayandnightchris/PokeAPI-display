@@ -765,7 +765,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
       </div>
 
       {moveError && <div className="error">{moveError}</div>}
-      {moveLoading && <div className="loading">Loading...</div>}
+      {moveLoading && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball" /></div>}
 
       {moveData && moveStats && (
         <>
@@ -844,7 +844,8 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
               <h3>Pokémon that learn {formatMoveName(moveData.name)}</h3>
               {learnersLoading && (
                 <span className="move-learners-progress">
-                  Loading… {learnersProgress.loaded}/{learnersProgress.total}
+                  <video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball-inline" />
+                  {learnersProgress.loaded}/{learnersProgress.total}
                 </span>
               )}
             </div>

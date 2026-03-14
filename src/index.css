@@ -221,11 +221,22 @@ body {
 }
 
 .loading {
-  text-align: center;
-  font-size: 1.2rem;
-  color: var(--text-secondary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 2rem;
-  animation: pulse 1.5s infinite;
+}
+
+.loading-pokeball {
+  width: 48px;
+  height: 48px;
+}
+
+.loading-pokeball-inline {
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  margin-right: 4px;
 }
 
 @keyframes pulse {

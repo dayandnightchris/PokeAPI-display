@@ -646,7 +646,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   }
 
   if (!pokemon) {
-    return <div className="loading">Loading Pokemon data...</div>
+    return <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball" /></div>
   }
 
   const englishEntries = species?.flavor_text_entries?.filter(entry => entry.language?.name === 'en') || []

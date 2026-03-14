@@ -401,7 +401,7 @@ function App() {
           <PokemonSearch onSearch={fetchPokemon} loading={loading} pokemonList={pokemonList} initialQuery={searchQuery} />
           
           {error && <div className="error">{error}</div>}
-          {loading && <div className="loading">Loading...</div>}
+          {loading && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball" /></div>}
           {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} onMoveClick={navigateToMove} onAbilityClick={navigateToAbility} onItemClick={navigateToItem} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} />}
         </>
       )}
