@@ -141,6 +141,11 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
   }
 
   const handleMaxEv = (statKey) => {
+    if (isLegacy) {
+      // Gen 1-2: no total cap, just toggle between 0 and 255
+      setEvs(prev => ({ ...prev, [statKey]: prev[statKey] === maxEv ? 0 : maxEv }))
+      return
+    }
     // If already maxed via button, toggle it off
     if (maxedOrder.includes(statKey) && evs[statKey] === 252) {
       setEvs(prev => ({ ...prev, [statKey]: 0 }))
@@ -263,7 +268,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
           return (
             <div key={stat.name} style={{ 
               display: 'grid', 
-              gridTemplateColumns: isLegacy ? '80px 60px 1fr 80px 80px 80px' : '80px 60px 1fr 80px 80px 40px 80px',
+              gridTemplateColumns: '80px 60px 1fr 80px 80px 40px 80px',
               gap: '0.5rem',
               alignItems: 'center',
               padding: '0.5rem',
@@ -329,7 +334,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
                 }}
                 title={isLegacy ? 'EV (0-255)' : 'EV (0-252)'}
               />
-              {!isLegacy && (
+              {!isLegacy ? (
                 <button
                   type="button"
                   className={`ev-max-btn${maxedOrder.includes(stat.key) && evs[stat.key] === 252 ? ' ev-max-active' : ''}`}
@@ -337,6 +342,15 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
                   title={maxedOrder.includes(stat.key) && evs[stat.key] === 252 ? 'Clear this EV' : 'Max this EV to 252'}
                 >
                   {maxedOrder.includes(stat.key) && evs[stat.key] === 252 ? '✕' : '▲'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={`ev-max-btn${evs[stat.key] === maxEv ? ' ev-max-active' : ''}`}
+                  onClick={() => handleMaxEv(stat.key)}
+                  title={evs[stat.key] === maxEv ? 'Clear this EV' : 'Max this EV to 255'}
+                >
+                  {evs[stat.key] === maxEv ? '✕' : '▲'}
                 </button>
               )}
               <span style={{ 
@@ -358,7 +372,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
         fontSize: '0.85rem',
         color: 'var(--text-secondary, #666)',
         display: 'grid',
-        gridTemplateColumns: isLegacy ? '80px 60px 1fr 80px 80px 80px' : '80px 60px 1fr 80px 80px 40px 80px',
+        gridTemplateColumns: '80px 60px 1fr 80px 80px 40px 80px',
         gap: '0.5rem'
       }}>
         <span></span>
@@ -366,7 +380,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
         <span></span>
         <span style={{ fontWeight: 'bold', textAlign: 'center' }}>{isLegacy ? 'DV' : 'IV'}</span>
         <span style={{ fontWeight: 'bold', textAlign: 'center' }}>EV</span>
-        {!isLegacy && <span></span>}
+        <span></span>
         <span style={{ fontWeight: 'bold', textAlign: 'right' }}>Final</span>
       </div>
     </div>
