@@ -669,6 +669,7 @@ body {
   padding: 6px 12px;
   border: 2px solid var(--border-light);
   background-color: var(--content-bg);
+  color: var(--text-color);
   border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
