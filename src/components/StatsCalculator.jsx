@@ -291,7 +291,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
                 position: 'relative'
               }}>
                 <div style={{
-                  width: `${(stat.calculated / 400) * 100}%`,
+                  width: `${(stat.calculated / 500) * 100}%`, 
                   height: '100%',
                   background: `linear-gradient(90deg, ${barColor}, ${barColor}dd)`,
                   transition: 'width 0.3s ease, background 0.3s ease'
