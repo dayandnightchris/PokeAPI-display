@@ -1223,7 +1223,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                                stat.base_stat < 130 ? '#90ee90' : '#4caf50'
               const shortName = {
                 'hp': 'HP', 'attack': 'ATK', 'defense': 'DEF',
-                'special-attack': 'SPA', 'special-defense': 'SPD', 'speed': 'SPE'
+                'special': 'SPC', 'special-attack': 'SPA', 'special-defense': 'SPD', 'speed': 'SPE'
               }[stat.stat.name] || stat.stat.name
               
               return (
