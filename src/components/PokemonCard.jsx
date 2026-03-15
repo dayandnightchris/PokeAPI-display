@@ -293,6 +293,9 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   // Sprite mode: 0 = normal, 1 = shiny, 2 = female
   const [spriteMode, setSpriteMode] = useState(0)
 
+  // Mobile move tab state
+  const [activeMoveTab, setActiveMoveTab] = useState(0)
+
   // Derive display pokemon
   const displayPokemon = formPokemon || pokemon
 
@@ -796,7 +799,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
         </div>
 
         {/* Species Info Box */}
-        <div className="info-box">
+        <div className="info-box species-box">
           <div className="box-title">Species Info</div>
           <div className="box-content">
             <div className="info-row">
@@ -934,7 +937,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
         </div>
 
         {/* Abilities Box */}
-        <div className="info-box">
+        <div className="info-box abilities-box">
           <div className="box-title">Abilities</div>
           <div className="box-content abilities-list">
             {filteredAbilities.length > 0 ? (
@@ -960,7 +963,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
 
         {/* Encounter Info + Location stacked in column 4, spanning both rows */}
         <div className="encounter-location-stack">
-          <div className="info-box">
+          <div className="info-box encounter-info-box">
             <div className="box-title">Encounter Info</div>
             <div className="box-content" style={{ fontSize: '12px' }}>
               <div><strong>Capture Rate:</strong> {species?.capture_rate || 'N/A'}</div>
@@ -1008,7 +1011,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
             </div>
           </div>
 
-          <div className="info-box" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <div className="info-box location-box" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <div className="box-title">Location</div>
             <div className="box-content" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
               {selectedVersion && allEncounters.length > 0 ? (
@@ -1147,7 +1150,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
         </div>
 
         {/* Evolution Box */}
-        <div className="info-box">
+        <div className="info-box evolution-box">
           <div className="box-title">Evolution Line</div>
           <div className="box-content evolution-box-content" style={{ display: 'flex', justifyContent: 'center' }}>
             {evolutions.length > 0 ? (
@@ -1159,7 +1162,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
         </div>
 
         {/* Stats Box */}
-        <div className="info-box">
+        <div className="info-box basestats-box">
           <div className="box-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>Base Stats</span>
             <button
@@ -1221,36 +1224,56 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
 
       </div>
 
-      {/* Moves Flex Container */}
-      {(movesLoading || moves.levelUp.length > 0 || moves.tm.length > 0 || moves.tutor.length > 0 || moves.special.length > 0 || moves.egg.length > 0 || moves.transfer.length > 0) && (
-        <div className="container-flex">
-          {(moves.levelUp.length > 0 || movesLoading) && (
-            <MoveTable title="Level Up Moves" moves={moves.levelUp} showLevel loading={movesLoading} onMoveClick={onMoveClick} />
-          )}
+      {/* Moves — Desktop: stacked, Mobile: tabbed */}
+      {(movesLoading || moves.levelUp.length > 0 || moves.tm.length > 0 || moves.tutor.length > 0 || moves.special.length > 0 || moves.egg.length > 0 || moves.transfer.length > 0) && (() => {
+        const moveTabs = [
+          moves.levelUp.length > 0 && { key: 'levelUp', title: 'Level Up', content: <MoveTable title="Level Up Moves" moves={moves.levelUp} showLevel loading={movesLoading} onMoveClick={onMoveClick} /> },
+          moves.tm.length > 0 && { key: 'tm', title: 'TMs', content: <MoveTable title="TMs" moves={moves.tm} showTmNumber loading={movesLoading} onMoveClick={onMoveClick} /> },
+          moves.tutor.length > 0 && { key: 'tutor', title: 'Tutor', content: <MoveTable title="Tutor" moves={moves.tutor} loading={movesLoading} onMoveClick={onMoveClick} /> },
+          moves.special.length > 0 && { key: 'special', title: 'Special', content: <MoveTable title="Special" moves={moves.special} showMethod loading={movesLoading} onMoveClick={onMoveClick} /> },
+          moves.transfer.length > 0 && { key: 'transfer', title: 'Transfer', content: <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} onMoveClick={onMoveClick} /> },
+          moves.egg.length > 0 && { key: 'egg', title: 'Egg', content: <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} /> },
+        ].filter(Boolean)
 
-          {(moves.tm.length > 0 || movesLoading) && (
-            <MoveTable title="TMs" moves={moves.tm} showTmNumber loading={movesLoading} onMoveClick={onMoveClick} />
-          )}
+        const safeTab = activeMoveTab < moveTabs.length ? activeMoveTab : 0
 
-          {(moves.tutor.length > 0 || movesLoading) && (
-            <MoveTable title="Tutor" moves={moves.tutor} loading={movesLoading} onMoveClick={onMoveClick} />
-          )}
+        return (
+          <>
+            {/* Desktop: all tables stacked */}
+            <div className="container-flex moves-desktop">
+              {moveTabs.map(tab => <div key={tab.key}>{tab.content}</div>)}
+              {movesLoading && moveTabs.length === 0 && (
+                <MoveTable title="Moves" moves={[]} loading onMoveClick={onMoveClick} />
+              )}
+            </div>
 
-          {(moves.special.length > 0 || movesLoading) && (
-            <MoveTable title="Special" moves={moves.special} showMethod loading={movesLoading} onMoveClick={onMoveClick} />
-          )}
-
-          {(moves.transfer.length > 0 || movesLoading) && (
-            <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} onMoveClick={onMoveClick} />
-          )}
-
-          {(moves.egg.length > 0 || movesLoading) && (
-            <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} />
-          )}
-
-
-        </div>
-      )}
+            {/* Mobile: tabbed interface */}
+            <div className="moves-mobile">
+              {movesLoading && moveTabs.length === 0 ? (
+                <MoveTable title="Moves" moves={[]} loading onMoveClick={onMoveClick} />
+              ) : (
+                <>
+                  <div className="moves-tab-bar">
+                    {moveTabs.map((tab, idx) => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        className={`moves-tab-btn${idx === safeTab ? ' moves-tab-active' : ''}`}
+                        onClick={() => setActiveMoveTab(idx)}
+                      >
+                        {tab.title}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="moves-tab-content">
+                    {moveTabs[safeTab]?.content}
+                  </div>
+                </>
+              )}
+            </div>
+          </>
+        )
+      })()}
 
 
 

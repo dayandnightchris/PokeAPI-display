@@ -1361,3 +1361,160 @@
   background: #c62828;
   border-color: #b71c1c;
 }
+
+/* =========================
+   Responsive / Mobile
+   ========================= */
+
+@media (max-width: 768px) {
+  /* Search bar full width */
+  .search-container {
+    max-width: 100%;
+    margin-bottom: 1rem;
+  }
+
+  .search-input-wrapper {
+    gap: 0.5rem;
+  }
+
+  .search-container input {
+    font-size: 0.9rem;
+    padding: 0.6rem;
+  }
+
+  .search-container button {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  /* Version selector stacks */
+  .version-selector {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .version-selector label {
+    font-size: 13px;
+  }
+
+  /* Move tables scroll horizontally */
+  .info-box:has(.move-table) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .move-table {
+    min-width: 550px;
+  }
+
+  /* Stats calculator – narrower columns */
+  .stat-calc-row {
+    grid-template-columns: 60px 45px 1fr 65px 65px 32px 60px !important;
+    gap: 0.35rem !important;
+    padding: 0.4rem !important;
+  }
+
+  .stat-calc-footer {
+    grid-template-columns: 60px 45px 1fr 65px 65px 32px 60px !important;
+    gap: 0.35rem !important;
+  }
+
+  .stat-row {
+    grid-template-columns: 80px 1fr 80px;
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .stat-name {
+    font-size: 0.8rem;
+  }
+
+  /* Footer stacks */
+  .app-footer {
+    flex-direction: column;
+    text-align: center;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  /* Move / Ability / Item detail pages */
+  .move-page,
+  .ability-page,
+  .item-page {
+    max-width: 100%;
+  }
+
+  .move-detail-card,
+  .ability-detail-card,
+  .item-detail-card,
+  .move-learners-section,
+  .ability-pokemon-section,
+  .item-holders-section {
+    padding: 12px;
+  }
+
+  .move-detail-name,
+  .ability-detail-name,
+  .item-detail-name {
+    font-size: 1.3rem;
+  }
+
+  .move-detail-stats {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .move-stat-item {
+    min-width: 60px;
+  }
+
+  /* Learner / holder tables scroll */
+  .move-learners-table-wrapper,
+  .ability-pokemon-table-wrapper,
+  .item-holders-table-wrapper {
+    max-height: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-input-wrapper {
+    flex-direction: column;
+  }
+
+  .search-container button {
+    width: 100%;
+  }
+
+  /* Stats calculator – even more compact */
+  .stat-calc-row {
+    grid-template-columns: 40px 40px 1fr 55px 55px 28px 50px !important;
+    gap: 0.2rem !important;
+    padding: 0.3rem !important;
+    font-size: 0.8rem;
+  }
+
+  .stat-calc-footer {
+    grid-template-columns: 40px 40px 1fr 55px 55px 28px 50px !important;
+    gap: 0.2rem !important;
+    font-size: 0.75rem;
+  }
+
+  .stat-row {
+    grid-template-columns: 60px 1fr 60px;
+    gap: 0.25rem;
+    padding: 0.4rem;
+  }
+
+  .stat-name {
+    font-size: 0.75rem;
+  }
+
+  .stat-value {
+    font-size: 0.85rem;
+  }
+
+  .stat-base {
+    display: none;
+  }
+}

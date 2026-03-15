@@ -265,7 +265,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
           const barColor = getStatColor(stat.calculated) // Use calculated stat for color
           
           return (
-            <div key={stat.name} style={{ 
+            <div key={stat.name} className="stat-calc-row" style={{ 
               display: 'grid', 
               gridTemplateColumns: '80px 60px 1fr 80px 80px 40px 80px',
               gap: '0.5rem',
@@ -365,7 +365,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
         })}
       </div>
       
-      <div style={{ 
+      <div className="stat-calc-row stat-calc-footer" style={{ 
         marginTop: '0.25rem', 
         padding: '0.25rem 0.5rem',
         fontSize: '0.85rem',
