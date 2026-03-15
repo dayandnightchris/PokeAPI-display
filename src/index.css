@@ -918,6 +918,14 @@ body {
     margin-bottom: 1rem;
   }
 
+  .pokemon-card-container {
+    gap: 3px;
+  }
+
+  .form-selector-wrapper {
+    margin-bottom: 3px;
+  }
+
   .app-header h1 {
     font-size: 1.6rem;
   }
@@ -1059,6 +1067,14 @@ body {
 @media (max-width: 480px) {
   .app {
     padding: 0.5rem;
+  }
+
+  .pokemon-card-container {
+    gap: 3px;
+  }
+
+  .form-selector-wrapper {
+    margin-bottom: 3px;
   }
 
   .app-header h1 {

@@ -1463,8 +1463,8 @@
   /* Version selector stacks */
   .version-selector {
     flex-wrap: wrap;
-    gap: 6px;
-    padding: 8px;
+    gap: 4px;
+    padding: 6px;
   }
 
   .version-selector label {
@@ -1567,6 +1567,11 @@
 }
 
 @media (max-width: 480px) {
+  .version-selector {
+    padding: 4px;
+    gap: 3px;
+  }
+
   .search-input-wrapper {
     flex-direction: column;
   }
