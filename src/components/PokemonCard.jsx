@@ -1221,20 +1221,26 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                                stat.base_stat < 80 ? '#ffa500' : 
                                stat.base_stat < 100 ? '#ffeb3b' : 
                                stat.base_stat < 130 ? '#90ee90' : '#4caf50'
+              const shortName = {
+                'hp': 'HP', 'attack': 'ATK', 'defense': 'DEF',
+                'special-attack': 'SPA', 'special-defense': 'SPD', 'speed': 'SPE'
+              }[stat.stat.name] || stat.stat.name
               
               return (
                 <div key={stat.stat.name} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                   <div className="stat-compact-row">
-                    <span className="stat-label" style={{ textTransform: 'uppercase', fontSize: '11px' }}>
-                      {stat.stat.name.replace(/-/g, ' ')}
+                    <span className="stat-label" style={{ textTransform: 'uppercase', fontSize: '11px', minWidth: '28px' }}>
+                      {shortName}
+                    </span>
+                    <span className="stat-number" style={{ fontWeight: 'bold', marginRight: '8px' }}>
+                      {stat.base_stat}
                     </span>
                     <div style={{ 
                       flex: 1, 
                       height: '14px', 
                       backgroundColor: 'var(--stat-bar-bg, #e0e0e0)', 
                       borderRadius: '7px',
-                      overflow: 'hidden',
-                      margin: '0 8px'
+                      overflow: 'hidden'
                     }}>
                       <div style={{
                         width: `${percentage}%`,
@@ -1244,9 +1250,6 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                         borderRadius: '7px'
                       }} />
                     </div>
-                    <span className="stat-number" style={{ fontWeight: 'bold', minWidth: '35px', textAlign: 'right' }}>
-                      {stat.base_stat}
-                    </span>
                   </div>
                 </div>
               )
