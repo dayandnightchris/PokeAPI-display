@@ -82,6 +82,15 @@
   background: rgba(255, 107, 107, 0.15);
 }
 
+[data-theme="dark"] .move-table-compact tr:nth-child(even) {
+  background: none;
+}
+
+[data-theme="dark"] .move-table-compact tr:nth-child(4n+3),
+[data-theme="dark"] .move-table-compact tr:nth-child(4n+4) {
+  background: rgba(255, 107, 107, 0.15);
+}
+
 [data-theme="dark"] .control-group select,
 [data-theme="dark"] .control-group input {
   background-color: var(--input-bg);

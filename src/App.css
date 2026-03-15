@@ -310,6 +310,46 @@
   background: #ff6b6b79;
 }
 
+/* Compact mode: every 4th row pattern (data+effect pairs) */
+.move-table-compact tr:nth-child(even) {
+  background: none;
+}
+
+.move-table-compact tr:nth-child(4n+3),
+.move-table-compact tr:nth-child(4n+4) {
+  background: #ff6b6b79;
+}
+
+/* Compact move tables */
+.move-table-compact {
+  table-layout: auto;
+}
+
+.move-table-compact .move-col-name {
+  width: auto;
+  min-width: 70px;
+}
+
+.move-table-compact .move-col-sourceGames {
+  width: auto;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Effect sub-row (Serebii-style) */
+.move-effect-subrow-cell {
+  padding: 2px 6px 6px;
+  font-size: 11px;
+  color: var(--text-color);
+  line-height: 1.4;
+}
+
+.move-span-cell {
+  vertical-align: middle;
+}
+
 .move-table th,
 .move-table td {
   padding: 4px 6px;
