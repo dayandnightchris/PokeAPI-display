@@ -327,7 +327,7 @@
 
 .move-table-compact .move-col-name {
   width: auto;
-  min-width: 70px;
+  min-width: 60px;
 }
 
 .move-table-compact .move-col-sourceGames {
@@ -336,6 +336,39 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.move-table-compact .move-col-level,
+.move-table-compact .move-col-tmNumber {
+  width: 35px;
+}
+
+.move-table-compact .move-col-type {
+  width: 50px;
+}
+
+.move-table-compact .move-col-category {
+  width: 55px;
+}
+
+.move-table-compact .move-col-power,
+.move-table-compact .move-col-pp,
+.move-table-compact .move-col-accuracy {
+  width: 35px;
+}
+
+.move-table-compact .move-col-priority {
+  width: 30px;
+}
+
+.move-table-compact .move-col-learnMethod {
+  width: 70px;
+}
+
+.move-table-compact th,
+.move-table-compact td {
+  padding: 3px 4px;
+  font-size: 11px;
 }
 
 /* Effect sub-row (Serebii-style) */
@@ -1438,7 +1471,7 @@
     font-size: 13px;
   }
 
-  /* Move tables scroll horizontally */
+  /* Move tables scroll horizontally (desktop fallback) */
   .info-box:has(.move-table) {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -1446,6 +1479,22 @@
 
   .move-table {
     min-width: 550px;
+  }
+
+  /* Compact tables should NOT scroll — they fit naturally */
+  .move-table-compact {
+    min-width: 0;
+  }
+
+  .move-table-compact th,
+  .move-table-compact td {
+    padding: 2px 3px;
+    font-size: 10px;
+  }
+
+  .move-effect-subrow-cell {
+    padding: 1px 4px 4px;
+    font-size: 10px;
   }
 
   /* Stats calculator – narrower columns */
@@ -1556,5 +1605,17 @@
 
   .stat-base {
     display: none;
+  }
+
+  /* Ultra-compact move tables at 480px */
+  .move-table-compact th,
+  .move-table-compact td {
+    padding: 2px 2px;
+    font-size: 9px;
+  }
+
+  .move-effect-subrow-cell {
+    padding: 1px 3px 3px;
+    font-size: 9px;
   }
 }

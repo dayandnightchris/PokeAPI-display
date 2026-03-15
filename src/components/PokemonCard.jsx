@@ -107,17 +107,17 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
   }
 
   const allColumns = [
-    ...(showLevel ? [{ key: 'level', label: 'Level', numeric: true }] : []),
+    ...(showLevel ? [{ key: 'level', label: compact ? 'Lv' : 'Level', numeric: true }] : []),
     ...(showTmNumber ? [{ key: 'tmNumber', label: 'TM#', numeric: true }] : []),
-    ...(showMethod ? [{ key: 'learnMethod', label: 'Method' }] : []),
+    ...(showMethod ? [{ key: 'learnMethod', label: compact ? 'Mthd' : 'Method' }] : []),
     { key: 'name', label: 'Name' },
     { key: 'type', label: 'Type' },
     { key: 'effect', label: 'Effect Entry' },
-    { key: 'category', label: 'Category' },
-    { key: 'power', label: 'Power', numeric: true },
+    { key: 'category', label: compact ? 'Cat' : 'Category' },
+    { key: 'power', label: compact ? 'Pow' : 'Power', numeric: true },
     { key: 'pp', label: 'PP', numeric: true },
-    { key: 'accuracy', label: 'Accuracy', numeric: true },
-    { key: 'priority', label: 'Priority', numeric: true },
+    { key: 'accuracy', label: compact ? 'Acc' : 'Accuracy', numeric: true },
+    { key: 'priority', label: compact ? 'Pri' : 'Priority', numeric: true },
     ...(hasSourceGames ? [{ key: 'sourceGames', label: 'Game' }] : []),
   ]
 
