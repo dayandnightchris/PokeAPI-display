@@ -40,7 +40,7 @@ export default function PokemonSearch({ onSearch, loading, pokemonList, initialQ
     }
   }, [initialQuery])
 
-  // Close suggestions when clicking outside
+  // Close suggestions when clicking/tapping outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -49,7 +49,11 @@ export default function PokemonSearch({ onSearch, loading, pokemonList, initialQ
     }
 
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
   }, [])
 
   const handleSubmit = (e) => {
@@ -63,8 +67,14 @@ export default function PokemonSearch({ onSearch, loading, pokemonList, initialQ
 
   const handleSuggestionClick = (suggestion) => {
     onSearch(suggestion)
+    userIsTypingRef.current = false
     setInput(suggestion)
     setShowSuggestions(false)
+    // Blur input to dismiss mobile keyboard
+    if (containerRef.current) {
+      const inp = containerRef.current.querySelector('input')
+      if (inp) inp.blur()
+    }
   }
 
   const handleKeyDown = (e) => {
@@ -120,7 +130,8 @@ export default function PokemonSearch({ onSearch, loading, pokemonList, initialQ
               <li
                 key={suggestion}
                 className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
-                onClick={() => handleSuggestionClick(suggestion)}
+                onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(suggestion) }}
+                onTouchEnd={(e) => { e.preventDefault(); handleSuggestionClick(suggestion) }}
               >
                 {suggestion.charAt(0).toUpperCase() + suggestion.slice(1)}
               </li>
