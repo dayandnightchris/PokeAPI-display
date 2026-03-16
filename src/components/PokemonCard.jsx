@@ -1043,7 +1043,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
             </div>
           </div>
 
-          <div className="info-box location-box" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <div className="info-box location-box">
             <div className="box-title">Location</div>
             <div className="box-content" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
               {selectedVersion && allEncounters.length > 0 ? (
