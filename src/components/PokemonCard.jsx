@@ -89,7 +89,24 @@ const getMoveEffectEntry = (details) => {
   return baseText.replaceAll('$effect_chance', details.effect_chance)
 }
 
-function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading, onMoveClick, compact }) {
+// In Gens 1-3 move category was determined by type, not per-move
+const physicalTypes = new Set(['normal', 'fighting', 'flying', 'poison', 'ground', 'rock', 'bug', 'ghost', 'steel'])
+const specialTypes = new Set(['fire', 'water', 'grass', 'electric', 'psychic', 'ice', 'dragon', 'dark'])
+
+function getMoveCategoryForGen(move, generationNum) {
+  // Gens 1-3: category is based on type, not the move's own damage_class
+  if (generationNum && generationNum <= 3) {
+    const typeName = move.details?.type?.name
+    if (!typeName) return move.details?.damage_class?.name || null
+    // Status moves remain status regardless of generation
+    if (move.details?.damage_class?.name === 'status') return 'status'
+    if (physicalTypes.has(typeName)) return 'physical'
+    if (specialTypes.has(typeName)) return 'special'
+  }
+  return move.details?.damage_class?.name || null
+}
+
+function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading, onMoveClick, compact, generationNum }) {
   const [sortConfig, setSortConfig] = useState({
     key: showLevel ? 'level' : showTmNumber ? 'tmNumber' : 'name',
     direction: 'asc'
@@ -144,7 +161,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
       case 'effect':
         return getMoveEffectEntry(move.details)
       case 'category':
-        return move.details?.damage_class?.name
+        return getMoveCategoryForGen(move, generationNum)
       case 'power':
         return move.details?.power
       case 'pp':
@@ -205,7 +222,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
       case 'effect':
         return getMoveEffectEntry(move.details)
       case 'category':
-        return formatMoveLabel(move.details?.damage_class?.name)
+        return formatMoveLabel(getMoveCategoryForGen(move, generationNum))
       case 'power':
         return move.details?.power ?? 'N/A'
       case 'pp':
@@ -1262,12 +1279,12 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
       {/* Moves — Desktop: stacked, Mobile: tabbed */}
       {(movesLoading || moves.levelUp.length > 0 || moves.tm.length > 0 || moves.tutor.length > 0 || moves.special.length > 0 || moves.egg.length > 0 || moves.transfer.length > 0) && (() => {
         const moveTabs = [
-          moves.levelUp.length > 0 && { key: 'levelUp', title: 'Level Up', content: <MoveTable title="Level Up Moves" moves={moves.levelUp} showLevel loading={movesLoading} onMoveClick={onMoveClick} />, compactContent: <MoveTable title="Level Up Moves" moves={moves.levelUp} showLevel loading={movesLoading} onMoveClick={onMoveClick} compact /> },
-          moves.tm.length > 0 && { key: 'tm', title: 'TMs', content: <MoveTable title="TMs" moves={moves.tm} showTmNumber loading={movesLoading} onMoveClick={onMoveClick} />, compactContent: <MoveTable title="TMs" moves={moves.tm} showTmNumber loading={movesLoading} onMoveClick={onMoveClick} compact /> },
-          moves.tutor.length > 0 && { key: 'tutor', title: 'Tutor', content: <MoveTable title="Tutor" moves={moves.tutor} loading={movesLoading} onMoveClick={onMoveClick} />, compactContent: <MoveTable title="Tutor" moves={moves.tutor} loading={movesLoading} onMoveClick={onMoveClick} compact /> },
-          moves.special.length > 0 && { key: 'special', title: 'Special', content: <MoveTable title="Special" moves={moves.special} showMethod loading={movesLoading} onMoveClick={onMoveClick} />, compactContent: <MoveTable title="Special" moves={moves.special} showMethod loading={movesLoading} onMoveClick={onMoveClick} compact /> },
-          moves.transfer.length > 0 && { key: 'transfer', title: 'Transfer', content: <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} onMoveClick={onMoveClick} />, compactContent: <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} onMoveClick={onMoveClick} compact /> },
-          moves.egg.length > 0 && { key: 'egg', title: 'Egg', content: <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} />, compactContent: <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} compact /> },
+          moves.levelUp.length > 0 && { key: 'levelUp', title: 'Level Up', content: <MoveTable title="Level Up Moves" moves={moves.levelUp} showLevel loading={movesLoading} onMoveClick={onMoveClick} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="Level Up Moves" moves={moves.levelUp} showLevel loading={movesLoading} onMoveClick={onMoveClick} compact generationNum={selectedGenerationRank} /> },
+          moves.tm.length > 0 && { key: 'tm', title: 'TMs', content: <MoveTable title="TMs" moves={moves.tm} showTmNumber loading={movesLoading} onMoveClick={onMoveClick} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="TMs" moves={moves.tm} showTmNumber loading={movesLoading} onMoveClick={onMoveClick} compact generationNum={selectedGenerationRank} /> },
+          moves.tutor.length > 0 && { key: 'tutor', title: 'Tutor', content: <MoveTable title="Tutor" moves={moves.tutor} loading={movesLoading} onMoveClick={onMoveClick} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="Tutor" moves={moves.tutor} loading={movesLoading} onMoveClick={onMoveClick} compact generationNum={selectedGenerationRank} /> },
+          moves.special.length > 0 && { key: 'special', title: 'Special', content: <MoveTable title="Special" moves={moves.special} showMethod loading={movesLoading} onMoveClick={onMoveClick} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="Special" moves={moves.special} showMethod loading={movesLoading} onMoveClick={onMoveClick} compact generationNum={selectedGenerationRank} /> },
+          moves.transfer.length > 0 && { key: 'transfer', title: 'Transfer', content: <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} onMoveClick={onMoveClick} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} onMoveClick={onMoveClick} compact generationNum={selectedGenerationRank} /> },
+          moves.egg.length > 0 && { key: 'egg', title: 'Egg', content: <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} compact generationNum={selectedGenerationRank} /> },
         ].filter(Boolean)
 
         const safeTab = activeMoveTab < moveTabs.length ? activeMoveTab : 0
