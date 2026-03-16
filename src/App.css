@@ -1439,6 +1439,12 @@
    Responsive / Mobile
    ========================= */
 
+@media (max-width: 1200px) {
+  .version-selector-wrapper {
+    padding: 0;
+  }
+}
+
 @media (max-width: 768px) {
   /* Search bar full width */
   .search-container {
