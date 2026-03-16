@@ -80,6 +80,50 @@ const formatMoveLabel = (value) => {
   return value.replace(/-/g, ' ')
 }
 
+// Type color map (module-level so MoveTable and PokemonCard can both use it)
+const typeColors = {
+  normal: '#A8A878',
+  fire: '#F08030',
+  water: '#6890F0',
+  electric: '#F8D030',
+  grass: '#78C850',
+  ice: '#98D8D8',
+  fighting: '#C03028',
+  poison: '#A040A0',
+  ground: '#E0C068',
+  flying: '#A890F0',
+  psychic: '#F85888',
+  bug: '#A8B820',
+  rock: '#B8A038',
+  ghost: '#705898',
+  dragon: '#7038F8',
+  dark: '#705848',
+  steel: '#B8B8D0',
+  fairy: '#EE99AC'
+}
+
+const getTypeColor = (typeName) => typeColors[typeName?.toLowerCase()] || '#999'
+
+// Returns dark or white text based on background luminance for readability
+const getTypeTextColor = (typeName) => {
+  const hex = getTypeColor(typeName)
+  const r = parseInt(hex.slice(1,3), 16) / 255
+  const g = parseInt(hex.slice(3,5), 16) / 255
+  const b = parseInt(hex.slice(5,7), 16) / 255
+  const lum = 0.2126 * (r <= 0.03928 ? r/12.92 : ((r+0.055)/1.055)**2.4)
+            + 0.7152 * (g <= 0.03928 ? g/12.92 : ((g+0.055)/1.055)**2.4)
+            + 0.0722 * (b <= 0.03928 ? b/12.92 : ((b+0.055)/1.055)**2.4)
+  return lum > 0.35 ? '#333' : '#fff'
+}
+
+// Darken a hex color by a factor (0 = black, 1 = original) for readable text on light backgrounds
+const darkenColor = (hex, factor = 0.65) => {
+  const r = Math.round(parseInt(hex.slice(1,3), 16) * factor)
+  const g = Math.round(parseInt(hex.slice(3,5), 16) * factor)
+  const b = Math.round(parseInt(hex.slice(5,7), 16) * factor)
+  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`
+}
+
 const getMoveEffectEntry = (details) => {
   if (!details) return 'N/A'
   const entry = (details.effect_entries || []).find(e => e.language?.name === 'en')
@@ -217,8 +261,27 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
         return move.inheritedFrom
           ? <>{nameEl} <span style={{ fontSize: '10px', color: '#888' }}>({formatMoveLabel(move.inheritedFrom)})</span></>
           : nameEl
-      case 'type':
-        return formatMoveLabel(move.details?.type?.name)
+      case 'type': {
+        const typeName = move.details?.type?.name
+        if (!typeName) return 'N/A'
+        const bg = getTypeColor(typeName)
+        const fg = getTypeTextColor(typeName)
+        return (
+          <span style={{
+            backgroundColor: bg,
+            color: fg,
+            padding: '1px 6px',
+            borderRadius: '3px',
+            fontSize: 'inherit',
+            fontWeight: 600,
+            textTransform: 'capitalize',
+            whiteSpace: 'nowrap',
+            opacity: 0.85
+          }}>
+            {formatMoveLabel(typeName)}
+          </span>
+        )
+      }
       case 'effect':
         return getMoveEffectEntry(move.details)
       case 'category':
@@ -592,42 +655,6 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
 
   const generationTypes = getGenerationTypes()
   const generationStats = getGenerationStats()
-
-  const typeColors = {
-    normal: '#A8A878',
-    fire: '#F08030',
-    water: '#6890F0',
-    electric: '#F8D030',
-    grass: '#78C850',
-    ice: '#98D8D8',
-    fighting: '#C03028',
-    poison: '#A040A0',
-    ground: '#E0C068',
-    flying: '#A890F0',
-    psychic: '#F85888',
-    bug: '#A8B820',
-    rock: '#B8A038',
-    ghost: '#705898',
-    dragon: '#7038F8',
-    dark: '#705848',
-    steel: '#B8B8D0',
-    fairy: '#EE99AC'
-  }
-
-  const getTypeColor = (typeName) => typeColors[typeName?.toLowerCase()] || '#999'
-
-  // Returns dark or white text based on background luminance for readability
-  const getTypeTextColor = (typeName) => {
-    const hex = getTypeColor(typeName)
-    const r = parseInt(hex.slice(1,3), 16) / 255
-    const g = parseInt(hex.slice(3,5), 16) / 255
-    const b = parseInt(hex.slice(5,7), 16) / 255
-    // Relative luminance (WCAG formula)
-    const lum = 0.2126 * (r <= 0.03928 ? r/12.92 : ((r+0.055)/1.055)**2.4)
-              + 0.7152 * (g <= 0.03928 ? g/12.92 : ((g+0.055)/1.055)**2.4)
-              + 0.0722 * (b <= 0.03928 ? b/12.92 : ((b+0.055)/1.055)**2.4)
-    return lum > 0.35 ? '#333' : '#fff'
-  }
 
   const typeEffectiveness = {
     normal: { resists: [], weak: ['fighting'], immune: ['ghost'], veryWeak: [] },
