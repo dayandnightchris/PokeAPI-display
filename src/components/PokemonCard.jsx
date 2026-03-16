@@ -1176,7 +1176,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                                   {entryList.length} method{entryList.length !== 1 ? 's' : ''}
                                 </td>
                                 <td style={{ padding: '6px 8px', textAlign: 'center', color: '#888' }}>
-                                  {entryList.reduce((sum, e) => sum + e.rate, 0)}%
+                                  —
                                 </td>
                               </tr>
                             )
