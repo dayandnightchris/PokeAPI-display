@@ -1174,6 +1174,10 @@ body {
     font-size: 10px;
   }
 
+  .move-type-badge {
+    width: auto !important;
+  }
+
   .pokedex-entry {
     font-size: 11px;
     line-height: 1.4;

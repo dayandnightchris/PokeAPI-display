@@ -77,6 +77,7 @@ function CollapsibleInfoBox({ title, children, className = '', style, contentCla
 
 const formatMoveLabel = (value) => {
   if (!value) return 'N/A'
+  if (value === 'unknown') return '???'
   return value.replace(/-/g, ' ')
 }
 
@@ -99,7 +100,8 @@ const typeColors = {
   dragon: '#7038F8',
   dark: '#705848',
   steel: '#B8B8D0',
-  fairy: '#EE99AC'
+  fairy: '#EE99AC',
+  unknown: '#4D7A70'
 }
 
 const getTypeColor = (typeName) => typeColors[typeName?.toLowerCase()] || '#999'
@@ -267,7 +269,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
         const bg = getTypeColor(typeName)
         const fg = getTypeTextColor(typeName)
         return (
-          <span style={{
+          <span className="move-type-badge" style={{
             backgroundColor: bg,
             color: fg,
             padding: '1px 6px',
@@ -276,7 +278,11 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
             fontWeight: 600,
             textTransform: 'capitalize',
             whiteSpace: 'nowrap',
-            opacity: 0.85
+            opacity: 0.85,
+            display: 'inline-block',
+            textAlign: 'center',
+            width: '62px',
+            overflow: 'hidden'
           }}>
             {formatMoveLabel(typeName)}
           </span>
