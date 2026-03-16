@@ -786,6 +786,8 @@ body {
   .main-info-grid {
     grid-template-columns: 1fr 1fr;
     grid-auto-flow: dense;
+    gap: 0;
+    margin: 0;
   }
 
   /* Break stacks apart so children become grid items */
