@@ -414,6 +414,9 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   // Mobile move tab state
   const [activeMoveTab, setActiveMoveTab] = useState(0)
 
+  // Collapsible location rows
+  const [expandedLocations, setExpandedLocations] = useState({})
+
   // Derive display pokemon
   const displayPokemon = formPokemon || pokemon
 
@@ -1120,6 +1123,9 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                   
                   const hasEncounters = Object.keys(encountersByLocation).length > 0
                   if (hasEncounters) {
+                    const toggleLocation = (loc) => {
+                      setExpandedLocations(prev => ({ ...prev, [loc]: !prev[loc] }))
+                    }
                     return (
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                         <thead>
@@ -1130,28 +1136,78 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                           </tr>
                         </thead>
                         <tbody>
-                          {Object.entries(encountersByLocation).map(([location, entries]) =>
-                            Object.values(entries).map((entry, idx) => {
+                          {Object.entries(encountersByLocation).map(([location, entries]) => {
+                            const entryList = Object.values(entries)
+                            const hasMultiple = entryList.length > 1
+                            const hasConditions = entryList.some(e => e.conditions.length > 0)
+                            const isCollapsible = hasMultiple || hasConditions
+                            const isExpanded = !!expandedLocations[location]
+                            const locationDisplay = location.replace(/-/g, ' ').replace(/ area$/i, '')
+
+                            if (!isCollapsible) {
+                              // Single entry, no conditions — flat row
+                              const entry = entryList[0]
                               const methodDisplay = entry.method.replace(/-/g, ' ')
-                              const conditionTip = entry.conditions.length > 0
-                                ? 'Condition: ' + entry.conditions.map(c => c.replace(/-/g, ' ')).join(', ')
-                                : ''
                               return (
-                                <tr key={`${location}-${entry.method}-${entry.conditions.join(',')}`} style={{ borderBottom: '1px solid #eee' }} title={conditionTip}>
-                                  <td style={{ padding: '6px 8px' }}>
-                                    {idx === 0 ? location.replace(/-/g, ' ').replace(/ area$/i, '') : ''}
-                                  </td>
+                                <tr key={location} style={{ borderBottom: '1px solid #eee' }}>
+                                  <td style={{ padding: '6px 8px' }}>{locationDisplay}</td>
                                   <td style={{ padding: '6px 8px' }}>
                                     {methodDisplay.charAt(0).toUpperCase() + methodDisplay.slice(1)}
-                                    {entry.conditions.length > 0 && <span style={{ cursor: 'help' }}> *</span>}
                                   </td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'center' }}>
-                                    {entry.rate}%
-                                  </td>
+                                  <td style={{ padding: '6px 8px', textAlign: 'center' }}>{entry.rate}%</td>
                                 </tr>
                               )
-                            })
-                          )}
+                            }
+
+                            // Collapsible location
+                            const rows = []
+                            rows.push(
+                              <tr
+                                key={location}
+                                className="location-header-row"
+                                style={{ borderBottom: '1px solid #eee', cursor: 'pointer' }}
+                                onClick={() => toggleLocation(location)}
+                              >
+                                <td style={{ padding: '6px 8px' }}>
+                                  <span className="location-toggle">{isExpanded ? '▾' : '▸'}</span>
+                                  {locationDisplay}
+                                </td>
+                                <td style={{ padding: '6px 8px', color: '#888' }}>
+                                  {entryList.length} method{entryList.length !== 1 ? 's' : ''}
+                                </td>
+                                <td style={{ padding: '6px 8px', textAlign: 'center', color: '#888' }}>
+                                  {entryList.reduce((sum, e) => sum + e.rate, 0)}%
+                                </td>
+                              </tr>
+                            )
+
+                            if (isExpanded) {
+                              entryList.forEach((entry, idx) => {
+                                const methodDisplay = entry.method.replace(/-/g, ' ')
+                                rows.push(
+                                  <tr
+                                    key={`${location}-${idx}`}
+                                    className="location-detail-row"
+                                    style={{ borderBottom: '1px solid #eee' }}
+                                  >
+                                    <td style={{ padding: '4px 8px 4px 24px' }}>
+                                      {entry.conditions.length > 0 && (
+                                        <span style={{ fontSize: '11px', color: '#888', fontStyle: 'italic' }}>
+                                          {entry.conditions.map(c => c.replace(/-/g, ' ')).join(', ')}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td style={{ padding: '4px 8px' }}>
+                                      {methodDisplay.charAt(0).toUpperCase() + methodDisplay.slice(1)}
+                                    </td>
+                                    <td style={{ padding: '4px 8px', textAlign: 'center' }}>{entry.rate}%</td>
+                                  </tr>
+                                )
+                              })
+                            }
+
+                            return rows
+                          })}
                         </tbody>
                       </table>
                     )

@@ -636,6 +636,25 @@ body {
   text-transform: capitalize;
 }
 
+.location-header-row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.location-toggle {
+  display: inline-block;
+  width: 14px;
+  font-size: 10px;
+  color: #888;
+}
+
+.location-detail-row {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.location-condition-row {
+  background: rgba(0, 0, 0, 0.02);
+}
+
 /* Moves Lists */
 .moves-list-box {
   gap: 6px;
