@@ -67,6 +67,7 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [pokemonList, setPokemonList] = useState([])
+  const [pokemonIdMap, setPokemonIdMap] = useState({})
   const [requestedForm, setRequestedForm] = useState(null)
   const [initialVersion, setInitialVersion] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -135,6 +136,13 @@ function App() {
           if (name.startsWith('alcremie-') && name !== 'alcremie-gmax') names.delete(name)
         }
 
+        // Build id-to-name map from the pokemon list (extract id from URL)
+        const idMap = {}
+        all.results.forEach(p => {
+          const id = p.url.match(/\/pokemon\/(\d+)\//)?.[1]
+          if (id) idMap[id] = p.name
+        })
+        setPokemonIdMap(idMap)
         setPokemonList(Array.from(names).sort())
       } catch (err) {
         console.error('Failed to fetch Pokemon list:', err)
@@ -398,7 +406,7 @@ function App() {
 
       {activeTab === 'pokemon' && (
         <>
-          <PokemonSearch onSearch={fetchPokemon} loading={loading} pokemonList={pokemonList} initialQuery={searchQuery} />
+          <PokemonSearch onSearch={fetchPokemon} loading={loading} pokemonList={pokemonList} pokemonIdMap={pokemonIdMap} initialQuery={searchQuery} />
           
           {error && <div className="error">{error}</div>}
           {loading && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball" /></div>}

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 
-export default function PokemonSearch({ onSearch, loading, pokemonList, initialQuery }) {
+export default function PokemonSearch({ onSearch, loading, pokemonList, pokemonIdMap = {}, initialQuery }) {
   const [input, setInput] = useState(initialQuery || '')
   const [suggestions, setSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -10,7 +10,8 @@ export default function PokemonSearch({ onSearch, loading, pokemonList, initialQ
   const userIsTypingRef = useRef(false)
 
   useEffect(() => {
-    if (!input.trim()) {
+    const cleaned = input.replace(/#/g, '').trim()
+    if (!cleaned) {
       setSuggestions([])
       setShowSuggestions(false)
       return
@@ -22,15 +23,27 @@ export default function PokemonSearch({ onSearch, loading, pokemonList, initialQ
     }
 
     // Filter Pokemon list for autocomplete
-    const q = input.toLowerCase()
-    const filtered = pokemonList
-      .filter(name => name.includes(q))
-      .slice(0, 8) //limit to 8 suggestions
+    const q = cleaned.toLowerCase()
+    const isNumeric = /^\d+$/.test(q)
+    let filtered
+    if (isNumeric) {
+      // Match dex numbers that start with the typed digits
+      filtered = Object.entries(pokemonIdMap)
+        .filter(([id]) => id.startsWith(q))
+        .sort((a, b) => Number(a[0]) - Number(b[0]))
+        .slice(0, 8)
+        .map(([id, name]) => ({ name, id }))
+    } else {
+      filtered = pokemonList
+        .filter(name => name.includes(q))
+        .slice(0, 8)
+        .map(name => ({ name, id: null }))
+    }
 
     setSuggestions(filtered)
     setShowSuggestions(filtered.length > 0)
     setActiveSuggestion(0)
-  }, [input, pokemonList])
+  }, [input, pokemonList, pokemonIdMap])
 
   // Sync input when initialQuery changes (e.g. from URL load or evo click)
   useEffect(() => {
@@ -58,17 +71,19 @@ export default function PokemonSearch({ onSearch, loading, pokemonList, initialQ
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (input.trim()) {
-      onSearch(input)
-      setInput(input.trim().toLowerCase())
+    const cleaned = input.replace(/#/g, '').trim().toLowerCase()
+    if (cleaned) {
+      onSearch(cleaned)
+      setInput(cleaned)
       setShowSuggestions(false)
     }
   }
 
   const handleSuggestionClick = (suggestion) => {
-    onSearch(suggestion)
+    const searchVal = typeof suggestion === 'object' ? suggestion.name : suggestion
+    onSearch(searchVal)
     userIsTypingRef.current = false
-    setInput(suggestion)
+    setInput(searchVal)
     setShowSuggestions(false)
     // Blur input to dismiss mobile keyboard
     if (containerRef.current) {
@@ -128,12 +143,13 @@ export default function PokemonSearch({ onSearch, loading, pokemonList, initialQ
           <ul className="suggestions-list">
             {suggestions.map((suggestion, idx) => (
               <li
-                key={suggestion}
+                key={suggestion.id ? `${suggestion.id}-${suggestion.name}` : suggestion.name}
                 className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
                 onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(suggestion) }}
                 onTouchEnd={(e) => { e.preventDefault(); handleSuggestionClick(suggestion) }}
               >
-                {suggestion.charAt(0).toUpperCase() + suggestion.slice(1)}
+                {suggestion.id && <span style={{ color: '#888', marginRight: '6px' }}>#{suggestion.id}</span>}
+                {suggestion.name.charAt(0).toUpperCase() + suggestion.name.slice(1)}
               </li>
             ))}
           </ul>
