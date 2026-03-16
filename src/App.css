@@ -1183,6 +1183,163 @@
 }
 
 /* =========================
+   Location Page
+   ========================= */
+
+.location-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.location-detail-card {
+  background: var(--box-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.location-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.location-detail-name {
+  font-size: 1.6rem;
+  color: var(--text-color);
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.location-region-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #e0f2f1;
+  color: #00695c;
+}
+
+.location-encounters-section {
+  background: var(--box-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.location-encounters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.location-encounters-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-color);
+}
+
+.location-encounters-table-wrapper {
+  max-height: 600px;
+  overflow-y: auto;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+}
+
+.location-encounters-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.location-encounters-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.location-encounters-table th {
+  background: var(--table-header-bg);
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-subtle);
+  border-bottom: 2px solid var(--table-header-border);
+}
+
+.location-encounters-table th button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text-subtle);
+  cursor: pointer;
+  text-align: left;
+}
+
+.location-encounters-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-lighter);
+  vertical-align: middle;
+  text-transform: capitalize;
+}
+
+.location-encounters-table tbody tr:hover {
+  background: var(--table-row-hover);
+}
+
+.location-header-row {
+  cursor: pointer;
+}
+
+.location-header-row:hover {
+  background: var(--table-row-hover);
+}
+
+.location-toggle {
+  display: inline-block;
+  width: 14px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.location-detail-row {
+  background: var(--table-alt-row, rgba(0, 0, 0, 0.02));
+}
+
+.location-method-cell {
+  white-space: nowrap;
+}
+
+.location-level-cell {
+  white-space: nowrap;
+}
+
+.location-rate-cell {
+  font-weight: 600;
+}
+
+.location-versions-cell {
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+
+.location-no-encounters {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* =========================
    Footer
    ========================= */
 
@@ -1533,25 +1690,29 @@
     gap: 12px;
   }
 
-  /* Move / Ability / Item detail pages */
+  /* Move / Ability / Item / Location detail pages */
   .move-page,
   .ability-page,
-  .item-page {
+  .item-page,
+  .location-page {
     max-width: 100%;
   }
 
   .move-detail-card,
   .ability-detail-card,
   .item-detail-card,
+  .location-detail-card,
   .move-learners-section,
   .ability-pokemon-section,
-  .item-holders-section {
+  .item-holders-section,
+  .location-encounters-section {
     padding: 12px;
   }
 
   .move-detail-name,
   .ability-detail-name,
-  .item-detail-name {
+  .item-detail-name,
+  .location-detail-name {
     font-size: 1.3rem;
   }
 

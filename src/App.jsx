@@ -5,6 +5,7 @@ import PokemonSearch from './components/PokemonSearch'
 import MovePage from './components/MovePage'
 import AbilityPage from './components/AbilityPage'
 import ItemPage from './components/ItemPage'
+import LocationPage from './components/LocationPage'
 
 /**
  * Read URL path parameters on load.
@@ -23,7 +24,7 @@ function getUrlParams() {
   const segments = pathname.split('/').filter(Boolean)
   const tab = segments[0] || null
 
-  if (tab === 'pokemon' || tab === 'moves' || tab === 'abilities' || tab === 'items') {
+  if (tab === 'pokemon' || tab === 'moves' || tab === 'abilities' || tab === 'items' || tab === 'locations') {
     if (segments.length >= 3) {
       return { tab, version: segments[1], name: segments[2] }
     }
@@ -54,6 +55,7 @@ const TABS = [
   { id: 'abilities', label: 'Abilities' },
   { id: 'moves', label: 'Moves' },
   { id: 'items', label: 'Items' },
+  { id: 'locations', label: 'Locations' },
 ]
 
 const SOLROCK_SPRITE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/338.png'
@@ -101,6 +103,11 @@ function App() {
   const [itemPageInit, setItemPageInit] = useState({
     item: urlParams.tab === 'items' ? urlParams.name : null,
     version: urlParams.tab === 'items' ? urlParams.version : null,
+    key: 0,
+  })
+  const [locationPageInit, setLocationPageInit] = useState({
+    location: urlParams.tab === 'locations' ? urlParams.name : null,
+    version: urlParams.tab === 'locations' ? urlParams.version : null,
     key: 0,
   })
 
@@ -194,6 +201,13 @@ function App() {
     updateUrl('items', current)
   }, [])
 
+  const handleLocationStateChange = useCallback(({ version, location }) => {
+    const current = urlStateRef.current
+    if (version !== undefined) current.version = version
+    if (location !== undefined) current.name = location
+    updateUrl('locations', current)
+  }, [])
+
   // Navigate from PokemonCard → MovePage
   const navigateToMove = useCallback((moveName) => {
     const currentVersion = urlStateRef.current.version
@@ -219,6 +233,15 @@ function App() {
     updateUrl('items', urlStateRef.current)
     setItemPageInit(prev => ({ item: itemName, version: currentVersion, key: prev.key + 1 }))
     setActiveTab('items')
+  }, [])
+
+  // Navigate from PokemonCard → LocationPage
+  const navigateToLocation = useCallback((locationName) => {
+    const currentVersion = urlStateRef.current.version
+    urlStateRef.current = { version: currentVersion, name: locationName }
+    updateUrl('locations', urlStateRef.current)
+    setLocationPageInit(prev => ({ location: locationName, version: currentVersion, key: prev.key + 1 }))
+    setActiveTab('locations')
   }, [])
 
   // Navigate from MovePage → PokemonCard
@@ -369,6 +392,8 @@ function App() {
       setAbilityPageInit(prev => ({ ...prev, version: currentVersion }))
     } else if (tabId === 'items') {
       setItemPageInit(prev => ({ ...prev, version: currentVersion }))
+    } else if (tabId === 'locations') {
+      setLocationPageInit(prev => ({ ...prev, version: currentVersion }))
     }
     setActiveTab(tabId)
   }, [])
@@ -410,7 +435,7 @@ function App() {
           
           {error && <div className="error">{error}</div>}
           {loading && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball" /></div>}
-          {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} onMoveClick={navigateToMove} onAbilityClick={navigateToAbility} onItemClick={navigateToItem} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} />}
+          {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} onMoveClick={navigateToMove} onAbilityClick={navigateToAbility} onItemClick={navigateToItem} onLocationClick={navigateToLocation} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} />}
         </>
       )}
 
@@ -440,6 +465,16 @@ function App() {
           initialItem={itemPageInit.item}
           initialVersion={itemPageInit.version}
           onStateChange={handleItemStateChange}
+          onPokemonClick={navigateToPokemon}
+        />
+      )}
+
+      {activeTab === 'locations' && (
+        <LocationPage
+          key={locationPageInit.key}
+          initialLocation={locationPageInit.location}
+          initialVersion={locationPageInit.version}
+          onStateChange={handleLocationStateChange}
           onPokemonClick={navigateToPokemon}
         />
       )}

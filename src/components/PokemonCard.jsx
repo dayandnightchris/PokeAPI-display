@@ -387,7 +387,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
   )
 }
 
-export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, onAbilityClick, onItemClick, initialForm, initialVersion, onStateChange }) {
+export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, onAbilityClick, onItemClick, onLocationClick, initialForm, initialVersion, onStateChange }) {
   // UI state
   const [hoveredType, setHoveredType] = useState(null)
   const [versionInfo, setVersionInfo] = useState(null)
@@ -1150,7 +1150,12 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                               const methodDisplay = entry.method.replace(/-/g, ' ')
                               return (
                                 <tr key={location} style={{ borderBottom: '1px solid #eee' }}>
-                                  <td style={{ padding: '6px 8px' }}>{locationDisplay}</td>
+                                  <td style={{ padding: '6px 8px' }}>
+                                    {onLocationClick
+                                      ? <button type="button" className="pokemon-name-link" onClick={() => onLocationClick(location.replace(/-area$/, '').replace(/-\d+$/, ''))}>{locationDisplay}</button>
+                                      : locationDisplay
+                                    }
+                                  </td>
                                   <td style={{ padding: '6px 8px' }}>
                                     {methodDisplay.charAt(0).toUpperCase() + methodDisplay.slice(1)}
                                   </td>
@@ -1170,7 +1175,10 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                               >
                                 <td style={{ padding: '6px 8px' }}>
                                   <span className="location-toggle">{isExpanded ? '▾' : '▸'}</span>
-                                  {locationDisplay}
+                                  {onLocationClick
+                                    ? <button type="button" className="pokemon-name-link" onClick={(e) => { e.stopPropagation(); onLocationClick(location.replace(/-area$/, '').replace(/-\d+$/, '')) }}>{locationDisplay}</button>
+                                    : locationDisplay
+                                  }
                                 </td>
                                 <td style={{ padding: '6px 8px', color: '#888' }}>
                                   {entryList.length} method{entryList.length !== 1 ? 's' : ''}

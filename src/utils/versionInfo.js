@@ -60,6 +60,27 @@ export const versionDisplayNames = {
   'legends-za': 'Legends: Z-A',
 }
 
+// Map individual version name to abbreviated display name
+export const versionAbbreviations = {
+  'red': 'R', 'blue': 'B', 'yellow': 'Y',
+  'gold': 'G', 'silver': 'S', 'crystal': 'C',
+  'ruby': 'R', 'sapphire': 'S', 'emerald': 'E',
+  'firered': 'FR', 'leafgreen': 'LG',
+  'colosseum': 'Col', 'xd': 'XD',
+  'diamond': 'D', 'pearl': 'P', 'platinum': 'Pt',
+  'heartgold': 'HG', 'soulsilver': 'SS',
+  'black': 'B', 'white': 'W', 'black-2': 'B2', 'white-2': 'W2',
+  'x': 'X', 'y': 'Y',
+  'omega-ruby': 'OR', 'alpha-sapphire': 'AS',
+  'sun': 'S', 'moon': 'M', 'ultra-sun': 'US', 'ultra-moon': 'UM',
+  'lets-go-pikachu': 'LGP', 'lets-go-eevee': 'LGE',
+  'sword': 'Sw', 'shield': 'Sh',
+  'brilliant-diamond': 'BD', 'shining-pearl': 'SP',
+  'legends-arceus': 'LA',
+  'scarlet': 'Sc', 'violet': 'Vi',
+  'legends-za': 'LZ-A',
+}
+
 // Map version group name to display name
 export const versionGroupDisplayNames = {
   'red-blue': 'R/B', 'yellow': 'Y',

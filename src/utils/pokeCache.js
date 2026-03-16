@@ -241,3 +241,23 @@ export async function fetchSpeciesCached(name) {
   if (!name) return null
   return cachedFetch(`pokeapi:species:${name}`, `https://pokeapi.co/api/v2/pokemon-species/${name}/`, speciesMemoryCache)
 }
+
+const locationMemoryCache = new Map()
+
+export async function fetchLocationCached(name) {
+  name = String(name).trim().toLowerCase()
+  if (!name) return null
+  return cachedFetch(`pokeapi:location:${name}`, `https://pokeapi.co/api/v2/location/${name}/`, locationMemoryCache)
+}
+
+const locationAreaMemoryCache = new Map()
+
+export async function fetchLocationAreaCached(nameOrUrl) {
+  if (!nameOrUrl) return null
+  // Accept either a name or a full URL
+  if (nameOrUrl.startsWith('http')) {
+    return cachedFetch(nameOrUrl, nameOrUrl, locationAreaMemoryCache)
+  }
+  const name = String(nameOrUrl).trim().toLowerCase()
+  return cachedFetch(`pokeapi:location-area:${name}`, `https://pokeapi.co/api/v2/location-area/${name}/`, locationAreaMemoryCache)
+}
