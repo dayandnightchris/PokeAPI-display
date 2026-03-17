@@ -271,7 +271,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
         if (existing) {
           existing.rate += chance
         } else {
-          byPokemon[pokeName].entries.push({ method, minLevel: minLvl, maxLevel: maxLvl, rate: chance, conditions })
+          byPokemon[pokeName].entries.push({ method, minLevel: minLvl, maxLevel: maxLvl, rate: chance, conditions, versions: new Set() })
         }
       })
 
@@ -280,6 +280,50 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
         if (v.version?.name && v.encounter_details?.length > 0) {
           byPokemon[pokeName].versions.add(v.version.name)
         }
+      })
+    })
+
+    // Track which versions each method entry appears in
+    // Match by full signature (method + levels + rate + conditions) so only
+    // versions with identical encounter details are tagged on each row.
+    encounters.forEach(enc => {
+      const pokeName = enc.pokemon.name
+      if (!byPokemon[pokeName]) return
+      enc.version_details?.forEach(vd => {
+        const vName = vd.version?.name
+        if (!vName || !versionDisplayNames[vName] || !vd.encounter_details?.length) return
+
+        // Build & merge this version's details the same way entries were built
+        const merged = []
+        vd.encounter_details.forEach(detail => {
+          const method = detail.method?.name || 'unknown'
+          const minLvl = detail.min_level || 0
+          const maxLvl = detail.max_level || 0
+          const chance = detail.chance || 0
+          const conditions = (detail.condition_values || []).map(cv => cv.name).sort()
+          const existing = merged.find(
+            m => m.method === method && m.minLevel === minLvl && m.maxLevel === maxLvl && JSON.stringify(m.conditions) === JSON.stringify(conditions)
+          )
+          if (existing) {
+            existing.rate += chance
+          } else {
+            merged.push({ method, minLevel: minLvl, maxLevel: maxLvl, rate: chance, conditions })
+          }
+        })
+
+        // Only tag a version on an entry if the full signature matches
+        byPokemon[pokeName].entries.forEach(entry => {
+          const match = merged.find(
+            m => m.method === entry.method
+              && m.minLevel === entry.minLevel
+              && m.maxLevel === entry.maxLevel
+              && m.rate === entry.rate
+              && JSON.stringify(m.conditions) === JSON.stringify(entry.conditions)
+          )
+          if (match) {
+            entry.versions.add(vName)
+          }
+        })
       })
     })
 
@@ -542,7 +586,13 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                                   )}
                                 </td>
                                 <td className="location-rate-cell">{entry.rate}%</td>
-                                <td className="location-versions-cell"></td>
+                                <td className="location-versions-cell">
+                                  {Array.from(entry.versions || [])
+                                    .filter(v => versionAbbreviations[v])
+                                    .sort((a, b) => (versionGeneration[a] || 0) - (versionGeneration[b] || 0))
+                                    .map(v => versionAbbreviations[v])
+                                    .join(', ')}
+                                </td>
                               </tr>
                             )
                           })
