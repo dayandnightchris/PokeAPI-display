@@ -159,6 +159,26 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
     setEncounters([])
 
     try {
+      // Try as sub-area (location-area) first
+      const areaData = await fetchLocationAreaCached(query)
+      if (areaData && areaData.pokemon_encounters) {
+        setLocationData({
+          name: areaData.name,
+          region: areaData.location?.region || null,
+          // Fallback: try to get region from parent location if not present
+        })
+        // Each encounter is for this sub-area only
+        const allEncounters = areaData.pokemon_encounters.map(pe => ({
+          pokemon: pe.pokemon,
+          version_details: pe.version_details,
+          area: areaData.name,
+        }))
+        setEncounters(allEncounters)
+        setLocationLoading(false)
+        return
+      }
+
+      // Fallback: try as parent location
       const data = await fetchLocationCached(query)
       if (!data) throw new Error('Location not found')
       setLocationData(data)
