@@ -165,7 +165,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
         setLocationData({
           name: areaData.name,
           region: areaData.location?.region || null,
-          // Fallback: try to get region from parent location if not present
+          parentLocation: areaData.location?.name || null,
         })
         // Each encounter is for this sub-area only
         const allEncounters = areaData.pokemon_encounters.map(pe => ({
@@ -401,7 +401,41 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
               {regionName && (
                 <span className="location-region-badge">{formatName(regionName)}</span>
               )}
+              {/* Show parent location if in a sub-area */}
+              {locationData.parentLocation && (
+                <div style={{ marginTop: '8px', fontSize: '14px' }}>
+                  Parent location:
+                  <button
+                    type="button"
+                    className="location-parent-link"
+                    style={{ background: 'none', border: 'none', color: '#1976d2', cursor: 'pointer', padding: 0, fontSize: 'inherit', textDecoration: 'underline', marginLeft: '6px' }}
+                    onClick={() => searchLocation(locationData.parentLocation)}
+                  >
+                    {formatLocationName(locationData.parentLocation)}
+                  </button>
+                </div>
+              )}
             </div>
+            {/* Sub-areas list */}
+            {locationData.areas && locationData.areas.length > 0 && (
+              <div className="location-subareas-list" style={{ marginTop: '12px' }}>
+                <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '4px' }}>Sub-areas:</div>
+                <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '14px' }}>
+                  {locationData.areas.map(area => (
+                    <li key={area.name} style={{ marginBottom: '2px' }}>
+                      <button
+                        type="button"
+                        className="location-subarea-link"
+                        style={{ background: 'none', border: 'none', color: '#1976d2', cursor: 'pointer', padding: 0, fontSize: 'inherit', textDecoration: 'underline' }}
+                        onClick={() => searchLocation(area.name)}
+                      >
+                        {formatLocationName(area.name)}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* Encounters Table */}
