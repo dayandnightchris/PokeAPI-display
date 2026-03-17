@@ -76,7 +76,7 @@ function CollapsibleInfoBox({ title, children, className = '', style, contentCla
 }
 
 function formatLocationName(name) {
-  // Remove trailing -area or -area-123, then replace dashes with spaces
+  // Remove trailing -area, then replace dashes with spaces
   return name
     .replace(/-area$/, '')
     .replace(/-/g, ' ')
