@@ -75,6 +75,14 @@ function CollapsibleInfoBox({ title, children, className = '', style, contentCla
   )
 }
 
+function formatLocationName(name) {
+  // Remove trailing -area or -area-123, then replace dashes with spaces
+  return name
+    .replace(/-area-\d+$/, '')
+    .replace(/-area$/, '')
+    .replace(/-/g, ' ')
+    .trim();
+}
 const formatMoveLabel = (value) => {
   if (!value) return 'N/A'
   if (value === 'unknown') return '???'
@@ -1152,7 +1160,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                                 <tr key={location} style={{ borderBottom: '1px solid #eee' }}>
                                   <td style={{ padding: '6px 8px' }}>
                                     {onLocationClick
-                                      ? <button type="button" className="pokemon-name-link" onClick={() => onLocationClick(location.replace(/-area$/, '').replace(/-\d+$/, ''))}>{locationDisplay}</button>
+                                      ? <button type="button" className="pokemon-name-link" onClick={() => onLocationClick(location)}>{formatLocationName(location)}</button>
                                       : locationDisplay
                                     }
                                   </td>
@@ -1176,7 +1184,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                                 <td style={{ padding: '6px 8px' }}>
                                   <span className="location-toggle">{isExpanded ? '▾' : '▸'}</span>
                                   {onLocationClick
-                                    ? <button type="button" className="pokemon-name-link" onClick={(e) => { e.stopPropagation(); onLocationClick(location.replace(/-area$/, '').replace(/-\d+$/, '')) }}>{locationDisplay}</button>
+                                    ? <button type="button" className="pokemon-name-link" onClick={(e) => { e.stopPropagation(); onLocationClick(location) }}>{locationDisplay}</button>
                                     : locationDisplay
                                   }
                                 </td>
