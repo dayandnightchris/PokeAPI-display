@@ -215,6 +215,7 @@ function App() {
     updateUrl('moves', urlStateRef.current)
     setMovePageInit(prev => ({ move: moveName, version: currentVersion, key: prev.key + 1 }))
     setActiveTab('moves')
+    window.scrollTo(0, 0)
   }, [])
 
   // Navigate from PokemonCard → AbilityPage
@@ -224,6 +225,7 @@ function App() {
     updateUrl('abilities', urlStateRef.current)
     setAbilityPageInit(prev => ({ ability: abilityName, version: currentVersion, key: prev.key + 1 }))
     setActiveTab('abilities')
+    window.scrollTo(0, 0)
   }, [])
 
   // Navigate from PokemonCard → ItemPage
@@ -233,6 +235,7 @@ function App() {
     updateUrl('items', urlStateRef.current)
     setItemPageInit(prev => ({ item: itemName, version: currentVersion, key: prev.key + 1 }))
     setActiveTab('items')
+    window.scrollTo(0, 0)
   }, [])
 
   // Navigate from PokemonCard → LocationPage
@@ -242,6 +245,7 @@ function App() {
     updateUrl('locations', urlStateRef.current)
     setLocationPageInit(prev => ({ location: locationName, version: currentVersion, key: prev.key + 1 }))
     setActiveTab('locations')
+    window.scrollTo(0, 0)
   }, [])
 
   // Navigate from MovePage → PokemonCard
@@ -252,6 +256,7 @@ function App() {
     setPokemonPageInit(prev => ({ name: pokemonName, version: version || null, key: prev.key + 1 }))
     setActiveTab('pokemon')
     fetchPokemon(pokemonName)
+    window.scrollTo(0, 0)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPokemon = async (nameOrId) => {
