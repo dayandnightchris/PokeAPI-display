@@ -223,7 +223,7 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
   }, [selectedVersion, itemData, onStateChange])
 
   const searchItem = async (name) => {
-    const query = String(name).trim().toLowerCase()
+    const query = String(name).trim().toLowerCase().replace(/\s+/g, '-')
     if (!query) return
 
     userIsTypingRef.current = false

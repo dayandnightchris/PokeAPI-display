@@ -602,7 +602,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
   }, [selectedVersion, moveData, onStateChange])
 
   const searchMove = async (name) => {
-    const query = String(name).trim().toLowerCase()
+    const query = String(name).trim().toLowerCase().replace(/\s+/g, '-')
     if (!query) return
 
     userIsTypingRef.current = false

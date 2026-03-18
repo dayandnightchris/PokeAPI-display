@@ -355,7 +355,7 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
   }, [selectedVersion, abilityData, onStateChange])
 
   const searchAbility = async (name) => {
-    const query = String(name).trim().toLowerCase()
+    const query = String(name).trim().toLowerCase().replace(/\s+/g, '-')
     if (!query) return
 
     userIsTypingRef.current = false

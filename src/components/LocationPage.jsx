@@ -147,7 +147,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
   }, [selectedVersion, locationData, onStateChange])
 
   const searchLocation = async (name) => {
-    const query = String(name).trim().toLowerCase()
+    const query = String(name).trim().toLowerCase().replace(/\s+/g, '-')
     if (!query) return
 
     userIsTypingRef.current = false

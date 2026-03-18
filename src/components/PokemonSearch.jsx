@@ -71,7 +71,7 @@ export default function PokemonSearch({ onSearch, loading, pokemonList, pokemonI
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    const cleaned = input.replace(/#/g, '').trim().toLowerCase()
+    const cleaned = input.replace(/#/g, '').trim().toLowerCase().replace(/\s+/g, '-')
     if (cleaned) {
       onSearch(cleaned)
       setInput(cleaned)

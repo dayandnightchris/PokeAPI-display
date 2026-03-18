@@ -260,7 +260,7 @@ function App() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPokemon = async (nameOrId) => {
-    const query = String(nameOrId).trim().toLowerCase()
+    const query = String(nameOrId).trim().toLowerCase().replace(/\s+/g, '-')
     if (!query) return
 
     // Update search bar to reflect what's being loaded
