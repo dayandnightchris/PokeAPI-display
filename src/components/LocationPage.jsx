@@ -371,6 +371,16 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
 
   const encounterGroups = getEncounterGroups()
 
+  // When navigating to a new area while fully expanded, auto-expand the new area's collapsible groups
+  useEffect(() => {
+    if (!tableFullyExpanded) return
+    const collapsible = encounterGroups.filter(g => g.entries.length > 1)
+    if (collapsible.length === 0) return
+    const expanded = {}
+    collapsible.forEach(g => { expanded[g.pokemon] = true })
+    setExpandedPokemon(expanded)
+  }, [encounters, selectedVersion]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Sorting
   const handleSort = (key) => {
     setSortConfig(prev => ({
