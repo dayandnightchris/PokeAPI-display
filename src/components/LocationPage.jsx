@@ -4,10 +4,14 @@ import { fetchLocationCached, fetchLocationAreaCached } from '../utils/pokeCache
 
 function formatName(name) {
   return name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+    .replace(/Firered/g, 'Fire Red').replace(/Leafgreen/g, 'Leaf Green')
+    .replace(/Heartgold/g, 'Heart Gold').replace(/Soulsilver/g, 'Soul Silver')
 }
 
 function formatLocationName(name) {
   return name.replace(/-/g, ' ').replace(/ area$/i, '').replace(/\b\w/g, c => c.toUpperCase())
+    .replace(/Firered/g, 'Fire Red').replace(/Leafgreen/g, 'Leaf Green')
+    .replace(/Heartgold/g, 'Heart Gold').replace(/Soulsilver/g, 'Soul Silver')
 }
 
 export default function LocationPage({ initialLocation, initialVersion, onStateChange, onPokemonClick }) {

@@ -83,6 +83,10 @@ function formatLocationName(name) {
     .replace(/-/g, ' ')
     .trim()
     .replace(/\b\w/g, c => c.toUpperCase())
+    .replace(/Firered/g, 'Fire Red')
+    .replace(/Leafgreen/g, 'Leaf Green')
+    .replace(/Heartgold/g, 'Heart Gold')
+    .replace(/Soulsilver/g, 'Soul Silver')
 }
 const formatMoveLabel = (value) => {
   if (!value) return 'N/A'
