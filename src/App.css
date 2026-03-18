@@ -87,7 +87,7 @@
 
 .control-group label {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 1.05rem;
   color: var(--text-color);
 }
 
@@ -100,7 +100,7 @@
   padding: 0.5rem;
   border: 1px solid var(--border-light);
   border-radius: 4px;
-  font-size: 0.9rem;
+  font-size: 1.05rem;
   cursor: pointer;
 }
 
@@ -122,7 +122,7 @@
 
 .stat-name {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 1.05rem;
   color: var(--text-subtle);
   text-transform: uppercase;
 }
@@ -144,7 +144,7 @@
 
 .stat-value {
   font-weight: bold;
-  font-size: 1rem;
+  font-size: 1.15rem;
   color: var(--text-color);
   display: flex;
   align-items: center;
@@ -152,7 +152,7 @@
 }
 
 .stat-base {
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   color: var(--stat-id-color);
   font-weight: normal;
   margin-left: 0.5rem;
@@ -367,13 +367,13 @@
 .move-table-compact th,
 .move-table-compact td {
   padding: 3px 4px;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 /* Effect sub-row (Serebii-style) */
 .move-effect-subrow-cell {
   padding: 2px 6px 6px;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-color);
   line-height: 1.4;
 }
@@ -1254,7 +1254,7 @@
   width: 100%;
 }
 .location-box table th {
-  font-size: 11px;
+  font-size: 13px;
   white-space: nowrap;
 }
 .location-box table th:first-child,
