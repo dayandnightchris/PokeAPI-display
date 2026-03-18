@@ -558,7 +558,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                       <button
                         type="button"
                         className="expand-toggle"
-                        title={allExpanded ? 'Collapse all methods' : 'Expand all methods'}
+                        title={allExpanded ? 'Collapse all entries' : 'Expand all entries'}
                         onClick={() => {
                           const collapsible = sortedGroups.filter(g => g.entries.length > 1)
                           if (allExpanded) {
