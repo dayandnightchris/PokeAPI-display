@@ -1188,7 +1188,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                           <tr style={{ borderBottom: '1px solid #ccc', fontWeight: 'bold' }}>
                             <th style={{ padding: '6px 8px', textAlign: 'left' }}>Location</th>
                             <th style={{ padding: '6px 8px', textAlign: 'left' }}>Method</th>
-                            <th style={{ padding: '6px 8px', textAlign: 'center' }}>Levels</th>
+                            <th style={{ padding: '6px 8px', textAlign: 'center' }}><span className="hide-mobile">Level</span><span className="show-mobile">Lvl</span></th>
                             <th style={{ padding: '6px 8px', textAlign: 'center' }}>Rate</th>
                           </tr>
                         </thead>

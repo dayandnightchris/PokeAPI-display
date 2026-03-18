@@ -1199,6 +1199,9 @@
   flex-wrap: wrap;
 }
 
+/* Responsive text helpers */
+.show-mobile { display: none; }
+
 /* No margin on the Pokemon page — card content follows immediately */
 .pokemon-card-container > .page-search-row {
   margin-bottom: 0;
@@ -1243,6 +1246,32 @@
 /* Prevent version-selector from shrinking inside search row */
 .page-search-row > .version-selector {
   flex-shrink: 0;
+}
+
+/* PokemonCard location box — keep columns compact */
+.location-box table {
+  table-layout: fixed;
+  width: 100%;
+}
+.location-box table th {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.location-box table th:first-child,
+.location-box table td:first-child {
+  width: 34%;
+}
+.location-box table th:nth-child(2),
+.location-box table td:nth-child(2) {
+  width: 30%;
+}
+.location-box table th:nth-child(3),
+.location-box table td:nth-child(3) {
+  width: 18%;
+}
+.location-box table th:nth-child(4),
+.location-box table td:nth-child(4) {
+  width: 18%;
 }
 
 .location-detail-card {
@@ -1797,11 +1826,49 @@
   .page-search-row {
     flex-direction: column;
     align-items: stretch;
+    gap: 0;
   }
 
   .page-search-inline {
     max-width: 100%;
   }
+
+  /* Tighten PokemonCard location box table on mobile */
+  .location-box table th,
+  .location-box table td {
+    padding: 4px 4px !important;
+    font-size: 11px !important;
+    word-break: break-word;
+  }
+
+  .location-box table {
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .location-box table th:first-child,
+  .location-box table td:first-child {
+    width: 38%;
+  }
+
+  .location-box table th:nth-child(2),
+  .location-box table td:nth-child(2) {
+    width: 28%;
+  }
+
+  .location-box table th:nth-child(3),
+  .location-box table td:nth-child(3) {
+    width: 17%;
+  }
+
+  .location-box table th:nth-child(4),
+  .location-box table td:nth-child(4) {
+    width: 17%;
+  }
+
+  /* Show/hide helpers for responsive text */
+  .hide-mobile { display: none; }
+  .show-mobile { display: inline; }
 }
 
 @media (max-width: 480px) {
