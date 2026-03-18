@@ -30,6 +30,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
 
   const [sortConfig, setSortConfig] = useState({ key: 'pokemon', direction: 'asc' })
   const [expandedPokemon, setExpandedPokemon] = useState({})
+  const [tableFullyExpanded, setTableFullyExpanded] = useState(false)
 
   // Auto-load location from URL on mount
   const hasLoadedFromUrl = useRef(false)
@@ -536,10 +537,12 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                           const collapsible = sortedGroups.filter(g => g.entries.length > 1)
                           if (allExpanded) {
                             setExpandedPokemon({})
+                            setTableFullyExpanded(false)
                           } else {
                             const expanded = {}
                             collapsible.forEach(g => { expanded[g.pokemon] = true })
                             setExpandedPokemon(prev => ({ ...prev, ...expanded }))
+                            setTableFullyExpanded(true)
                           }
                         }}
                       >
@@ -557,7 +560,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                     )
                   })()}
                 </div>
-                <div className="location-encounters-table-wrapper">
+                <div className="location-encounters-table-wrapper" style={tableFullyExpanded ? { maxHeight: 'none' } : undefined}>
                   <table className="location-encounters-table">
                     <thead>
                       <tr>
