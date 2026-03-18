@@ -1412,7 +1412,10 @@
 
 .location-versions-cell {
   font-size: 12px;
-  color: var(--text-subtle);
+}
+
+.location-versions-cell .version-tag {
+  font-weight: 600;
 }
 
 .location-unavailable-row {

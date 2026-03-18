@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { versionDisplayNames, versionGeneration, versionAbbreviations, generationVersions } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, versionAbbreviations, generationVersions, versionColors } from '../utils/versionInfo'
 import { fetchLocationCached, fetchLocationAreaCached } from '../utils/pokeCache'
 
 function formatName(name) {
@@ -576,20 +576,31 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                         const selectedGen = versionGeneration[selectedVersion] || 0
                         const sameGenVersions = new Set(generationVersions[selectedGen] || [])
 
-                        // Helper: render version tags, greying ones that aren't the selected version
-                        // When rowGreyed is true, the row already has reduced opacity so skip per-tag dimming
+                        // Helper: render version tags with game-colored abbreviations
+                        // When rowGreyed is true, the row already has reduced opacity so skip per-tag dimming and color
                         const renderVersionTags = (versions, rowGreyed) => {
                           const sorted = Array.from(versions)
                             .filter(v => versionAbbreviations[v] && sameGenVersions.has(v))
                             .sort((a, b) => (versionGeneration[a] || 0) - (versionGeneration[b] || 0))
-                          return sorted.map((v, i) => (
-                            <span key={v}>
-                              {i > 0 && ', '}
-                              <span style={!rowGreyed && v !== selectedVersion ? { opacity: 0.4 } : undefined}>
-                                {versionAbbreviations[v]}
+                          return sorted.map((v, i) => {
+                            const isNonSelected = v !== selectedVersion
+                            const color = versionColors[v]
+                            const style = rowGreyed
+                              ? undefined
+                              : {
+                                  color: color || undefined,
+                                  opacity: isNonSelected ? 0.4 : undefined,
+                                  fontWeight: 600,
+                                }
+                            return (
+                              <span key={v}>
+                                {i > 0 && ', '}
+                                <span className="version-tag" style={style}>
+                                  {versionAbbreviations[v]}
+                                </span>
                               </span>
-                            </span>
-                          ))
+                            )
+                          })
                         }
 
                         if (!isCollapsible) {

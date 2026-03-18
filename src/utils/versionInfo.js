@@ -127,6 +127,59 @@ export const versionGroupOrder = {
   'legends-za': 26, 'mega-dimension': 27,
 }
 
+// Color for each version, used for version tags in the location page
+export const versionColors = {
+  // Gen 1
+  'red': '#EF4444',
+  'blue': '#3B82F6',
+  'yellow': '#EAB308',
+  // Gen 2
+  'gold': '#D97706',
+  'silver': '#94A3B8',
+  'crystal': '#22D3EE',
+  // Gen 3
+  'ruby': '#DC2626',
+  'sapphire': '#2563EB',
+  'emerald': '#10B981',
+  'firered': '#F97316',
+  'leafgreen': '#22C55E',
+  'colosseum': '#CA8A04',
+  'xd': '#7C3AED',
+  // Gen 4
+  'diamond': '#60A5FA',
+  'pearl': '#F472B6',
+  'platinum': '#94A3B8',
+  'heartgold': '#EAB308',
+  'soulsilver': '#9CA3AF',
+  // Gen 5
+  'black': '#6B7280',
+  'white': '#D1D5DB',
+  'black-2': '#6B7280',
+  'white-2': '#D1D5DB',
+  // Gen 6
+  'x': '#6366F1',
+  'y': '#EF4444',
+  'omega-ruby': '#DC2626',
+  'alpha-sapphire': '#2563EB',
+  // Gen 7
+  'sun': '#F59E0B',
+  'moon': '#8B5CF6',
+  'ultra-sun': '#EA580C',
+  'ultra-moon': '#7C3AED',
+  'lets-go-pikachu': '#EAB308',
+  'lets-go-eevee': '#92400E',
+  // Gen 8
+  'sword': '#38BDF8',
+  'shield': '#EC4899',
+  'brilliant-diamond': '#60A5FA',
+  'shining-pearl': '#F472B6',
+  'legends-arceus': '#0EA5E9',
+  // Gen 9
+  'scarlet': '#DC2626',
+  'violet': '#7C3AED',
+  'legends-za': '#059669',
+}
+
 // Determine which version groups can provide transfer-only moves for the selected version.
 // Returns a Set of version group names, or null if no transfers are possible.
 export function getTransferSourceVersionGroups(selectedVersion, versionGroup) {
