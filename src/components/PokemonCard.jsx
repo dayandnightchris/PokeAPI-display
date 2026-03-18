@@ -1114,16 +1114,18 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                     if (versionDetail && versionDetail.encounter_details?.length > 0) {
                       const locationName = enc.location_area.name
                       if (!encountersByLocation[locationName]) {
-                        encountersByLocation[locationName] = {}
+                        encountersByLocation[locationName] = []
                       }
                       versionDetail.encounter_details.forEach(detail => {
                         const methodName = detail.method?.name || 'unknown'
                         const conditions = (detail.condition_values || []).map(cv => cv.name).sort()
-                        const key = methodName + '|' + conditions.join(',')
-                        if (!encountersByLocation[locationName][key]) {
-                          encountersByLocation[locationName][key] = { method: methodName, rate: 0, conditions }
-                        }
-                        encountersByLocation[locationName][key].rate += detail.chance || 0
+                        encountersByLocation[locationName].push({
+                          method: methodName,
+                          rate: detail.chance || 0,
+                          minLevel: detail.min_level,
+                          maxLevel: detail.max_level,
+                          conditions
+                        })
                       })
                     }
                   })
@@ -1139,39 +1141,40 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                           <tr style={{ borderBottom: '1px solid #ccc', fontWeight: 'bold' }}>
                             <th style={{ padding: '6px 8px', textAlign: 'left' }}>Location</th>
                             <th style={{ padding: '6px 8px', textAlign: 'left' }}>Method</th>
+                            <th style={{ padding: '6px 8px', textAlign: 'center' }}>Levels</th>
                             <th style={{ padding: '6px 8px', textAlign: 'center' }}>Rate</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {Object.entries(encountersByLocation).map(([location, entries]) => {
-                            const entryList = Object.values(entries)
-                            const hasMultiple = entryList.length > 1
-                            const hasConditions = entryList.some(e => e.conditions.length > 0)
-                            const isCollapsible = hasMultiple || hasConditions
+                          {Object.entries(encountersByLocation).map(([location, entryList]) => {
+                            const isCollapsible = entryList.length > 1
                             const isExpanded = !!expandedLocations[location]
-                            const locationDisplay = location.replace(/-/g, ' ').replace(/ area$/i, '')
 
                             if (!isCollapsible) {
-                              // Single entry, no conditions — flat row
+                              // Single entry — flat row
                               const entry = entryList[0]
                               const methodDisplay = entry.method.replace(/-/g, ' ')
+                              const levelDisplay = entry.minLevel === entry.maxLevel
+                                ? `${entry.minLevel}`
+                                : `${entry.minLevel}–${entry.maxLevel}`
                               return (
                                 <tr key={location} style={{ borderBottom: '1px solid #eee' }}>
                                   <td style={{ padding: '6px 8px' }}>
                                     {onLocationClick
                                       ? <button type="button" className="pokemon-name-link" onClick={() => onLocationClick(location)}>{formatLocationName(location)}</button>
-                                      : locationDisplay
+                                      : formatLocationName(location)
                                     }
                                   </td>
                                   <td style={{ padding: '6px 8px' }}>
                                     {methodDisplay.charAt(0).toUpperCase() + methodDisplay.slice(1)}
                                   </td>
+                                  <td style={{ padding: '6px 8px', textAlign: 'center' }}>{levelDisplay}</td>
                                   <td style={{ padding: '6px 8px', textAlign: 'center' }}>{entry.rate}%</td>
                                 </tr>
                               )
                             }
 
-                            // Collapsible location
+                            // Collapsible location — multiple entries
                             const rows = []
                             rows.push(
                               <tr
@@ -1183,23 +1186,25 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                                 <td style={{ padding: '6px 8px' }}>
                                   <span className="location-toggle">{isExpanded ? '▾' : '▸'}</span>
                                   {onLocationClick
-                                    ? <button type="button" className="pokemon-name-link" onClick={(e) => { e.stopPropagation(); onLocationClick(location) }}>{locationDisplay}</button>
-                                    : locationDisplay
+                                    ? <button type="button" className="pokemon-name-link" onClick={(e) => { e.stopPropagation(); onLocationClick(location) }}>{formatLocationName(location)}</button>
+                                    : formatLocationName(location)
                                   }
                                 </td>
                                 <td style={{ padding: '6px 8px', color: '#888' }}>
-                                  {entryList.length} method{entryList.length !== 1 ? 's' : ''}
+                                  {entryList.length} entries
                                 </td>
-                                <td style={{ padding: '6px 8px', textAlign: 'center', color: '#888' }}>
-                                  —
-                                </td>
+                                <td style={{ padding: '6px 8px', textAlign: 'center', color: '#888' }}>—</td>
+                                <td style={{ padding: '6px 8px', textAlign: 'center', color: '#888' }}>—</td>
                               </tr>
                             )
 
                             if (isExpanded) {
                               entryList.forEach((entry, idx) => {
                                 const methodDisplay = entry.method.replace(/-/g, ' ')
-                                rows.push(
+                                const levelDisplay = entry.minLevel === entry.maxLevel
+                                  ? `${entry.minLevel}`
+                                  : `${entry.minLevel}–${entry.maxLevel}`
+                                return rows.push(
                                   <tr
                                     key={`${location}-${idx}`}
                                     className="location-detail-row"
@@ -1215,6 +1220,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                                     <td style={{ padding: '4px 8px' }}>
                                       {methodDisplay.charAt(0).toUpperCase() + methodDisplay.slice(1)}
                                     </td>
+                                    <td style={{ padding: '4px 8px', textAlign: 'center' }}>{levelDisplay}</td>
                                     <td style={{ padding: '4px 8px', textAlign: 'center' }}>{entry.rate}%</td>
                                   </tr>
                                 )
