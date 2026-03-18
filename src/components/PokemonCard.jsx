@@ -77,16 +77,17 @@ function CollapsibleInfoBox({ title, children, className = '', style, contentCla
 }
 
 function formatLocationName(name) {
-  // Remove trailing -area, then replace dashes with spaces
+  // Remove trailing -area, then replace dashes with spaces, title case
   return name
     .replace(/-area$/, '')
     .replace(/-/g, ' ')
-    .trim();
+    .trim()
+    .replace(/\b\w/g, c => c.toUpperCase())
 }
 const formatMoveLabel = (value) => {
   if (!value) return 'N/A'
   if (value === 'unknown') return '???'
-  return value.replace(/-/g, ' ')
+  return value.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
 // Type color map (module-level so MoveTable and PokemonCard can both use it)
@@ -851,7 +852,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                   <span className="label">Egg Groups:</span>
                   <span className="value">
                     {species.egg_groups?.length > 0
-                      ? species.egg_groups.map(g => g.name).join(', ')
+                      ? species.egg_groups.map(g => g.name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())).join(', ')
                       : 'N/A'}
                   </span>
                 </div>
@@ -900,7 +901,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
           <div className="box-content">
             <div className="info-row">
               <span className="label">Name:</span>
-              <span className="value">{displayPokemon.name?.toUpperCase() || 'Unknown'}</span>
+              <span className="value">{displayPokemon.name?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Unknown'}</span>
             </div>
             <div className="info-row">
               <span className="label">#</span>
@@ -1041,8 +1042,8 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                 <div key={idx} className="ability-item">
                   <span className="tooltip-trigger">
                     {onAbilityClick
-                      ? <button type="button" className="ability-name-link" onClick={() => onAbilityClick(ability.ability.name)}>{ability.ability.name}</button>
-                      : ability.ability.name
+                      ? <button type="button" className="ability-name-link" onClick={() => onAbilityClick(ability.ability.name)}>{ability.ability.name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</button>
+                      : ability.ability.name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
                     }
                     {abilityDescriptions[ability.ability.name]?.description && (
                       <span className="tooltip-text">{abilityDescriptions[ability.ability.name].description}</span>
@@ -1072,7 +1073,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                       ? hi.version_details?.find(v => v.version?.name === selectedVersion)
                       : hi.version_details?.[0]
                     if (!vd) return null
-                    return { name: hi.item.name, displayName: hi.item.name.replace(/-/g, ' '), rarity: vd.rarity }
+                    return { name: hi.item.name, displayName: hi.item.name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), rarity: vd.rarity }
                   })
                   .filter(Boolean)
                 if (items.length === 0) return 'None'
@@ -1094,7 +1095,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                     {generationStats.map(stat => (
                       stat.effort > 0 && (
                         <li key={stat.stat.name}>
-                          {stat.stat.name}: {stat.effort}
+                          {stat.stat.name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}: {stat.effort}
                         </li>
                       )
                     ))}
@@ -1200,7 +1201,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                             if (!isCollapsible) {
                               // Single entry — flat row
                               const entry = entryList[0]
-                              const methodDisplay = entry.method.replace(/-/g, ' ')
+                              const methodDisplay = entry.method.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
                               const levelDisplay = entry.minLevel === entry.maxLevel
                                 ? `${entry.minLevel}`
                                 : `${entry.minLevel}–${entry.maxLevel}`
@@ -1213,7 +1214,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                                     }
                                   </td>
                                   <td style={{ padding: '6px 8px' }}>
-                                    {methodDisplay.charAt(0).toUpperCase() + methodDisplay.slice(1)}
+                                    {methodDisplay}
                                   </td>
                                   <td style={{ padding: '6px 8px', textAlign: 'center' }}>{levelDisplay}</td>
                                   <td style={{ padding: '6px 8px', textAlign: 'center' }}>{entry.rate}%</td>
@@ -1247,7 +1248,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
 
                             if (isExpanded) {
                               entryList.forEach((entry, idx) => {
-                                const methodDisplay = entry.method.replace(/-/g, ' ')
+                                const methodDisplay = entry.method.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
                                 const levelDisplay = entry.minLevel === entry.maxLevel
                                   ? `${entry.minLevel}`
                                   : `${entry.minLevel}–${entry.maxLevel}`
@@ -1260,12 +1261,12 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                                     <td style={{ padding: '4px 8px 4px 24px' }}>
                                       {entry.conditions.length > 0 && (
                                         <span style={{ fontSize: '11px', color: '#888', fontStyle: 'italic' }}>
-                                          {entry.conditions.map(c => c.replace(/-/g, ' ')).join(', ')}
+                                          {entry.conditions.map(c => c.replace(/-/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase())).join(', ')}
                                         </span>
                                       )}
                                     </td>
                                     <td style={{ padding: '4px 8px' }}>
-                                      {methodDisplay.charAt(0).toUpperCase() + methodDisplay.slice(1)}
+                                      {methodDisplay}
                                     </td>
                                     <td style={{ padding: '4px 8px', textAlign: 'center' }}>{levelDisplay}</td>
                                     <td style={{ padding: '4px 8px', textAlign: 'center' }}>{entry.rate}%</td>

@@ -635,7 +635,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                               <td className="location-conditions-cell">
                                 {entry.conditions && entry.conditions.length > 0 ? (
                                   <span style={{ fontSize: '11px', color: '#888', fontStyle: 'italic' }}>
-                                    {entry.conditions.map(c => c.replace(/-/g, ' ')).join(', ')}
+                                    {entry.conditions.map(c => formatName(c)).join(', ')}
                                   </span>
                                 ) : (
                                   <span style={{ color: '#bbb', fontSize: '11px' }}>—</span>
@@ -685,7 +685,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                                 <td className="location-conditions-cell">
                                   {entry.conditions && entry.conditions.length > 0 ? (
                                     <span style={{ fontSize: '11px', color: '#888', fontStyle: 'italic' }}>
-                                      {entry.conditions.map(c => c.replace(/-/g, ' ')).join(', ')}
+                                    {entry.conditions.map(c => formatName(c)).join(', ')}
                                     </span>
                                   ) : (
                                     <span style={{ color: '#bbb', fontSize: '11px' }}>—</span>
