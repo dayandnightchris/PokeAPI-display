@@ -1331,6 +1331,14 @@
   color: var(--text-subtle);
 }
 
+.location-unavailable-row {
+  opacity: 0.45;
+}
+
+.location-unavailable-row:hover {
+  opacity: 0.7;
+}
+
 .location-no-encounters {
   text-align: center;
   padding: 2rem;

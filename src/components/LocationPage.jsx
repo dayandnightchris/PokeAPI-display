@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { versionDisplayNames, versionGeneration, versionAbbreviations } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, versionAbbreviations, generationVersions } from '../utils/versionInfo'
 import { fetchLocationCached, fetchLocationAreaCached } from '../utils/pokeCache'
 
 function formatName(name) {
@@ -283,6 +283,46 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
       })
     })
 
+    // Second pass: include Pokémon from other same-gen versions that aren't in the selected version
+    const selectedGen = versionGeneration[selectedVersion] || 0
+    const sameGenVersions = new Set(generationVersions[selectedGen] || [])
+
+    encounters.forEach(enc => {
+      const pokeName = enc.pokemon.name
+      if (byPokemon[pokeName]) return // Already included from selected version
+
+      // Only consider versions from the same generation
+      const relevantVd = enc.version_details?.find(v =>
+        sameGenVersions.has(v.version?.name) && v.encounter_details?.length > 0
+      )
+      if (!relevantVd) return
+
+      byPokemon[pokeName] = { pokemon: pokeName, entries: [], versions: new Set(), notInSelectedVersion: true }
+
+      relevantVd.encounter_details.forEach(detail => {
+        const method = detail.method?.name || 'unknown'
+        const chance = detail.chance || 0
+        const minLvl = detail.min_level || 0
+        const maxLvl = detail.max_level || 0
+        const conditions = (detail.condition_values || []).map(cv => cv.name).sort()
+        const existing = byPokemon[pokeName].entries.find(
+          e => e.method === method && e.minLevel === minLvl && e.maxLevel === maxLvl && JSON.stringify(e.conditions) === JSON.stringify(conditions)
+        )
+        if (existing) {
+          existing.rate += chance
+        } else {
+          byPokemon[pokeName].entries.push({ method, minLevel: minLvl, maxLevel: maxLvl, rate: chance, conditions, versions: new Set() })
+        }
+      })
+
+      // Collect all versions this pokemon appears in
+      enc.version_details?.forEach(v => {
+        if (v.version?.name && v.encounter_details?.length > 0) {
+          byPokemon[pokeName].versions.add(v.version.name)
+        }
+      })
+    })
+
     // Track which versions each method entry appears in
     // Match by full signature (method + levels + rate + conditions) so only
     // versions with identical encounter details are tagged on each row.
@@ -517,7 +557,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                             ? `Lv. ${entry.minLevel}`
                             : `Lv. ${entry.minLevel}–${entry.maxLevel}`
                           return (
-                            <tr key={group.pokemon}>
+                            <tr key={group.pokemon} className={group.notInSelectedVersion ? 'location-unavailable-row' : ''}>
                               <td className="location-method-cell">{formatName(entry.method)}</td>
                               <td className="location-pokemon-cell">
                                 {onPokemonClick
@@ -546,7 +586,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                         rows.push(
                           <tr
                             key={group.pokemon}
-                            className="location-header-row"
+                            className={`location-header-row${group.notInSelectedVersion ? ' location-unavailable-row' : ''}`}
                             onClick={() => togglePokemon(group.pokemon)}
                           >
                             <td className="location-method-cell" style={{ color: 'var(--text-muted)' }}>
@@ -572,7 +612,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                               ? `Lv. ${entry.minLevel}`
                               : `Lv. ${entry.minLevel}–${entry.maxLevel}`
                             rows.push(
-                              <tr key={`${group.pokemon}-${idx}`} className="location-detail-row">
+                              <tr key={`${group.pokemon}-${idx}`} className={`location-detail-row${group.notInSelectedVersion ? ' location-unavailable-row' : ''}`}>
                                 <td className="location-method-cell">{formatName(entry.method)}</td>
                                 <td className="location-pokemon-cell"></td>
                                 <td className="location-level-cell">{levelDisplay}</td>
