@@ -744,35 +744,59 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
 
   return (
     <div className="move-page">
-      {/* Search */}
-      <div className="search-container" ref={containerRef}>
-        <form onSubmit={handleSubmit} className="search-form">
-          <div className="search-input-wrapper">
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => { userIsTypingRef.current = true; setSearchInput(e.target.value) }}
-              onKeyDown={handleKeyDown}
-              onFocus={() => searchInput && setShowSuggestions(suggestions.length > 0)}
-              placeholder="Enter move name..."
-              autoComplete="off"
-            />
-            <button type="submit" disabled={moveLoading}>Search</button>
+      {/* Search + Version row */}
+      <div className="page-search-row">
+        {moveData && moveStats && availableVersions.length > 0 && (
+          <div className="page-version-inline">
+            <label htmlFor="move-version-select">Version:</label>
+            <select
+              id="move-version-select"
+              value={selectedVersion || ''}
+              onChange={(e) => setSelectedVersion(e.target.value)}
+              className="version-dropdown"
+            >
+              {availableVersions.map((group, idx) => {
+                const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
+                return (
+                  <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
+                    {group.map(({ display, name }) => (
+                      <option key={name} value={name}>{display}</option>
+                    ))}
+                  </optgroup>
+                )
+              })}
+            </select>
           </div>
-          {showSuggestions && suggestions.length > 0 && (
-            <ul className="suggestions-list">
-              {suggestions.map((s, idx) => (
-                <li
-                  key={s}
-                  className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
-                  onClick={() => handleSuggestionClick(s)}
-                >
-                  {formatMoveName(s)}
-                </li>
-              ))}
-            </ul>
-          )}
-        </form>
+        )}
+        <div className="search-container page-search-inline" ref={containerRef}>
+          <form onSubmit={handleSubmit} className="search-form">
+            <div className="search-input-wrapper">
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => { userIsTypingRef.current = true; setSearchInput(e.target.value) }}
+                onKeyDown={handleKeyDown}
+                onFocus={() => searchInput && setShowSuggestions(suggestions.length > 0)}
+                placeholder="Enter move name..."
+                autoComplete="off"
+              />
+              <button type="submit" disabled={moveLoading}>Search</button>
+            </div>
+            {showSuggestions && suggestions.length > 0 && (
+              <ul className="suggestions-list">
+                {suggestions.map((s, idx) => (
+                  <li
+                    key={s}
+                    className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
+                    onClick={() => handleSuggestionClick(s)}
+                  >
+                    {formatMoveName(s)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </form>
+        </div>
       </div>
 
       {moveError && <div className="error">{moveError}</div>}
@@ -780,32 +804,6 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
 
       {moveData && moveStats && (
         <>
-          {/* Version Selector */}
-          {availableVersions.length > 0 && (
-            <div className="version-selector-wrapper">
-              <div className="version-selector">
-                <label htmlFor="move-version-select">Game Version:</label>
-                <select
-                  id="move-version-select"
-                  value={selectedVersion || ''}
-                  onChange={(e) => setSelectedVersion(e.target.value)}
-                  className="version-dropdown"
-                >
-                  {availableVersions.map((group, idx) => {
-                    const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
-                    return (
-                      <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
-                        {group.map(({ display, name }) => (
-                          <option key={name} value={name}>{display}</option>
-                        ))}
-                      </optgroup>
-                    )
-                  })}
-                </select>
-              </div>
-            </div>
-          )}
-
           {/* Move Details Box */}
           <div className="move-detail-card">
             <div className="move-detail-header">

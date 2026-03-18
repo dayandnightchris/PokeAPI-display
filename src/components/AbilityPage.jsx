@@ -491,35 +491,59 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
 
   return (
     <div className="ability-page">
-      {/* Search */}
-      <div className="search-container" ref={containerRef}>
-        <form onSubmit={handleSubmit} className="search-form">
-          <div className="search-input-wrapper">
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => { userIsTypingRef.current = true; setSearchInput(e.target.value) }}
-              onKeyDown={handleKeyDown}
-              onFocus={() => searchInput && setShowSuggestions(suggestions.length > 0)}
-              placeholder="Enter ability name..."
-              autoComplete="off"
-            />
-            <button type="submit" disabled={abilityLoading}>Search</button>
+      {/* Search + Version row */}
+      <div className="page-search-row">
+        {abilityData && availableVersions.length > 0 && (
+          <div className="page-version-inline">
+            <label htmlFor="ability-version-select">Version:</label>
+            <select
+              id="ability-version-select"
+              value={selectedVersion || ''}
+              onChange={(e) => setSelectedVersion(e.target.value)}
+              className="version-dropdown"
+            >
+              {availableVersions.map((group, idx) => {
+                const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
+                return (
+                  <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
+                    {group.map(({ display, name }) => (
+                      <option key={name} value={name}>{display}</option>
+                    ))}
+                  </optgroup>
+                )
+              })}
+            </select>
           </div>
-          {showSuggestions && suggestions.length > 0 && (
-            <ul className="suggestions-list">
-              {suggestions.map((s, idx) => (
-                <li
-                  key={s}
-                  className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
-                  onClick={() => handleSuggestionClick(s)}
-                >
-                  {formatAbilityName(s)}
-                </li>
-              ))}
-            </ul>
-          )}
-        </form>
+        )}
+        <div className="search-container page-search-inline" ref={containerRef}>
+          <form onSubmit={handleSubmit} className="search-form">
+            <div className="search-input-wrapper">
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => { userIsTypingRef.current = true; setSearchInput(e.target.value) }}
+                onKeyDown={handleKeyDown}
+                onFocus={() => searchInput && setShowSuggestions(suggestions.length > 0)}
+                placeholder="Enter ability name..."
+                autoComplete="off"
+              />
+              <button type="submit" disabled={abilityLoading}>Search</button>
+            </div>
+            {showSuggestions && suggestions.length > 0 && (
+              <ul className="suggestions-list">
+                {suggestions.map((s, idx) => (
+                  <li
+                    key={s}
+                    className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
+                    onClick={() => handleSuggestionClick(s)}
+                  >
+                    {formatAbilityName(s)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </form>
+        </div>
       </div>
 
       {abilityError && <div className="error">{abilityError}</div>}
@@ -527,32 +551,6 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
 
       {abilityData && (
         <>
-          {/* Version Selector */}
-          {availableVersions.length > 0 && (
-            <div className="version-selector-wrapper">
-              <div className="version-selector">
-                <label htmlFor="ability-version-select">Game Version:</label>
-                <select
-                  id="ability-version-select"
-                  value={selectedVersion || ''}
-                  onChange={(e) => setSelectedVersion(e.target.value)}
-                  className="version-dropdown"
-                >
-                  {availableVersions.map((group, idx) => {
-                    const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
-                    return (
-                      <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
-                        {group.map(({ display, name }) => (
-                          <option key={name} value={name}>{display}</option>
-                        ))}
-                      </optgroup>
-                    )
-                  })}
-                </select>
-              </div>
-            </div>
-          )}
-
           {/* Ability Details Box */}
           <div className="ability-detail-card">
             <div className="ability-detail-header">

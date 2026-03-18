@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import StatsCalculator from './StatsCalculator'
 import VersionSelector from './VersionSelector'
+import PokemonSearch from './PokemonSearch'
 import { renderEvolutionForest } from './EvolutionTree'
 import { getVersionInfo, generationOrder, generationVersions, versionGeneration, versionDisplayNames } from '../utils/versionInfo'
 import {
@@ -394,7 +395,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
   )
 }
 
-export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, onAbilityClick, onItemClick, onLocationClick, initialForm, initialVersion, onStateChange }) {
+export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, onAbilityClick, onItemClick, onLocationClick, initialForm, initialVersion, onStateChange, onSearch, searchLoading, pokemonList, pokemonIdMap, initialQuery }) {
   // UI state
   const [hoveredType, setHoveredType] = useState(null)
   const [versionInfo, setVersionInfo] = useState(null)
@@ -766,8 +767,8 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
 
   return (
     <div className="pokemon-card-container" ref={cardTopRef}>
-      {/* Version Selector */}
-      <div className="version-selector-wrapper">
+      {/* Search + Version Selector Row */}
+      <div className="page-search-row">
         <VersionSelector
           pokemon={displayPokemon}
           selectedVersion={selectedVersion}
@@ -776,6 +777,9 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
           pokedexVersions={formPokemon ? null : pokedexVersions}
           formVersionFilter={formVersionFilter}
         />
+        <div className="page-search-inline">
+          <PokemonSearch onSearch={onSearch} loading={searchLoading} pokemonList={pokemonList} pokemonIdMap={pokemonIdMap} initialQuery={initialQuery} />
+        </div>
       </div>
 
       {/* Form Selector */}

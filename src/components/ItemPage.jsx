@@ -464,35 +464,59 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
 
   return (
     <div className="item-page">
-      {/* Search */}
-      <div className="search-container" ref={containerRef}>
-        <form onSubmit={handleSubmit} className="search-form">
-          <div className="search-input-wrapper">
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => { userIsTypingRef.current = true; setSearchInput(e.target.value) }}
-              onKeyDown={handleKeyDown}
-              onFocus={() => searchInput && setShowSuggestions(suggestions.length > 0)}
-              placeholder="Enter item name..."
-              autoComplete="off"
-            />
-            <button type="submit" disabled={itemLoading}>Search</button>
+      {/* Search + Version row */}
+      <div className="page-search-row">
+        {itemData && availableVersions.length > 0 && (
+          <div className="page-version-inline">
+            <label htmlFor="item-version-select">Version:</label>
+            <select
+              id="item-version-select"
+              value={selectedVersion || ''}
+              onChange={(e) => setSelectedVersion(e.target.value)}
+              className="version-dropdown"
+            >
+              {availableVersions.map((group, idx) => {
+                const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
+                return (
+                  <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
+                    {group.map(({ display, name }) => (
+                      <option key={name} value={name}>{display}</option>
+                    ))}
+                  </optgroup>
+                )
+              })}
+            </select>
           </div>
-          {showSuggestions && suggestions.length > 0 && (
-            <ul className="suggestions-list">
-              {suggestions.map((s, idx) => (
-                <li
-                  key={s}
-                  className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
-                  onClick={() => handleSuggestionClick(s)}
-                >
-                  {formatItemName(s)}
-                </li>
-              ))}
-            </ul>
-          )}
-        </form>
+        )}
+        <div className="search-container page-search-inline" ref={containerRef}>
+          <form onSubmit={handleSubmit} className="search-form">
+            <div className="search-input-wrapper">
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => { userIsTypingRef.current = true; setSearchInput(e.target.value) }}
+                onKeyDown={handleKeyDown}
+                onFocus={() => searchInput && setShowSuggestions(suggestions.length > 0)}
+                placeholder="Enter item name..."
+                autoComplete="off"
+              />
+              <button type="submit" disabled={itemLoading}>Search</button>
+            </div>
+            {showSuggestions && suggestions.length > 0 && (
+              <ul className="suggestions-list">
+                {suggestions.map((s, idx) => (
+                  <li
+                    key={s}
+                    className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
+                    onClick={() => handleSuggestionClick(s)}
+                  >
+                    {formatItemName(s)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </form>
+        </div>
       </div>
 
       {itemError && <div className="error">{itemError}</div>}
@@ -500,32 +524,6 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
 
       {itemData && (
         <>
-          {/* Version Selector */}
-          {availableVersions.length > 0 && (
-            <div className="version-selector-wrapper">
-              <div className="version-selector">
-                <label htmlFor="item-version-select">Game Version:</label>
-                <select
-                  id="item-version-select"
-                  value={selectedVersion || ''}
-                  onChange={(e) => setSelectedVersion(e.target.value)}
-                  className="version-dropdown"
-                >
-                  {availableVersions.map((group, idx) => {
-                    const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
-                    return (
-                      <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
-                        {group.map(({ display, name }) => (
-                          <option key={name} value={name}>{display}</option>
-                        ))}
-                      </optgroup>
-                    )
-                  })}
-                </select>
-              </div>
-            </div>
-          )}
-
           {/* Item Details Box */}
           <div className="item-detail-card">
             <div className="item-detail-header">

@@ -439,36 +439,60 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
 
   return (
     <div className="location-page">
-      {/* Search */}
-      <div className="search-container" ref={containerRef}>
-        <form onSubmit={handleSubmit} className="search-form">
-          <div className="search-input-wrapper">
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => { userIsTypingRef.current = true; setSearchInput(e.target.value) }}
-              onKeyDown={handleKeyDown}
-              onFocus={() => searchInput && setShowSuggestions(suggestions.length > 0)}
-              placeholder="Enter location name..."
-              autoComplete="off"
-            />
-            <button type="submit" disabled={locationLoading}>Search</button>
+      {/* Search + Version row */}
+      <div className="page-search-row">
+        {locationData && availableVersions.length > 0 && (
+          <div className="page-version-inline">
+            <label htmlFor="location-version-select">Version:</label>
+            <select
+              id="location-version-select"
+              value={selectedVersion || ''}
+              onChange={(e) => setSelectedVersion(e.target.value)}
+              className="version-dropdown"
+            >
+              {availableVersions.map((group, idx) => {
+                const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
+                return (
+                  <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
+                    {group.map(({ display, name }) => (
+                      <option key={name} value={name}>{display}</option>
+                    ))}
+                  </optgroup>
+                )
+              })}
+            </select>
           </div>
-          {showSuggestions && suggestions.length > 0 && (
-            <ul className="suggestions-list">
-              {suggestions.map((s, idx) => (
-                <li
-                  key={s}
-                  className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
-                  onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s) }}
-                  onTouchEnd={(e) => { e.preventDefault(); handleSuggestionClick(s) }}
-                >
-                  {formatLocationName(s)}
-                </li>
-              ))}
-            </ul>
-          )}
-        </form>
+        )}
+        <div className="search-container page-search-inline" ref={containerRef}>
+          <form onSubmit={handleSubmit} className="search-form">
+            <div className="search-input-wrapper">
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => { userIsTypingRef.current = true; setSearchInput(e.target.value) }}
+                onKeyDown={handleKeyDown}
+                onFocus={() => searchInput && setShowSuggestions(suggestions.length > 0)}
+                placeholder="Enter location name..."
+                autoComplete="off"
+              />
+              <button type="submit" disabled={locationLoading}>Search</button>
+            </div>
+            {showSuggestions && suggestions.length > 0 && (
+              <ul className="suggestions-list">
+                {suggestions.map((s, idx) => (
+                  <li
+                    key={s}
+                    className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
+                    onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s) }}
+                    onTouchEnd={(e) => { e.preventDefault(); handleSuggestionClick(s) }}
+                  >
+                    {formatLocationName(s)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </form>
+        </div>
       </div>
 
       {locationError && <div className="error">{locationError}</div>}
@@ -476,31 +500,6 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
 
       {locationData && (
         <>
-          {/* Version Selector */}
-          {availableVersions.length > 0 && (
-            <div className="version-selector-wrapper">
-              <div className="version-selector">
-                <label htmlFor="location-version-select">Game Version:</label>
-                <select
-                  id="location-version-select"
-                  value={selectedVersion || ''}
-                  onChange={(e) => setSelectedVersion(e.target.value)}
-                  className="version-dropdown"
-                >
-                  {availableVersions.map((group, idx) => {
-                    const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
-                    return (
-                      <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
-                        {group.map(({ display, name }) => (
-                          <option key={name} value={name}>{display}</option>
-                        ))}
-                      </optgroup>
-                    )
-                  })}
-                </select>
-              </div>
-            </div>
-          )}
 
           {/* Location Details */}
           <div className="location-detail-card">

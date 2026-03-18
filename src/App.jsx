@@ -436,11 +436,11 @@ function App() {
 
       {activeTab === 'pokemon' && (
         <>
-          <PokemonSearch onSearch={fetchPokemon} loading={loading} pokemonList={pokemonList} pokemonIdMap={pokemonIdMap} initialQuery={searchQuery} />
+          {!pokemon && <PokemonSearch onSearch={fetchPokemon} loading={loading} pokemonList={pokemonList} pokemonIdMap={pokemonIdMap} initialQuery={searchQuery} />}
           
           {error && <div className="error">{error}</div>}
           {loading && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball" /></div>}
-          {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} onMoveClick={navigateToMove} onAbilityClick={navigateToAbility} onItemClick={navigateToItem} onLocationClick={navigateToLocation} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} />}
+          {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} onMoveClick={navigateToMove} onAbilityClick={navigateToAbility} onItemClick={navigateToItem} onLocationClick={navigateToLocation} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} onSearch={fetchPokemon} searchLoading={loading} pokemonList={pokemonList} pokemonIdMap={pokemonIdMap} initialQuery={searchQuery} />}
         </>
       )}
 
