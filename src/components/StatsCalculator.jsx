@@ -119,6 +119,17 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
     return '#4caf50'
   }
 
+  // Darker text-safe variants for light mode (yellow/orange/green are hard to read on white)
+  const getStatTextColor = (value) => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    if (isDark) return getStatColor(value)
+    if (value < 60) return '#d32f2f'
+    if (value < 80) return '#e65100'
+    if (value < 100) return '#f9a825'
+    if (value < 130) return '#388e3c'
+    return '#2e7d32'
+  }
+
   const totalEvs = Object.values(evs).reduce((sum, val) => sum + val, 0)
   const evRemaining = 508 - totalEvs
 
@@ -277,7 +288,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
               <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{stat.shortName}</span>
               <span style={{ 
                 fontWeight: 'bold', 
-                color: getStatColor(stat.base),
+                color: getStatTextColor(stat.base),
                 fontSize: '0.9rem'
               }}>
                 {stat.base}
