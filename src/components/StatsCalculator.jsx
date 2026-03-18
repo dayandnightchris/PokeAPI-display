@@ -367,7 +367,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
                 fontWeight: 'bold', 
                 fontSize: '1rem',
                 textAlign: 'right',
-                color: barColor
+                color: getStatTextColor(stat.calculated)
               }}>
                 {stat.calculated}
               </span>
