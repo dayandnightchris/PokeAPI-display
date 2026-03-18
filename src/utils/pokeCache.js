@@ -145,7 +145,13 @@ async function cachedFetch(cacheKey, url, memCache) {
         await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
         continue
       }
-      console.error('Failed to fetch:', url, err)
+      if (err.message !== 'HTTP 404') {
+        console.error('Failed to fetch:', url, err)
+      }
+      if (err.message === 'HTTP 404') {
+        // Cache the miss so we don't re-fetch known 404s
+        memCache.set(cacheKey, null)
+      }
       return null
     }
   }
