@@ -1289,7 +1289,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                   // --- No wild encounters for this version: priority fallback ---
                   // Priority 1: Can it evolve from a pre-evolution available in this game?
                   if (canEvolveFrom) {
-                    return <p style={{ margin: '0' }}>Evolve from {canEvolveFrom.replace(/-/g, ' ')}.</p>
+                    return <p style={{ margin: '0' }}>Evolve from {canEvolveFrom.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}.</p>
                   }
 
                   // Priority 2: Can it be traded from another game in this gen?
@@ -1317,7 +1317,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                   // Priority 2b: Can a pre-evolution be traded from another game and then evolved?
                   if (canTradeAndEvolveFrom) {
                     const tradeNames = canTradeAndEvolveFrom.tradeVersions.map(v => versionDisplayNames[v] || v).join(', ')
-                    const preEvoName = canTradeAndEvolveFrom.preEvo.replace(/-/g, ' ')
+                    const preEvoName = canTradeAndEvolveFrom.preEvo.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
                     return <p style={{ margin: '0' }}>Trade from {tradeNames} and/or evolve from {preEvoName}.</p>
                   }
 
@@ -1332,13 +1332,13 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                 (() => {
                   // No encounter data at all from the API — same priority fallback
                   if (canEvolveFrom) {
-                    return <p style={{ margin: '0' }}>Evolve from {canEvolveFrom.replace(/-/g, ' ')}.</p>
+                    return <p style={{ margin: '0' }}>Evolve from {canEvolveFrom.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}.</p>
                   }
 
                   // Check if a pre-evo can be traded from another same-gen game and evolved
                   if (canTradeAndEvolveFrom) {
                     const tradeNames = canTradeAndEvolveFrom.tradeVersions.map(v => versionDisplayNames[v] || v).join(', ')
-                    const preEvoName = canTradeAndEvolveFrom.preEvo.replace(/-/g, ' ')
+                    const preEvoName = canTradeAndEvolveFrom.preEvo.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
                     return <p style={{ margin: '0' }}>Trade from {tradeNames} and/or evolve from {preEvoName}.</p>
                   }
 
