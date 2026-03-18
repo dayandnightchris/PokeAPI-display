@@ -217,7 +217,7 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
   if (loading) {
     return (
       <div className="version-selector">
-        <label>Game Version:</label>
+        <label>Version:</label>
         <div className="version-loading"><video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball-inline" /></div>
       </div>
     )
@@ -229,7 +229,7 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
 
   return (
     <div className="version-selector">
-      <label htmlFor="version-select">Game Version:</label>
+      <label htmlFor="version-select">Version:</label>
       <select
         id="version-select"
         value={selectedVersion || ''}

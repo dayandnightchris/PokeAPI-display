@@ -7,7 +7,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px;
+  padding: 4px;
   background: var(--bg-color);
   border-radius: 4px;
   border: 1px solid var(--border-light);
@@ -1195,8 +1195,13 @@
   align-items: flex-start;
   justify-content: center;
   gap: 12px;
-  margin-bottom: 2rem;
+  margin-bottom: 0.5rem;
   flex-wrap: wrap;
+}
+
+/* No margin on the Pokemon page — card content follows immediately */
+.pokemon-card-container > .page-search-row {
+  margin-bottom: 0;
 }
 
 .page-version-inline {
