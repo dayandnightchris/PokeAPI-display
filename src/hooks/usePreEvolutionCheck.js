@@ -13,6 +13,31 @@ import { versionGeneration, generationVersions, versionDisplayNames } from '../u
  */
 
 const encounterCache = new Map()
+const speciesResolveCache = new Map()
+
+// For Pokemon with form names (e.g. pumpkaboo → pumpkaboo-average),
+// the species name from the evolution chain doesn't match any Pokemon name.
+// Resolve through the species endpoint to find the default variety's Pokemon name.
+async function resolveDefaultPokemon(speciesName) {
+  const key = speciesName.toLowerCase()
+  if (speciesResolveCache.has(key)) return speciesResolveCache.get(key)
+
+  try {
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${key}`)
+    if (!res.ok) {
+      speciesResolveCache.set(key, key)
+      return key
+    }
+    const data = await res.json()
+    const defaultVariety = data.varieties?.find(v => v.is_default)
+    const defaultName = defaultVariety?.pokemon?.name || key
+    speciesResolveCache.set(key, defaultName)
+    return defaultName
+  } catch {
+    speciesResolveCache.set(key, key)
+    return key
+  }
+}
 
 async function fetchEncounters(pokemonName) {
   const key = pokemonName.toLowerCase()
@@ -20,10 +45,32 @@ async function fetchEncounters(pokemonName) {
 
   try {
     const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${key}/encounters`)
-    if (!res.ok) return []
-    const data = await res.json()
-    encounterCache.set(key, data)
-    return data
+    if (res.ok) {
+      const data = await res.json()
+      encounterCache.set(key, data)
+      return data
+    }
+
+    // Species name may not match the default Pokemon name (e.g. "pumpkaboo" vs "pumpkaboo-average").
+    // Resolve through the species endpoint and retry.
+    const resolved = await resolveDefaultPokemon(key)
+    if (resolved !== key) {
+      if (encounterCache.has(resolved)) {
+        const cached = encounterCache.get(resolved)
+        encounterCache.set(key, cached)
+        return cached
+      }
+      const retryRes = await fetch(`https://pokeapi.co/api/v2/pokemon/${resolved}/encounters`)
+      if (retryRes.ok) {
+        const data = await retryRes.json()
+        encounterCache.set(key, data)
+        encounterCache.set(resolved, data)
+        return data
+      }
+    }
+
+    encounterCache.set(key, [])
+    return []
   } catch {
     return []
   }
