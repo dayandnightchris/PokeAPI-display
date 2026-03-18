@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { versionDisplayNames, versionGeneration, generationOrder, generationVersions } from '../utils/versionInfo'
-import { fetchItemCached } from '../utils/pokeCache'
+import { fetchItemCached, fetchMachineCached } from '../utils/pokeCache'
 
 function formatItemName(name) {
   return name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
@@ -16,7 +16,30 @@ function normalizeVersionName(apiVersion) {
   return apiVersion // The API version names match our versionGeneration keys
 }
 
-export default function ItemPage({ initialItem, initialVersion, onStateChange, onPokemonClick }) {
+// Map individual version name → version group name
+const versionToVg = {
+  'red': 'red-blue', 'blue': 'red-blue', 'yellow': 'yellow',
+  'gold': 'gold-silver', 'silver': 'gold-silver', 'crystal': 'crystal',
+  'ruby': 'ruby-sapphire', 'sapphire': 'ruby-sapphire', 'emerald': 'emerald',
+  'firered': 'firered-leafgreen', 'leafgreen': 'firered-leafgreen',
+  'colosseum': 'colosseum', 'xd': 'xd',
+  'diamond': 'diamond-pearl', 'pearl': 'diamond-pearl', 'platinum': 'platinum',
+  'heartgold': 'heartgold-soulsilver', 'soulsilver': 'heartgold-soulsilver',
+  'black': 'black-white', 'white': 'black-white',
+  'black-2': 'black-2-white-2', 'white-2': 'black-2-white-2',
+  'x': 'x-y', 'y': 'x-y',
+  'omega-ruby': 'omega-ruby-alpha-sapphire', 'alpha-sapphire': 'omega-ruby-alpha-sapphire',
+  'sun': 'sun-moon', 'moon': 'sun-moon',
+  'ultra-sun': 'ultra-sun-ultra-moon', 'ultra-moon': 'ultra-sun-ultra-moon',
+  'lets-go-pikachu': 'lets-go-pikachu-lets-go-eevee', 'lets-go-eevee': 'lets-go-pikachu-lets-go-eevee',
+  'sword': 'sword-shield', 'shield': 'sword-shield',
+  'brilliant-diamond': 'brilliant-diamond-and-shining-pearl', 'shining-pearl': 'brilliant-diamond-and-shining-pearl',
+  'legends-arceus': 'legends-arceus',
+  'scarlet': 'scarlet-violet', 'violet': 'scarlet-violet',
+  'legends-za': 'legends-za',
+}
+
+export default function ItemPage({ initialItem, initialVersion, onStateChange, onPokemonClick, onMoveClick }) {
   const [itemList, setItemList] = useState([])
   const [searchInput, setSearchInput] = useState(initialItem || '')
   const [suggestions, setSuggestions] = useState([])
@@ -34,6 +57,7 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
   const [pendingInitialVersion, setPendingInitialVersion] = useState(initialVersion || null)
 
   const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'asc' })
+  const [machineMove, setMachineMove] = useState(null) // { name, url } for TM/HM items
 
   // Auto-load item from URL on mount
   const hasLoadedFromUrl = useRef(false)
@@ -256,33 +280,65 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
     }
   }
 
+  // Resolve the move taught by this TM/HM/TR for the selected version
+  useEffect(() => {
+    if (!itemData?.machines?.length || !selectedVersion) {
+      setMachineMove(null)
+      return
+    }
+
+    // Only relevant for TM/HM/TR items (category: all-machines or similar)
+    const isMachineItem = /^(tm|hm|tr)\d+$/i.test(itemData.name)
+    if (!isMachineItem) {
+      setMachineMove(null)
+      return
+    }
+
+    let active = true
+    const vg = versionToVg[selectedVersion]
+    const genNum = versionGeneration[selectedVersion]
+    const sameGenVgs = new Set()
+    if (genNum) {
+      for (const [gen, vgs] of Object.entries(generationVersions)) {
+        // generationVersions uses gen numbers as keys; match via versionToVg values
+      }
+    }
+
+    // Prefer exact version group match, then any from the same gen
+    const machineEntry = itemData.machines.find(m => m.version_group?.name === vg)
+      || itemData.machines.find(m => {
+        const mVg = m.version_group?.name
+        if (!mVg) return false
+        // Check if this machine's version group is in the same generation
+        // by seeing if any version in our gen maps to this vg
+        return Object.entries(versionToVg).some(([ver, verVg]) =>
+          verVg === mVg && versionGeneration[ver] === genNum
+        )
+      })
+
+    if (!machineEntry?.machine?.url) {
+      setMachineMove(null)
+      return
+    }
+
+    const fetchMachineMove = async () => {
+      const data = await fetchMachineCached(machineEntry.machine.url)
+      if (!active) return
+      if (data?.move?.name) {
+        setMachineMove({ name: data.move.name })
+      } else {
+        setMachineMove(null)
+      }
+    }
+    fetchMachineMove()
+
+    return () => { active = false }
+  }, [itemData, selectedVersion])
+
   // Get description for selected version
   const getDescription = () => {
     if (!itemData || !selectedVersion) return null
     const gen = versionGeneration[selectedVersion]
-
-    // Map version to its version group(s) for flavor text lookup
-    const versionToVg = {
-      'red': 'red-blue', 'blue': 'red-blue', 'yellow': 'yellow',
-      'gold': 'gold-silver', 'silver': 'gold-silver', 'crystal': 'crystal',
-      'ruby': 'ruby-sapphire', 'sapphire': 'ruby-sapphire', 'emerald': 'emerald',
-      'firered': 'firered-leafgreen', 'leafgreen': 'firered-leafgreen',
-      'colosseum': 'colosseum', 'xd': 'xd',
-      'diamond': 'diamond-pearl', 'pearl': 'diamond-pearl', 'platinum': 'platinum',
-      'heartgold': 'heartgold-soulsilver', 'soulsilver': 'heartgold-soulsilver',
-      'black': 'black-white', 'white': 'black-white',
-      'black-2': 'black-2-white-2', 'white-2': 'black-2-white-2',
-      'x': 'x-y', 'y': 'x-y',
-      'omega-ruby': 'omega-ruby-alpha-sapphire', 'alpha-sapphire': 'omega-ruby-alpha-sapphire',
-      'sun': 'sun-moon', 'moon': 'sun-moon',
-      'ultra-sun': 'ultra-sun-ultra-moon', 'ultra-moon': 'ultra-sun-ultra-moon',
-      'lets-go-pikachu': 'lets-go-pikachu-lets-go-eevee', 'lets-go-eevee': 'lets-go-pikachu-lets-go-eevee',
-      'sword': 'sword-shield', 'shield': 'sword-shield',
-      'brilliant-diamond': 'brilliant-diamond-and-shining-pearl', 'shining-pearl': 'brilliant-diamond-and-shining-pearl',
-      'legends-arceus': 'legends-arceus',
-      'scarlet': 'scarlet-violet', 'violet': 'scarlet-violet',
-      'legends-za': 'legends-za',
-    }
 
     const vg = versionToVg[selectedVersion]
     if (vg) {
@@ -513,7 +569,17 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
               </div>
             )}
 
-            {effect && (
+            {machineMove && (
+              <div className="item-detail-effect">
+                <div className="item-description-label">Teaches Move</div>
+                {onMoveClick
+                  ? <button type="button" className="move-name-link" onClick={() => onMoveClick(machineMove.name)}>{formatItemName(machineMove.name)}</button>
+                  : formatItemName(machineMove.name)
+                }
+              </div>
+            )}
+
+            {effect && !machineMove && (
               <div className="item-detail-effect">
                 <div className="item-description-label">Effect</div>
                 {effect}

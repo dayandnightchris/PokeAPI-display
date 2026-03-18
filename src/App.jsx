@@ -466,6 +466,7 @@ function App() {
           initialVersion={itemPageInit.version}
           onStateChange={handleItemStateChange}
           onPokemonClick={navigateToPokemon}
+          onMoveClick={navigateToMove}
         />
       )}
 
