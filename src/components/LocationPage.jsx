@@ -272,122 +272,100 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
   const getEncounterGroups = () => {
     if (!selectedVersion || encounters.length === 0) return []
 
-    // Group by pokemon
-    const byPokemon = {}
-    encounters.forEach(enc => {
-      const vd = enc.version_details?.find(v => v.version?.name === selectedVersion)
-      if (!vd || !vd.encounter_details?.length) return
-
-      const pokeName = enc.pokemon.name
-      if (!byPokemon[pokeName]) byPokemon[pokeName] = { pokemon: pokeName, entries: [], versions: new Set() }
-
-      vd.encounter_details.forEach(detail => {
-        const method = detail.method?.name || 'unknown'
-        const chance = detail.chance || 0
-        const minLvl = detail.min_level || 0
-        const maxLvl = detail.max_level || 0
-
-        // Merge duplicate method+level+conditions entries
-        const conditions = (detail.condition_values || []).map(cv => cv.name).sort()
-        const existing = byPokemon[pokeName].entries.find(
-          e => e.method === method && e.minLevel === minLvl && e.maxLevel === maxLvl && JSON.stringify(e.conditions) === JSON.stringify(conditions)
-        )
-        if (existing) {
-          existing.rate += chance
-        } else {
-          byPokemon[pokeName].entries.push({ method, minLevel: minLvl, maxLevel: maxLvl, rate: chance, conditions, versions: new Set() })
-        }
-      })
-
-      // Collect all versions this pokemon appears in
-      enc.version_details?.forEach(v => {
-        if (v.version?.name && v.encounter_details?.length > 0) {
-          byPokemon[pokeName].versions.add(v.version.name)
-        }
-      })
-    })
-
-    // Second pass: include Pokémon from other same-gen versions that aren't in the selected version
     const selectedGen = versionGeneration[selectedVersion] || 0
     const sameGenVersions = new Set(generationVersions[selectedGen] || [])
 
+    // Group by pokemon — include ALL entries from same-gen versions
+    const byPokemon = {}
     encounters.forEach(enc => {
       const pokeName = enc.pokemon.name
-      if (byPokemon[pokeName]) return // Already included from selected version
 
-      // Only consider versions from the same generation
-      const relevantVd = enc.version_details?.find(v =>
-        sameGenVersions.has(v.version?.name) && v.encounter_details?.length > 0
-      )
-      if (!relevantVd) return
+      enc.version_details?.forEach(vd => {
+        const vName = vd.version?.name
+        if (!vName || !sameGenVersions.has(vName) || !vd.encounter_details?.length) return
 
-      byPokemon[pokeName] = { pokemon: pokeName, entries: [], versions: new Set(), notInSelectedVersion: true }
+        if (!byPokemon[pokeName]) byPokemon[pokeName] = { pokemon: pokeName, entries: [], versions: new Set() }
 
-      relevantVd.encounter_details.forEach(detail => {
-        const method = detail.method?.name || 'unknown'
-        const chance = detail.chance || 0
-        const minLvl = detail.min_level || 0
-        const maxLvl = detail.max_level || 0
-        const conditions = (detail.condition_values || []).map(cv => cv.name).sort()
-        const existing = byPokemon[pokeName].entries.find(
-          e => e.method === method && e.minLevel === minLvl && e.maxLevel === maxLvl && JSON.stringify(e.conditions) === JSON.stringify(conditions)
-        )
-        if (existing) {
-          existing.rate += chance
-        } else {
-          byPokemon[pokeName].entries.push({ method, minLevel: minLvl, maxLevel: maxLvl, rate: chance, conditions, versions: new Set() })
-        }
-      })
+        vd.encounter_details.forEach(detail => {
+          const method = detail.method?.name || 'unknown'
+          const chance = detail.chance || 0
+          const minLvl = detail.min_level || 0
+          const maxLvl = detail.max_level || 0
+          const conditions = (detail.condition_values || []).map(cv => cv.name).sort()
 
-      // Collect all versions this pokemon appears in
-      enc.version_details?.forEach(v => {
-        if (v.version?.name && v.encounter_details?.length > 0) {
-          byPokemon[pokeName].versions.add(v.version.name)
-        }
+          // Merge duplicate method+level+conditions entries
+          const existing = byPokemon[pokeName].entries.find(
+            e => e.method === method && e.minLevel === minLvl && e.maxLevel === maxLvl && JSON.stringify(e.conditions) === JSON.stringify(conditions)
+          )
+          if (existing) {
+            // Sum rate for the selected version; ignore other versions' rates
+            if (vName === selectedVersion) {
+              if (!existing._hasSelectedRate) {
+                existing.rate = chance
+                existing._hasSelectedRate = true
+              } else {
+                existing.rate += chance
+              }
+            }
+          } else {
+            byPokemon[pokeName].entries.push({
+              method, minLevel: minLvl, maxLevel: maxLvl,
+              rate: chance, conditions, versions: new Set(),
+              _hasSelectedRate: vName === selectedVersion
+            })
+          }
+        })
+
+        byPokemon[pokeName].versions.add(vName)
       })
     })
 
-    // Track which versions each method entry appears in
-    // Match by full signature (method + levels + rate + conditions) so only
-    // versions with identical encounter details are tagged on each row.
+    // Determine per-pokemon whether it appears in the selected version at all
+    encounters.forEach(enc => {
+      const pokeName = enc.pokemon.name
+      if (!byPokemon[pokeName]) return
+      const hasSelected = enc.version_details?.some(
+        v => v.version?.name === selectedVersion && v.encounter_details?.length > 0
+      )
+      if (!hasSelected) {
+        byPokemon[pokeName].notInSelectedVersion = true
+      }
+    })
+
+    // Track which same-gen versions each entry appears in
+    // Match by method + level + conditions (not rate, since rates differ across versions)
     encounters.forEach(enc => {
       const pokeName = enc.pokemon.name
       if (!byPokemon[pokeName]) return
       enc.version_details?.forEach(vd => {
         const vName = vd.version?.name
-        if (!vName || !versionDisplayNames[vName] || !vd.encounter_details?.length) return
+        if (!vName || !sameGenVersions.has(vName) || !versionDisplayNames[vName] || !vd.encounter_details?.length) return
 
-        // Build & merge this version's details the same way entries were built
-        const merged = []
+        // Collect the method+level+conditions combos this version has
+        const combos = new Set()
         vd.encounter_details.forEach(detail => {
           const method = detail.method?.name || 'unknown'
           const minLvl = detail.min_level || 0
           const maxLvl = detail.max_level || 0
-          const chance = detail.chance || 0
           const conditions = (detail.condition_values || []).map(cv => cv.name).sort()
-          const existing = merged.find(
-            m => m.method === method && m.minLevel === minLvl && m.maxLevel === maxLvl && JSON.stringify(m.conditions) === JSON.stringify(conditions)
-          )
-          if (existing) {
-            existing.rate += chance
-          } else {
-            merged.push({ method, minLevel: minLvl, maxLevel: maxLvl, rate: chance, conditions })
-          }
+          combos.add(`${method}|${minLvl}|${maxLvl}|${JSON.stringify(conditions)}`)
         })
 
-        // Only tag a version on an entry if the full signature matches
+        // Tag this version on entries whose combo matches
         byPokemon[pokeName].entries.forEach(entry => {
-          const match = merged.find(
-            m => m.method === entry.method
-              && m.minLevel === entry.minLevel
-              && m.maxLevel === entry.maxLevel
-              && m.rate === entry.rate
-              && JSON.stringify(m.conditions) === JSON.stringify(entry.conditions)
-          )
-          if (match) {
+          const key = `${entry.method}|${entry.minLevel}|${entry.maxLevel}|${JSON.stringify(entry.conditions)}`
+          if (combos.has(key)) {
             entry.versions.add(vName)
           }
         })
+      })
+    })
+
+    // Mark entries that don't appear in the selected version
+    Object.values(byPokemon).forEach(group => {
+      group.entries.forEach(entry => {
+        entry.notInSelectedVersion = !entry.versions.has(selectedVersion)
+        delete entry._hasSelectedRate
       })
     })
 
@@ -599,10 +577,24 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                       {sortedGroups.map(group => {
                         const isCollapsible = group.entries.length > 1
                         const isExpanded = !!expandedPokemon[group.pokemon]
-                        const versionTags = Array.from(group.versions)
-                          .filter(v => versionAbbreviations[v])
-                          .sort((a, b) => (versionGeneration[a] || 0) - (versionGeneration[b] || 0))
-                          .map(v => versionAbbreviations[v])
+                        const selectedGen = versionGeneration[selectedVersion] || 0
+                        const sameGenVersions = new Set(generationVersions[selectedGen] || [])
+
+                        // Helper: render version tags, greying ones that aren't the selected version
+                        // When rowGreyed is true, the row already has reduced opacity so skip per-tag dimming
+                        const renderVersionTags = (versions, rowGreyed) => {
+                          const sorted = Array.from(versions)
+                            .filter(v => versionAbbreviations[v] && sameGenVersions.has(v))
+                            .sort((a, b) => (versionGeneration[a] || 0) - (versionGeneration[b] || 0))
+                          return sorted.map((v, i) => (
+                            <span key={v}>
+                              {i > 0 && ', '}
+                              <span style={!rowGreyed && v !== selectedVersion ? { opacity: 0.4 } : undefined}>
+                                {versionAbbreviations[v]}
+                              </span>
+                            </span>
+                          ))
+                        }
 
                         if (!isCollapsible) {
                           // Single entry — flat row
@@ -630,7 +622,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                                 )}
                               </td>
                               <td className="location-rate-cell">{entry.rate}%</td>
-                              <td className="location-versions-cell">{versionTags.join(', ')}</td>
+                              <td className="location-versions-cell">{renderVersionTags(group.versions, !!group.notInSelectedVersion)}</td>
                             </tr>
                           )
                         }
@@ -656,7 +648,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                             <td className="location-level-cell" style={{ color: 'var(--text-muted)' }}>—</td>
                             <td className="location-conditions-cell" style={{ color: 'var(--text-muted)' }}>—</td>
                             <td className="location-rate-cell" style={{ color: 'var(--text-muted)' }}>—</td>
-                            <td className="location-versions-cell">{versionTags.join(', ')}</td>
+                            <td className="location-versions-cell">{renderVersionTags(group.versions, !!group.notInSelectedVersion)}</td>
                           </tr>
                         )
 
@@ -666,7 +658,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                               ? `Lv. ${entry.minLevel}`
                               : `Lv. ${entry.minLevel}–${entry.maxLevel}`
                             rows.push(
-                              <tr key={`${group.pokemon}-${idx}`} className={`location-detail-row${group.notInSelectedVersion ? ' location-unavailable-row' : ''}`}>
+                              <tr key={`${group.pokemon}-${idx}`} className={`location-detail-row${(entry.notInSelectedVersion || group.notInSelectedVersion) ? ' location-unavailable-row' : ''}`}>
                                 <td className="location-method-cell">{formatName(entry.method)}</td>
                                 <td className="location-pokemon-cell"></td>
                                 <td className="location-level-cell">{levelDisplay}</td>
@@ -681,11 +673,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                                 </td>
                                 <td className="location-rate-cell">{entry.rate}%</td>
                                 <td className="location-versions-cell">
-                                  {Array.from(entry.versions || [])
-                                    .filter(v => versionAbbreviations[v])
-                                    .sort((a, b) => (versionGeneration[a] || 0) - (versionGeneration[b] || 0))
-                                    .map(v => versionAbbreviations[v])
-                                    .join(', ')}
+                                  {renderVersionTags(entry.versions || new Set(), !!(entry.notInSelectedVersion || group.notInSelectedVersion))}
                                 </td>
                               </tr>
                             )
