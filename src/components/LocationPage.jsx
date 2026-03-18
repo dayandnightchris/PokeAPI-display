@@ -200,6 +200,30 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
           })
         })
       })
+
+      // Some PokeAPI locations (e.g. Alola double-dash names like
+      // "alola-route-1--hauoli-outskirts") are empty shells with no areas.
+      // The actual encounter data lives in a location-area whose name
+      // collapses the "--" to "-".  Try that as a fallback.
+      if (allEncounters.length === 0 && areas.length === 0 && query.includes('--')) {
+        const areaName = query.replace(/--/g, '-')
+        const fallbackArea = await fetchLocationAreaCached(areaName)
+        if (fallbackArea && fallbackArea.pokemon_encounters?.length > 0) {
+          setLocationData({
+            name: fallbackArea.name,
+            region: fallbackArea.location?.region || data.region || null,
+            parentLocation: fallbackArea.location?.name || null,
+          })
+          fallbackArea.pokemon_encounters.forEach(pe => {
+            allEncounters.push({
+              pokemon: pe.pokemon,
+              version_details: pe.version_details,
+              area: fallbackArea.name,
+            })
+          })
+        }
+      }
+
       setEncounters(allEncounters)
     } catch (err) {
       setLocationError(err.message || 'Failed to fetch location')
