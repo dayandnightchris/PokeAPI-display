@@ -321,14 +321,10 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
     })
 
     // Determine per-pokemon whether it appears in the selected version at all
-    encounters.forEach(enc => {
-      const pokeName = enc.pokemon.name
-      if (!byPokemon[pokeName]) return
-      const hasSelected = enc.version_details?.some(
-        v => v.version?.name === selectedVersion && v.encounter_details?.length > 0
-      )
-      if (!hasSelected) {
-        byPokemon[pokeName].notInSelectedVersion = true
+    // (use the versions Set already accumulated during entry-building)
+    Object.values(byPokemon).forEach(group => {
+      if (!group.versions.has(selectedVersion)) {
+        group.notInSelectedVersion = true
       }
     })
 
