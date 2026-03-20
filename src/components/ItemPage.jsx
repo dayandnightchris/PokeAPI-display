@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import UnifiedSearch from './UnifiedSearch'
 import { versionDisplayNames, versionGeneration, generationOrder, generationVersions } from '../utils/versionInfo'
 import { fetchItemCached, fetchMachineCached } from '../utils/pokeCache'
 
@@ -39,7 +40,7 @@ const versionToVg = {
   'legends-za': 'legends-za',
 }
 
-export default function ItemPage({ initialItem, initialVersion, onStateChange, onPokemonClick, onMoveClick }) {
+export default function ItemPage({ initialItem, initialVersion, onStateChange, onPokemonClick, onMoveClick, searchLists, onUnifiedNavigate }) {
   const [itemList, setItemList] = useState([])
   const [searchInput, setSearchInput] = useState(initialItem || '')
   const [suggestions, setSuggestions] = useState([])
@@ -488,34 +489,8 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
             </select>
           </div>
         )}
-        <div className="search-container page-search-inline" ref={containerRef}>
-          <form onSubmit={handleSubmit} className="search-form">
-            <div className="search-input-wrapper">
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => { userIsTypingRef.current = true; setSearchInput(e.target.value) }}
-                onKeyDown={handleKeyDown}
-                onFocus={() => searchInput && setShowSuggestions(suggestions.length > 0)}
-                placeholder="Enter item name..."
-                autoComplete="off"
-              />
-              <button type="submit" disabled={itemLoading}>Search</button>
-            </div>
-            {showSuggestions && suggestions.length > 0 && (
-              <ul className="suggestions-list">
-                {suggestions.map((s, idx) => (
-                  <li
-                    key={s}
-                    className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
-                    onClick={() => handleSuggestionClick(s)}
-                  >
-                    {formatItemName(s)}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </form>
+        <div className="search-container page-search-inline">
+          <UnifiedSearch lists={searchLists} onNavigate={onUnifiedNavigate} activeTab="items" initialQuery={initialItem || ''} loading={itemLoading} />
         </div>
       </div>
 

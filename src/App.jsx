@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
 import PokemonCard from './components/PokemonCard'
-import PokemonSearch from './components/PokemonSearch'
+import UnifiedSearch from './components/UnifiedSearch'
 import MovePage from './components/MovePage'
 import AbilityPage from './components/AbilityPage'
 import ItemPage from './components/ItemPage'
@@ -70,6 +70,10 @@ function App() {
   const [error, setError] = useState(null)
   const [pokemonList, setPokemonList] = useState([])
   const [pokemonIdMap, setPokemonIdMap] = useState({})
+  const [moveList, setMoveList] = useState([])
+  const [abilityList, setAbilityList] = useState([])
+  const [itemList, setItemList] = useState([])
+  const [locationList, setLocationList] = useState([])
   const [requestedForm, setRequestedForm] = useState(null)
   const [initialVersion, setInitialVersion] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -156,6 +160,84 @@ function App() {
       }
     }
     fetchPokemonList()
+  }, [])
+
+  // Fetch move names for unified search autocomplete
+  useEffect(() => {
+    const fetchMoves = async () => {
+      try {
+        const genPromises = []
+        for (let g = 1; g <= 7; g++) {
+          genPromises.push(fetch(`https://pokeapi.co/api/v2/generation/${g}/`).then(r => r.json()))
+        }
+        const genData = await Promise.all(genPromises)
+        const names = new Set()
+        for (const gen of genData) {
+          for (const move of (gen.moves || [])) {
+            const idMatch = move.url?.match(/\/(\d+)\/?$/)
+            if (idMatch && Number(idMatch[1]) >= 10001) continue
+            names.add(move.name)
+          }
+        }
+        setMoveList(Array.from(names).sort())
+      } catch (err) {
+        console.error('Failed to fetch move list:', err)
+      }
+    }
+    fetchMoves()
+  }, [])
+
+  // Fetch ability names for unified search autocomplete
+  useEffect(() => {
+    const fetchAbilities = async () => {
+      try {
+        const genPromises = []
+        for (let g = 3; g <= 7; g++) {
+          genPromises.push(fetch(`https://pokeapi.co/api/v2/generation/${g}/`).then(r => r.json()))
+        }
+        const genData = await Promise.all(genPromises)
+        const names = new Set()
+        for (const gen of genData) {
+          for (const ability of (gen.abilities || [])) {
+            const idMatch = ability.url?.match(/\/(\d+)\/?$/)
+            if (idMatch && Number(idMatch[1]) >= 10001) continue
+            names.add(ability.name)
+          }
+        }
+        setAbilityList(Array.from(names).sort())
+      } catch (err) {
+        console.error('Failed to fetch ability list:', err)
+      }
+    }
+    fetchAbilities()
+  }, [])
+
+  // Fetch item names for unified search autocomplete
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const first = await fetch('https://pokeapi.co/api/v2/item/').then(r => r.json())
+        const all = await fetch(`https://pokeapi.co/api/v2/item/?limit=${first.count}`).then(r => r.json())
+        setItemList(all.results.map(i => i.name).sort())
+      } catch (err) {
+        console.error('Failed to fetch item list:', err)
+      }
+    }
+    fetchItems()
+  }, [])
+
+  // Fetch location names for unified search autocomplete
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const first = await fetch('https://pokeapi.co/api/v2/location/').then(r => r.json())
+        const all = await fetch(`https://pokeapi.co/api/v2/location/?limit=${first.count}`).then(r => r.json())
+        setLocationList(all.results.map(l => l.name).sort())
+      } catch (err) {
+        console.error('Failed to fetch location list:', err)
+      }
+    }
+    fetchLocations()
   }, [])
 
   // Auto-load Pokémon from URL params on mount
@@ -258,6 +340,33 @@ function App() {
     fetchPokemon(pokemonName)
     window.scrollTo(0, 0)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Unified search navigation — routes to the correct tab based on category
+  const handleUnifiedNavigate = useCallback((category, name) => {
+    switch (category) {
+      case 'pokemon':
+        navigateToPokemon(name)
+        break
+      case 'moves':
+        navigateToMove(name)
+        break
+      case 'abilities':
+        navigateToAbility(name)
+        break
+      case 'items':
+        navigateToItem(name)
+        break
+      case 'locations':
+        navigateToLocation(name)
+        break
+      default:
+        // Fall back to pokemon search
+        navigateToPokemon(name)
+    }
+  }, [navigateToPokemon, navigateToMove, navigateToAbility, navigateToItem, navigateToLocation])
+
+  // Bundled lists object for UnifiedSearch
+  const searchLists = { pokemon: pokemonList, pokemonIdMap, moves: moveList, abilities: abilityList, items: itemList, locations: locationList }
 
   const fetchPokemon = async (nameOrId) => {
     const query = String(nameOrId).trim().toLowerCase().replace(/\s+/g, '-')
@@ -436,11 +545,11 @@ function App() {
 
       {activeTab === 'pokemon' && (
         <>
-          {!pokemon && <PokemonSearch onSearch={fetchPokemon} loading={loading} pokemonList={pokemonList} pokemonIdMap={pokemonIdMap} initialQuery={searchQuery} />}
+          {!pokemon && <UnifiedSearch lists={searchLists} onNavigate={handleUnifiedNavigate} activeTab="pokemon" loading={loading} initialQuery={searchQuery} />}
           
           {error && <div className="error">{error}</div>}
           {loading && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball" /></div>}
-          {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} onMoveClick={navigateToMove} onAbilityClick={navigateToAbility} onItemClick={navigateToItem} onLocationClick={navigateToLocation} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} onSearch={fetchPokemon} searchLoading={loading} pokemonList={pokemonList} pokemonIdMap={pokemonIdMap} initialQuery={searchQuery} />}
+          {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} onMoveClick={navigateToMove} onAbilityClick={navigateToAbility} onItemClick={navigateToItem} onLocationClick={navigateToLocation} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} searchLists={searchLists} onUnifiedNavigate={handleUnifiedNavigate} searchLoading={loading} initialQuery={searchQuery} />}
         </>
       )}
 
@@ -451,6 +560,8 @@ function App() {
           initialVersion={abilityPageInit.version}
           onStateChange={handleAbilityStateChange}
           onPokemonClick={navigateToPokemon}
+          searchLists={searchLists}
+          onUnifiedNavigate={handleUnifiedNavigate}
         />
       )}
 
@@ -461,6 +572,8 @@ function App() {
           initialVersion={movePageInit.version}
           onStateChange={handleMoveStateChange}
           onPokemonClick={navigateToPokemon}
+          searchLists={searchLists}
+          onUnifiedNavigate={handleUnifiedNavigate}
         />
       )}
 
@@ -472,6 +585,8 @@ function App() {
           onStateChange={handleItemStateChange}
           onPokemonClick={navigateToPokemon}
           onMoveClick={navigateToMove}
+          searchLists={searchLists}
+          onUnifiedNavigate={handleUnifiedNavigate}
         />
       )}
 
@@ -482,6 +597,8 @@ function App() {
           initialVersion={locationPageInit.version}
           onStateChange={handleLocationStateChange}
           onPokemonClick={navigateToPokemon}
+          searchLists={searchLists}
+          onUnifiedNavigate={handleUnifiedNavigate}
         />
       )}
 

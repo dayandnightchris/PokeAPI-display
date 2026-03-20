@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import UnifiedSearch from './UnifiedSearch'
 import { versionDisplayNames, versionGeneration, versionGroupDisplayNames, generationVersionGroups, generationOrder, versionGroupOrder, getTransferSourceVersionGroups } from '../utils/versionInfo'
 import { fetchPokemonCached, fetchMoveCached, fetchSpeciesCached, preloadPokemonCache } from '../utils/pokeCache'
 import gen1TradebackMoves from '../utils/tradebackMoves'
@@ -219,7 +220,7 @@ function getMoveStatsForVersion(moveData, selectedVersion) {
   return { power, pp, accuracy, type, effectChance }
 }
 
-export default function MovePage({ initialMove, initialVersion, onStateChange, onPokemonClick }) {
+export default function MovePage({ initialMove, initialVersion, onStateChange, onPokemonClick, searchLists, onUnifiedNavigate }) {
   const [moveList, setMoveList] = useState([])
   const [searchInput, setSearchInput] = useState(initialMove || '')
   const [suggestions, setSuggestions] = useState([])
@@ -768,34 +769,8 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
             </select>
           </div>
         )}
-        <div className="search-container page-search-inline" ref={containerRef}>
-          <form onSubmit={handleSubmit} className="search-form">
-            <div className="search-input-wrapper">
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => { userIsTypingRef.current = true; setSearchInput(e.target.value) }}
-                onKeyDown={handleKeyDown}
-                onFocus={() => searchInput && setShowSuggestions(suggestions.length > 0)}
-                placeholder="Enter move name..."
-                autoComplete="off"
-              />
-              <button type="submit" disabled={moveLoading}>Search</button>
-            </div>
-            {showSuggestions && suggestions.length > 0 && (
-              <ul className="suggestions-list">
-                {suggestions.map((s, idx) => (
-                  <li
-                    key={s}
-                    className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
-                    onClick={() => handleSuggestionClick(s)}
-                  >
-                    {formatMoveName(s)}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </form>
+        <div className="search-container page-search-inline">
+          <UnifiedSearch lists={searchLists} onNavigate={onUnifiedNavigate} activeTab="moves" initialQuery={initialMove || ''} loading={moveLoading} />
         </div>
       </div>
 

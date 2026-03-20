@@ -246,6 +246,41 @@
   background-color: var(--suggestion-active);
 }
 
+/* Unified search suggestion layout */
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.suggestion-category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  white-space: nowrap;
+  min-width: 4.8rem;
+  justify-content: center;
+  color: #fff;
+  background: #888;
+}
+
+.suggestion-category-badge[data-category="pokemon"]   { background: #e74c3c; }
+.suggestion-category-badge[data-category="moves"]     { background: #3498db; }
+.suggestion-category-badge[data-category="abilities"] { background: #9b59b6; }
+.suggestion-category-badge[data-category="items"]     { background: #e67e22; }
+.suggestion-category-badge[data-category="locations"] { background: #27ae60; }
+
+.suggestion-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Evolution Line box */
 .evolution-box-content > div {
   padding: 12px;

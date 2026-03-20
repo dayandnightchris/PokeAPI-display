@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import StatsCalculator from './StatsCalculator'
 import VersionSelector from './VersionSelector'
-import PokemonSearch from './PokemonSearch'
+import UnifiedSearch from './UnifiedSearch'
 import { renderEvolutionForest } from './EvolutionTree'
 import { getVersionInfo, generationOrder, generationVersions, versionGeneration, versionDisplayNames } from '../utils/versionInfo'
 import {
@@ -400,7 +400,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
   )
 }
 
-export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, onAbilityClick, onItemClick, onLocationClick, initialForm, initialVersion, onStateChange, onSearch, searchLoading, pokemonList, pokemonIdMap, initialQuery }) {
+export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, onAbilityClick, onItemClick, onLocationClick, initialForm, initialVersion, onStateChange, searchLists, onUnifiedNavigate, searchLoading, initialQuery }) {
   // UI state
   const [hoveredType, setHoveredType] = useState(null)
   const [versionInfo, setVersionInfo] = useState(null)
@@ -783,7 +783,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
           formVersionFilter={formVersionFilter}
         />
         <div className="page-search-inline">
-          <PokemonSearch onSearch={onSearch} loading={searchLoading} pokemonList={pokemonList} pokemonIdMap={pokemonIdMap} initialQuery={initialQuery} />
+          <UnifiedSearch lists={searchLists} onNavigate={onUnifiedNavigate} activeTab="pokemon" loading={searchLoading} initialQuery={initialQuery} />
         </div>
       </div>
 

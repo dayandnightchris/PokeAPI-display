@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import UnifiedSearch from './UnifiedSearch'
 import { versionDisplayNames, versionGeneration, generationVersionGroups, generationOrder, generationVersions } from '../utils/versionInfo'
 import { fetchAbilityCached, fetchPokemonCached } from '../utils/pokeCache'
 
@@ -99,7 +100,7 @@ function pokemonHasAbilityInGen(pokemonData, abilityName, selectedGen) {
   return null
 }
 
-export default function AbilityPage({ initialAbility, initialVersion, onStateChange, onPokemonClick }) {
+export default function AbilityPage({ initialAbility, initialVersion, onStateChange, onPokemonClick, searchLists, onUnifiedNavigate }) {
   const [abilityList, setAbilityList] = useState([])
   const [searchInput, setSearchInput] = useState(initialAbility || '')
   const [suggestions, setSuggestions] = useState([])
@@ -515,34 +516,8 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
             </select>
           </div>
         )}
-        <div className="search-container page-search-inline" ref={containerRef}>
-          <form onSubmit={handleSubmit} className="search-form">
-            <div className="search-input-wrapper">
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => { userIsTypingRef.current = true; setSearchInput(e.target.value) }}
-                onKeyDown={handleKeyDown}
-                onFocus={() => searchInput && setShowSuggestions(suggestions.length > 0)}
-                placeholder="Enter ability name..."
-                autoComplete="off"
-              />
-              <button type="submit" disabled={abilityLoading}>Search</button>
-            </div>
-            {showSuggestions && suggestions.length > 0 && (
-              <ul className="suggestions-list">
-                {suggestions.map((s, idx) => (
-                  <li
-                    key={s}
-                    className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
-                    onClick={() => handleSuggestionClick(s)}
-                  >
-                    {formatAbilityName(s)}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </form>
+        <div className="search-container page-search-inline">
+          <UnifiedSearch lists={searchLists} onNavigate={onUnifiedNavigate} activeTab="abilities" initialQuery={initialAbility || ''} loading={abilityLoading} />
         </div>
       </div>
 

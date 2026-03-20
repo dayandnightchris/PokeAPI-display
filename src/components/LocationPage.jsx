@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import UnifiedSearch from './UnifiedSearch'
 import { versionDisplayNames, versionGeneration, versionAbbreviations, generationVersions, versionColors } from '../utils/versionInfo'
 import { fetchLocationCached, fetchLocationAreaCached } from '../utils/pokeCache'
 
@@ -14,7 +15,7 @@ function formatLocationName(name) {
     .replace(/Heartgold/g, 'Heart Gold').replace(/Soulsilver/g, 'Soul Silver')
 }
 
-export default function LocationPage({ initialLocation, initialVersion, onStateChange, onPokemonClick }) {
+export default function LocationPage({ initialLocation, initialVersion, onStateChange, onPokemonClick, searchLists, onUnifiedNavigate }) {
   const [locationList, setLocationList] = useState([])
   const [searchInput, setSearchInput] = useState(initialLocation ? formatLocationName(initialLocation) : '')
   const [suggestions, setSuggestions] = useState([])
@@ -452,35 +453,8 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
             </select>
           </div>
         )}
-        <div className="search-container page-search-inline" ref={containerRef}>
-          <form onSubmit={handleSubmit} className="search-form">
-            <div className="search-input-wrapper">
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => { userIsTypingRef.current = true; setSearchInput(e.target.value) }}
-                onKeyDown={handleKeyDown}
-                onFocus={() => searchInput && setShowSuggestions(suggestions.length > 0)}
-                placeholder="Enter location name..."
-                autoComplete="off"
-              />
-              <button type="submit" disabled={locationLoading}>Search</button>
-            </div>
-            {showSuggestions && suggestions.length > 0 && (
-              <ul className="suggestions-list">
-                {suggestions.map((s, idx) => (
-                  <li
-                    key={s}
-                    className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
-                    onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s) }}
-                    onTouchEnd={(e) => { e.preventDefault(); handleSuggestionClick(s) }}
-                  >
-                    {formatLocationName(s)}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </form>
+        <div className="search-container page-search-inline">
+          <UnifiedSearch lists={searchLists} onNavigate={onUnifiedNavigate} activeTab="locations" initialQuery={initialLocation || ''} loading={locationLoading} />
         </div>
       </div>
 
