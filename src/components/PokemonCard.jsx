@@ -4,6 +4,7 @@ import VersionSelector from './VersionSelector'
 import UnifiedSearch from './UnifiedSearch'
 import { renderEvolutionForest } from './EvolutionTree'
 import { getVersionInfo, generationOrder, generationVersions, versionGeneration, versionDisplayNames } from '../utils/versionInfo'
+import { getTypeEffectiveness } from '../utils/typeEffectiveness'
 import {
   usePokemonSpecies,
   useAbilityDescriptions,
@@ -678,26 +679,8 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   const generationTypes = getGenerationTypes()
   const generationStats = getGenerationStats()
 
-  const typeEffectiveness = {
-    normal: { resists: [], weak: ['fighting'], immune: ['ghost'], veryWeak: [] },
-    fire: { resists: ['fire', 'grass', 'ice', 'bug', 'steel', 'fairy'], weak: ['water', 'ground', 'rock'], immune: [], veryWeak: [] },
-    water: { resists: ['fire', 'water', 'ice', 'steel'], weak: ['electric', 'grass'], immune: [], veryWeak: [] },
-    electric: { resists: ['flying', 'steel'], weak: ['ground'], immune: [], veryWeak: [] },
-    grass: { resists: ['ground', 'water', 'grass'], weak: ['fire', 'ice', 'poison', 'flying', 'bug'], immune: [], veryWeak: [] },
-    ice: { resists: ['ice'], weak: ['fire', 'fighting', 'rock', 'steel'], immune: [], veryWeak: [] },
-    fighting: { resists: ['rock', 'bug', 'dark'], weak: ['flying', 'psychic', 'fairy'], immune: [], veryWeak: [] },
-    poison: { resists: ['fighting', 'poison', 'bug', 'grass'], weak: ['ground', 'psychic'], immune: [], veryWeak: [] },
-    ground: { resists: ['poison', 'rock'], weak: ['water', 'grass', 'ice'], immune: ['electric'], veryWeak: [] },
-    flying: { resists: ['fighting', 'bug', 'grass'], weak: ['electric', 'ice', 'rock'], immune: ['ground'], veryWeak: [] },
-    psychic: { resists: ['fighting', 'psychic'], weak: ['bug', 'ghost', 'dark'], immune: [], veryWeak: [] },
-    bug: { resists: ['fighting', 'ground', 'grass'], weak: ['fire', 'flying', 'rock'], immune: [], veryWeak: [] },
-    rock: { resists: ['normal', 'flying', 'poison', 'fire'], weak: ['water', 'grass', 'fighting', 'ground', 'steel'], immune: [], veryWeak: [] },
-    ghost: { resists: ['poison', 'bug'], weak: ['ghost', 'dark'], immune: ['normal', 'fighting'], veryWeak: [] },
-    dragon: { resists: ['fire', 'water', 'grass', 'electric'], weak: ['ice', 'dragon', 'fairy'], immune: [], veryWeak: [] },
-    dark: { resists: ['ghost', 'dark'], weak: ['fighting', 'bug', 'fairy'], immune: ['psychic'], veryWeak: [] },
-    steel: { resists: ['normal', 'flying', 'rock', 'bug', 'steel', 'grass', 'psychic', 'ice', 'dragon', 'fairy'], weak: ['fire', 'water', 'ground'], immune: ['poison'], veryWeak: [] },
-    fairy: { resists: ['fighting', 'bug', 'dark'], weak: ['poison', 'steel'], immune: ['dragon'], veryWeak: [] }
-  }
+  // Use the version-appropriate type chart (Gen 1 / Gen 2–5 / Gen 6+)
+  const typeEffectiveness = getTypeEffectiveness(selectedVersion)
 
   const getCombinedTypeMatchups = () => {
     const types = generationTypes?.map(t => t.type.name) || []
