@@ -244,7 +244,7 @@ export default function EggMoveTab({
     if (initialPokemon) loadPokemon(initialPokemon)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch parents for a specific egg move when expanded
+  // Fetch parents for a specific egg move
   const fetchParentsForMove = useCallback(async (moveName) => {
     if (parentsByMove[moveName]) return // Already loaded
 
@@ -355,15 +355,18 @@ export default function EggMoveTab({
     }
   }, [speciesData, allEggGroups, parentsByMove])
 
+  // Auto-fetch parents for all egg moves once they're loaded
+  useEffect(() => {
+    if (eggMoves.length === 0 || !speciesData) return
+    eggMoves.forEach(m => {
+      fetchParentsForMove(m.name)
+    })
+  }, [eggMoves, speciesData, allEggGroups]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Toggle egg move expansion
   const toggleMove = useCallback((moveName) => {
-    setExpandedMoves(prev => {
-      const next = { ...prev, [moveName]: !prev[moveName] }
-      // Fetch parents when expanding for the first time
-      if (next[moveName]) fetchParentsForMove(moveName)
-      return next
-    })
-  }, [fetchParentsForMove])
+    setExpandedMoves(prev => ({ ...prev, [moveName]: !prev[moveName] }))
+  }, [])
 
   // Filter egg moves to the selected version
   const getFilteredEggMoves = () => {
@@ -401,6 +404,15 @@ export default function EggMoveTab({
       .filter(Boolean)
   }
 
+  // Count distinct learn methods across all parents for an egg move
+  const getDistinctMethodCount = (moveName) => {
+    const parents = getFilteredParents(moveName)
+    if (parents.length === 0) return 0
+    const methodSet = new Set()
+    parents.forEach(p => p.methods.forEach(m => methodSet.add(m.method)))
+    return methodSet.size
+  }
+
   // Sorting
   const handleSort = (key) => {
     setSortConfig(prev => ({
@@ -426,6 +438,10 @@ export default function EggMoveTab({
         result = (aParents.length || 0) - (bParents.length || 0)
         break
       }
+      case 'methods': {
+        result = getDistinctMethodCount(a.name) - getDistinctMethodCount(b.name)
+        break
+      }
       default:
         result = a.name.localeCompare(b.name)
     }
@@ -442,7 +458,6 @@ export default function EggMoveTab({
       const expanded = {}
       sortedMoves.forEach(m => {
         expanded[m.name] = true
-        if (!parentsByMove[m.name]) fetchParentsForMove(m.name)
       })
       setExpandedMoves(expanded)
       setTableFullyExpanded(true)
@@ -559,18 +574,23 @@ export default function EggMoveTab({
                   <table className="location-encounters-table egg-move-table">
                     <thead>
                       <tr>
-                        <th style={{ width: '40%' }}>
+                        <th style={{ width: '35%' }}>
                           <button type="button" onClick={() => handleSort('move')}>
                             Egg Move{getSortIndicator('move')}
                           </button>
                         </th>
-                        <th style={{ width: '20%' }}>Type</th>
-                        <th style={{ width: '15%' }}>Power</th>
-                        <th style={{ width: '25%' }}>
+                        <th style={{ width: '15%' }}>
                           <button type="button" onClick={() => handleSort('parents')}>
                             Parents{getSortIndicator('parents')}
                           </button>
                         </th>
+                        <th style={{ width: '15%' }}>
+                          <button type="button" onClick={() => handleSort('methods')}>
+                            Methods{getSortIndicator('methods')}
+                          </button>
+                        </th>
+                        <th style={{ width: '20%' }}>Type</th>
+                        <th style={{ width: '15%' }}>Power</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -606,17 +626,26 @@ export default function EggMoveTab({
                                 </span>
                               )}
                             </td>
+                            <td className="location-method-cell" style={{ color: 'var(--text-muted)' }}>
+                              {parentsByMove[eggMove.name]
+                                ? `${parents.length} parent${parents.length !== 1 ? 's' : ''}`
+                                : <video src="/simple_pokeball.webm" autoPlay loop muted className="egg-move-inline-loader" />
+                              }
+                            </td>
+                            <td className="location-method-cell" style={{ color: 'var(--text-muted)' }}>
+                              {parentsByMove[eggMove.name]
+                                ? (() => {
+                                    const count = getDistinctMethodCount(eggMove.name)
+                                    return `${count} method${count !== 1 ? 's' : ''}`
+                                  })()
+                                : <video src="/simple_pokeball.webm" autoPlay loop muted className="egg-move-inline-loader" />
+                              }
+                            </td>
                             <td className="egg-move-type-cell">
                               <MoveTypeCell moveName={eggMove.name} />
                             </td>
                             <td className="egg-move-power-cell">
                               <MovePowerCell moveName={eggMove.name} />
-                            </td>
-                            <td className="location-method-cell" style={{ color: 'var(--text-muted)' }}>
-                              {parentsByMove[eggMove.name]
-                                ? `${parents.length} parent${parents.length !== 1 ? 's' : ''}`
-                                : '—'
-                              }
                             </td>
                           </tr>
                         )
@@ -626,15 +655,15 @@ export default function EggMoveTab({
                           if (isLoadingParents) {
                             rows.push(
                               <tr key={`${eggMove.name}-loading`} className="location-detail-row">
-                                <td colSpan="4" style={{ textAlign: 'center', padding: '8px', color: 'var(--text-muted)' }}>
-                                  Loading parents…
+                                <td colSpan="5" style={{ textAlign: 'center', padding: '8px' }}>
+                                  <video src="/simple_pokeball.webm" autoPlay loop muted className="egg-move-inline-loader" />
                                 </td>
                               </tr>
                             )
                           } else if (parents.length === 0 && parentsByMove[eggMove.name]) {
                             rows.push(
                               <tr key={`${eggMove.name}-none`} className="location-detail-row">
-                                <td colSpan="4" style={{ textAlign: 'center', padding: '8px', color: 'var(--text-muted)' }}>
+                                <td colSpan="5" style={{ textAlign: 'center', padding: '8px', color: 'var(--text-muted)' }}>
                                   No compatible parents in this version
                                 </td>
                               </tr>
@@ -662,10 +691,9 @@ export default function EggMoveTab({
                                       formatName(parent.name)
                                     )}
                                   </td>
-                                  <td colSpan="2" className="egg-parent-method-cell">
+                                  <td className="egg-parent-method-cell" colSpan="4">
                                     {methodLabels.join(', ')}
                                   </td>
-                                  <td></td>
                                 </tr>
                               )
                             })
