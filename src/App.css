@@ -1472,7 +1472,7 @@
    ========================= */
 
 .egg-move-table .egg-parent-cell {
-  padding-left: 28px;
+  padding-left: 0;
 }
 
 .egg-move-table .egg-parent-method-cell {

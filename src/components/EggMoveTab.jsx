@@ -686,6 +686,7 @@ export default function EggMoveTab({
 
                               rows.push(
                                 <tr key={`${eggMove.name}-${parent.name}-${idx}`} className="location-detail-row">
+                                  <td></td>
                                   <td className="location-pokemon-cell egg-parent-cell">
                                     {onPokemonClick ? (
                                       <button
@@ -699,7 +700,7 @@ export default function EggMoveTab({
                                       formatName(parent.name)
                                     )}
                                   </td>
-                                  <td className="egg-parent-method-cell" colSpan="4">
+                                  <td className="egg-parent-method-cell" colSpan="3">
                                     {methodLabels.join(', ')}
                                   </td>
                                 </tr>
