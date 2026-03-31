@@ -147,12 +147,35 @@ function App() {
           if (name.startsWith('alcremie-') && name !== 'alcremie-gmax') names.delete(name)
         }
 
-        // Build id-to-name map from the pokemon list (extract id from URL)
+        // Build id-to-name map and identify Gen 8+ pokemon (id >= 810)
         const idMap = {}
+        const gen8PlusNames = new Set()
         all.results.forEach(p => {
           const id = p.url.match(/\/pokemon\/(\d+)\//)?.[1]
-          if (id) idMap[id] = p.name
+          if (id) {
+            const numId = Number(id)
+            idMap[id] = p.name
+            if (numId >= 810) gen8PlusNames.add(p.name)
+          }
         })
+
+        // Filter out Gen 8+ pokemon and their forms from autocomplete
+        for (const name of names) {
+          if (gen8PlusNames.has(name)) {
+            names.delete(name)
+            continue
+          }
+          // Forms: check if the base species name (before the first hyphen suffix) is Gen 8+
+          // e.g. "urshifu-rapid-strike" → base "urshifu"
+          const baseName = [...gen8PlusNames].find(g8 => name.startsWith(g8 + '-'))
+          if (baseName) names.delete(name)
+        }
+
+        // Also filter Gen 8+ from the id map
+        for (const id of Object.keys(idMap)) {
+          if (Number(id) >= 810) delete idMap[id]
+        }
+
         setPokemonIdMap(idMap)
         setPokemonList(Array.from(names).sort())
       } catch (err) {

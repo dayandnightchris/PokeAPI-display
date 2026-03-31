@@ -1324,12 +1324,8 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                     return <p style={{ margin: '0' }}>Trade from {tradeNames} and/or evolve from {preEvoName}.</p>
                   }
 
-                  // Priority 3: Transfer (only Gen 1-6)
-                  if (currentGen && currentGen <= 6) {
-                    return <p style={{ margin: '0' }}>Transfer only.</p>
-                  }
-
-                  return <p style={{ margin: '0' }}>No location data available.</p>
+                  // Priority 3: Transfer
+                  return <p style={{ margin: '0' }}>Transfer only.</p>
                 })()
               ) : allEncounters.length === 0 && selectedVersion ? (
                 (() => {
@@ -1365,14 +1361,8 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                     return <p style={{ margin: '0' }}>Trade from {tradeNames} and/or evolve from {preEvoName}.</p>
                   }
 
-                  // allEncounters is empty, so no wild encounters exist in any version — skip trade check
-                  const currentGen = versionGeneration[selectedVersion]
-
-                  if (currentGen && currentGen <= 6) {
-                    return <p style={{ margin: '0' }}>Transfer only.</p>
-                  }
-
-                  return <p style={{ margin: '0' }}>No location data available.</p>
+                  // No wild encounters exist in any version — transfer is the only option
+                  return <p style={{ margin: '0' }}>Transfer only.</p>
                 })()
               ) : allEncounters.length === 0 ? (
                 <p style={{ margin: '0' }}>No location data available.</p>
