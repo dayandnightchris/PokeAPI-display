@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
 
+// Hierarchy: Pokemon > Location > Move > Ability > Item
+const CATEGORY_ORDER = ['pokemon', 'locations', 'moves', 'abilities', 'items']
+
 const CATEGORY_META = {
-  pokemon:   { label: 'Pokémon',  icon: '🐾', priority: 1 },
-  moves:     { label: 'Move',     icon: '⚔️', priority: 2 },
-  abilities: { label: 'Ability',  icon: '🌟', priority: 3 },
-  items:     { label: 'Item',     icon: '🎒', priority: 4 },
-  locations: { label: 'Location', icon: '📍', priority: 5 },
+  pokemon:   { label: 'Pokémon',  priority: 1 },
+  locations: { label: 'Location', priority: 2 },
+  moves:     { label: 'Move',     priority: 3 },
+  abilities: { label: 'Ability',  priority: 4 },
+  items:     { label: 'Item',     priority: 5 },
 }
 
 /**
@@ -51,81 +54,83 @@ export default function UnifiedSearch({ lists, onNavigate, activeTab, placeholde
     const qNoSep = cleaned.toLowerCase().replace(/[-\s]/g, '')
     const isNumeric = /^\d+$/.test(cleaned)
 
-    const results = []
     const MAX_PER_CATEGORY = 4
-    const MAX_TOTAL = 8
 
-    // Helper to score a match — lower is better
-    const score = (name, category) => {
-      const isActiveTab = category === activeTab
+    // Helper to score a match within a category — lower is better
+    const score = (name) => {
       const nameClean = name.replace(/-/g, '')
-      if (name === q) return isActiveTab ? 0 : 1
-      if (name.startsWith(q)) return isActiveTab ? 2 : 3
-      if (nameClean.startsWith(qNoSep)) return isActiveTab ? 4 : 5
-      return isActiveTab ? 6 : 7
+      if (name === q) return 0
+      if (name.startsWith(q)) return 1
+      if (nameClean.startsWith(qNoSep)) return 2
+      return 3
     }
+
+    // Collect matches per category
+    const perCategory = {}
 
     // Pokemon — support numeric dex search
     if (lists.pokemon?.length) {
       if (isNumeric && lists.pokemonIdMap) {
-        const matches = Object.entries(lists.pokemonIdMap)
+        perCategory.pokemon = Object.entries(lists.pokemonIdMap)
           .filter(([id]) => id.startsWith(cleaned))
           .sort((a, b) => Number(a[0]) - Number(b[0]))
           .slice(0, MAX_PER_CATEGORY)
-          .map(([id, name]) => ({ name, category: 'pokemon', score: score(name, 'pokemon'), displayId: id }))
-        results.push(...matches)
+          .map(([id, name]) => ({ name, category: 'pokemon', score: score(name), displayId: id }))
       } else {
-        const matches = lists.pokemon
+        perCategory.pokemon = lists.pokemon
           .filter(name => name.includes(q) || name.replace(/-/g, '').includes(qNoSep))
           .slice(0, MAX_PER_CATEGORY)
-          .map(name => ({ name, category: 'pokemon', score: score(name, 'pokemon') }))
-        results.push(...matches)
+          .map(name => ({ name, category: 'pokemon', score: score(name) }))
       }
-    }
-
-    // Moves
-    if (lists.moves?.length) {
-      const matches = lists.moves
-        .filter(name => name.includes(q) || name.replace(/-/g, '').includes(qNoSep))
-        .slice(0, MAX_PER_CATEGORY)
-        .map(name => ({ name, category: 'moves', score: score(name, 'moves') }))
-      results.push(...matches)
-    }
-
-    // Abilities
-    if (lists.abilities?.length) {
-      const matches = lists.abilities
-        .filter(name => name.includes(q) || name.replace(/-/g, '').includes(qNoSep))
-        .slice(0, MAX_PER_CATEGORY)
-        .map(name => ({ name, category: 'abilities', score: score(name, 'abilities') }))
-      results.push(...matches)
-    }
-
-    // Items
-    if (lists.items?.length) {
-      const matches = lists.items
-        .filter(name => name.includes(q) || name.replace(/-/g, '').includes(qNoSep))
-        .slice(0, MAX_PER_CATEGORY)
-        .map(name => ({ name, category: 'items', score: score(name, 'items') }))
-      results.push(...matches)
     }
 
     // Locations
     if (lists.locations?.length) {
-      const matches = lists.locations
+      perCategory.locations = lists.locations
         .filter(name => name.includes(q) || name.replace(/-/g, '').includes(qNoSep))
         .slice(0, MAX_PER_CATEGORY)
-        .map(name => ({ name, category: 'locations', score: score(name, 'locations') }))
-      results.push(...matches)
+        .map(name => ({ name, category: 'locations', score: score(name) }))
     }
 
-    // Sort by score (active tab first, then exact/prefix/contains), limit total
-    results.sort((a, b) => a.score - b.score || a.name.localeCompare(b.name))
-    const limited = results.slice(0, MAX_TOTAL)
+    // Moves
+    if (lists.moves?.length) {
+      perCategory.moves = lists.moves
+        .filter(name => name.includes(q) || name.replace(/-/g, '').includes(qNoSep))
+        .slice(0, MAX_PER_CATEGORY)
+        .map(name => ({ name, category: 'moves', score: score(name) }))
+    }
 
-    setSuggestions(limited)
-    setShowSuggestions(limited.length > 0)
-    setActiveSuggestion(0)
+    // Abilities
+    if (lists.abilities?.length) {
+      perCategory.abilities = lists.abilities
+        .filter(name => name.includes(q) || name.replace(/-/g, '').includes(qNoSep))
+        .slice(0, MAX_PER_CATEGORY)
+        .map(name => ({ name, category: 'abilities', score: score(name) }))
+    }
+
+    // Items
+    if (lists.items?.length) {
+      perCategory.items = lists.items
+        .filter(name => name.includes(q) || name.replace(/-/g, '').includes(qNoSep))
+        .slice(0, MAX_PER_CATEGORY)
+        .map(name => ({ name, category: 'items', score: score(name) }))
+    }
+
+    // Build grouped list in hierarchy order: Pokemon > Location > Move > Ability > Item
+    // Each category's results are sorted by score within the group
+    const grouped = []
+    for (const cat of CATEGORY_ORDER) {
+      const items = perCategory[cat]
+      if (items && items.length > 0) {
+        items.sort((a, b) => a.score - b.score || a.name.localeCompare(b.name))
+        grouped.push({ type: 'header', category: cat, label: CATEGORY_META[cat].label })
+        grouped.push(...items.map(item => ({ ...item, type: 'item' })))
+      }
+    }
+
+    setSuggestions(grouped)
+    setShowSuggestions(grouped.length > 0)
+    setActiveSuggestion(grouped.findIndex(s => s.type === 'item'))
   }, [input, lists, activeTab])
 
   // Close suggestions on outside click
@@ -174,21 +179,31 @@ export default function UnifiedSearch({ lists, onNavigate, activeTab, placeholde
     setShowSuggestions(false)
   }
 
+  // Find next/prev selectable item index (skip headers)
+  const findNextItem = (from, direction) => {
+    let idx = from
+    for (let i = 0; i < suggestions.length; i++) {
+      idx = (idx + direction + suggestions.length) % suggestions.length
+      if (suggestions[idx]?.type === 'item') return idx
+    }
+    return from
+  }
+
   const handleKeyDown = (e) => {
     if (!showSuggestions) return
 
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
-        setActiveSuggestion(prev => (prev + 1) % suggestions.length)
+        setActiveSuggestion(prev => findNextItem(prev, 1))
         break
       case 'ArrowUp':
         e.preventDefault()
-        setActiveSuggestion(prev => (prev - 1 + suggestions.length) % suggestions.length)
+        setActiveSuggestion(prev => findNextItem(prev, -1))
         break
       case 'Enter':
         e.preventDefault()
-        if (suggestions[activeSuggestion]) {
+        if (suggestions[activeSuggestion]?.type === 'item') {
           navigateToResult(suggestions[activeSuggestion])
         } else {
           handleSubmit(e)
@@ -225,20 +240,27 @@ export default function UnifiedSearch({ lists, onNavigate, activeTab, placeholde
 
         {showSuggestions && suggestions.length > 0 && (
           <ul className="suggestions-list">
-            {suggestions.map((suggestion, idx) => {
-              const meta = CATEGORY_META[suggestion.category]
+            {suggestions.map((entry, idx) => {
+              if (entry.type === 'header') {
+                return (
+                  <li
+                    key={`header-${entry.category}`}
+                    className="suggestion-category-header"
+                    data-category={entry.category}
+                  >
+                    {entry.label}
+                  </li>
+                )
+              }
               return (
                 <li
-                  key={`${suggestion.category}-${suggestion.name}`}
+                  key={`${entry.category}-${entry.name}`}
                   className={`suggestion-item ${idx === activeSuggestion ? 'active' : ''}`}
-                  onMouseDown={(e) => { e.preventDefault(); navigateToResult(suggestion) }}
-                  onTouchEnd={(e) => { e.preventDefault(); navigateToResult(suggestion) }}
+                  onMouseDown={(e) => { e.preventDefault(); navigateToResult(entry) }}
+                  onTouchEnd={(e) => { e.preventDefault(); navigateToResult(entry) }}
                 >
-                  <span className="suggestion-category-badge" data-category={suggestion.category}>
-                    {meta?.icon} {meta?.label}
-                  </span>
-                  {suggestion.displayId && <span style={{ color: '#888', marginRight: '4px' }}>#{suggestion.displayId}</span>}
-                  <span className="suggestion-name">{formatName(suggestion.name)}</span>
+                  {entry.displayId && <span style={{ color: '#888', marginRight: '4px' }}>#{entry.displayId}</span>}
+                  <span className="suggestion-name">{formatName(entry.name)}</span>
                 </li>
               )
             })}

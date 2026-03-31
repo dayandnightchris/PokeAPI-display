@@ -219,7 +219,7 @@
   border-radius: 4px;
   list-style: none;
   padding: 0;
-  max-height: 300px;
+  max-height: 400px;
   overflow-y: auto;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   z-index: 10;
@@ -253,26 +253,25 @@
   gap: 0.5rem;
 }
 
-.suggestion-category-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
+/* Category header rows in suggestions dropdown */
+.suggestion-category-header {
+  padding: 0.35rem 0.75rem;
   font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.15rem 0.4rem;
-  border-radius: 3px;
-  white-space: nowrap;
-  min-width: 4.8rem;
-  justify-content: center;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: #fff;
+  cursor: default;
+  user-select: none;
+  border-bottom: 1px solid var(--border-row);
   background: #888;
 }
 
-.suggestion-category-badge[data-category="pokemon"]   { background: #e74c3c; }
-.suggestion-category-badge[data-category="moves"]     { background: #3498db; }
-.suggestion-category-badge[data-category="abilities"] { background: #9b59b6; }
-.suggestion-category-badge[data-category="items"]     { background: #e67e22; }
-.suggestion-category-badge[data-category="locations"] { background: #27ae60; }
+.suggestion-category-header[data-category="pokemon"]   { background: #e74c3c; }
+.suggestion-category-header[data-category="locations"] { background: #27ae60; }
+.suggestion-category-header[data-category="moves"]     { background: #3498db; }
+.suggestion-category-header[data-category="abilities"] { background: #9b59b6; }
+.suggestion-category-header[data-category="items"]     { background: #e67e22; }
 
 .suggestion-name {
   flex: 1;
