@@ -199,10 +199,13 @@ export default function EggMoveTab({
       extractEggMoves(pData.moves, null)
 
       // Walk pre-evolution chain and inherit their egg moves
+      // Track the lowest pre-evo (baby form) name
+      let babyName = null
       if (sData?.evolves_from_species) {
         let currentSpecies = sData
         while (currentSpecies?.evolves_from_species) {
           const preEvoName = currentSpecies.evolves_from_species.name
+          babyName = preEvoName // keeps getting overwritten to the lowest
           try {
             const preEvoPoke = await fetchPokemonCached(preEvoName)
             if (requestIdRef.current !== myReq) return
@@ -219,6 +222,11 @@ export default function EggMoveTab({
           } catch {
             break
           }
+        }
+
+        // All egg moves come from hatching the baby form, so attribute them all
+        if (babyName) {
+          eggs.forEach(e => { e.inheritedFrom = babyName })
         }
       }
 
