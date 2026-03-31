@@ -416,7 +416,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   const abilityDescriptionsBase = useAbilityDescriptions(formPokemon || pokemon)
   const [extraAbilityDescs, setExtraAbilityDescs] = useState({})
   const evolutions = useEvolutionChain({ species, selectedVersion, selectedForm })
-  const { canEvolveFrom, canTradeAndEvolveFrom, hasEvoFamilyInGen } = usePreEvolutionCheck({ species, selectedVersion })
+  const { canEvolveFrom, canTradeAndEvolveFrom, evoFamilyVersions } = usePreEvolutionCheck({ species, selectedVersion })
   // For forms with empty moves (e.g. PLZA megas), fall back to base pokemon's moves
   const movesSource = (formPokemon && formPokemon.moves?.length > 0) ? formPokemon : pokemon
   const { moves, loading: movesLoading } = useGroupedMoves(movesSource, selectedVersion, species)
@@ -1276,14 +1276,23 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                   }
 
                   // Priority 1b: Breeding (available in all games except RBY, Colosseum, XD, Legends Arceus, Legends Z-A)
-                  // Only suggest breeding if some member of the evo family has encounters in this gen
+                  // Only suggest breeding if some member of the evo family has encounters in this version
                   const NO_BREEDING_VERSIONS = new Set(['red', 'blue', 'yellow', 'colosseum', 'xd', 'legends-arceus', 'legends-za'])
                   const breedingAvailable = !NO_BREEDING_VERSIONS.has(selectedVersion)
-                  const canBreed = breedingAvailable && hasEvoFamilyInGen && (
-                    !species?.egg_groups?.every(g => g.name === 'no-eggs') || species?.is_baby
-                  )
+                  const hasEvoFamilyInVersion = evoFamilyVersions.includes(selectedVersion)
+                  const isBreedable = !species?.egg_groups?.every(g => g.name === 'no-eggs') || species?.is_baby
+                  const canBreed = breedingAvailable && hasEvoFamilyInVersion && isBreedable
                   if (canBreed) {
                     return <p style={{ margin: '0' }}>Obtain through breeding.</p>
+                  }
+
+                  // Priority 1c: Trade for a bred Pokémon — evo family exists in other same-gen games
+                  if (breedingAvailable && isBreedable && evoFamilyVersions.length > 0) {
+                    const tradeBreedVersions = evoFamilyVersions.filter(v => v !== selectedVersion)
+                    if (tradeBreedVersions.length > 0) {
+                      const tradeNames = tradeBreedVersions.map(v => versionDisplayNames[v] || v).join(', ')
+                      return <p style={{ margin: '0' }}>Trade from {tradeNames}.</p>
+                    }
                   }
 
                   // Priority 2: Can it be traded from another game in this gen?
@@ -1330,14 +1339,23 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                   }
 
                   // Priority 1b: Breeding — even though this Pokémon has no encounters,
-                  // an evo-family member might exist in this gen (e.g. Magby via Magmar in LeafGreen)
+                  // an evo-family member might exist in this version (e.g. Magby via Magmar in LeafGreen)
                   const NO_BREEDING_VERSIONS2 = new Set(['red', 'blue', 'yellow', 'colosseum', 'xd', 'legends-arceus', 'legends-za'])
                   const breedingAvailable2 = !NO_BREEDING_VERSIONS2.has(selectedVersion)
-                  const canBreed2 = breedingAvailable2 && hasEvoFamilyInGen && (
-                    !species?.egg_groups?.every(g => g.name === 'no-eggs') || species?.is_baby
-                  )
+                  const hasEvoFamilyInVersion2 = evoFamilyVersions.includes(selectedVersion)
+                  const isBreedable2 = !species?.egg_groups?.every(g => g.name === 'no-eggs') || species?.is_baby
+                  const canBreed2 = breedingAvailable2 && hasEvoFamilyInVersion2 && isBreedable2
                   if (canBreed2) {
                     return <p style={{ margin: '0' }}>Obtain through breeding.</p>
+                  }
+
+                  // Priority 1c: Trade for a bred Pokémon — evo family exists in other same-gen games
+                  if (breedingAvailable2 && isBreedable2 && evoFamilyVersions.length > 0) {
+                    const tradeBreedVersions = evoFamilyVersions.filter(v => v !== selectedVersion)
+                    if (tradeBreedVersions.length > 0) {
+                      const tradeNames = tradeBreedVersions.map(v => versionDisplayNames[v] || v).join(', ')
+                      return <p style={{ margin: '0' }}>Trade from {tradeNames}.</p>
+                    }
                   }
 
                   // Check if a pre-evo can be traded from another same-gen game and evolved

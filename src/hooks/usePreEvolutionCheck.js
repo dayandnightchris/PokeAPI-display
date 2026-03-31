@@ -135,14 +135,14 @@ function hasEncountersInGen(encounters, genVersions) {
 export function usePreEvolutionCheck({ species, selectedVersion }) {
   const [canEvolveFrom, setCanEvolveFrom] = useState(null)
   const [canTradeAndEvolveFrom, setCanTradeAndEvolveFrom] = useState(null)
-  const [hasEvoFamilyInGen, setHasEvoFamilyInGen] = useState(false)
+  const [evoFamilyVersions, setEvoFamilyVersions] = useState([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!species?.evolution_chain?.url || !selectedVersion || !species?.name) {
       setCanEvolveFrom(null)
       setCanTradeAndEvolveFrom(null)
-      setHasEvoFamilyInGen(false)
+      setEvoFamilyVersions([])
       return
     }
 
@@ -153,24 +153,24 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
       try {
         const chainRes = await fetch(species.evolution_chain.url)
         if (!chainRes.ok) {
-          if (active) { setCanEvolveFrom(null); setCanTradeAndEvolveFrom(null); setHasEvoFamilyInGen(false); setLoading(false) }
+          if (active) { setCanEvolveFrom(null); setCanTradeAndEvolveFrom(null); setEvoFamilyVersions([]); setLoading(false) }
           return
         }
         const chainData = await chainRes.json()
 
-        // Check if any member of the evo family has encounters in the current gen
+        // Collect all versions where any evo-family member has encounters
         const currentGen = versionGeneration[selectedVersion]
         const genVersions = currentGen ? (generationVersions[currentGen] || []) : []
         const allMembers = getAllChainMembers(chainData.chain)
-        let familyInGen = false
+        const familyVersions = new Set()
         for (const member of allMembers) {
           const enc = await fetchEncounters(member)
-          if (hasEncountersInGen(enc, genVersions)) {
-            familyInGen = true
-            break
+          const memberVersions = getEncounterVersions(enc)
+          for (const v of memberVersions) {
+            if (genVersions.includes(v)) familyVersions.add(v)
           }
         }
-        if (active) setHasEvoFamilyInGen(familyInGen)
+        if (active) setEvoFamilyVersions([...familyVersions])
 
         const preEvos = getPreEvolutions(chainData.chain, species.name)
         if (!preEvos || preEvos.length === 0) {
@@ -212,7 +212,7 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
         if (active) { setCanEvolveFrom(null); setCanTradeAndEvolveFrom(null); setLoading(false) }
       } catch (err) {
         console.error('Pre-evolution check failed:', err)
-        if (active) { setCanEvolveFrom(null); setCanTradeAndEvolveFrom(null); setHasEvoFamilyInGen(false); setLoading(false) }
+        if (active) { setCanEvolveFrom(null); setCanTradeAndEvolveFrom(null); setEvoFamilyVersions([]); setLoading(false) }
       }
     }
 
@@ -220,5 +220,5 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
     return () => { active = false }
   }, [species?.evolution_chain?.url, species?.name, selectedVersion])
 
-  return { canEvolveFrom, canTradeAndEvolveFrom, hasEvoFamilyInGen, loading }
+  return { canEvolveFrom, canTradeAndEvolveFrom, evoFamilyVersions, loading }
 }
