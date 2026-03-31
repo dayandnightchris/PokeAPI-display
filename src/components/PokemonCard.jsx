@@ -1275,6 +1275,16 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                     return <p style={{ margin: '0' }}>Evolve from {canEvolveFrom.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}.</p>
                   }
 
+                  // Priority 1b: Breeding (available in all games except RBY, Colosseum, XD, Legends Arceus, Legends Z-A)
+                  const NO_BREEDING_VERSIONS = new Set(['red', 'blue', 'yellow', 'colosseum', 'xd', 'legends-arceus', 'legends-za'])
+                  const breedingAvailable = !NO_BREEDING_VERSIONS.has(selectedVersion)
+                  const canBreed = breedingAvailable && (
+                    !species?.egg_groups?.every(g => g.name === 'no-eggs') || species?.is_baby
+                  )
+                  if (canBreed) {
+                    return <p style={{ margin: '0' }}>Obtain through breeding.</p>
+                  }
+
                   // Priority 2: Can it be traded from another game in this gen?
                   const currentGen = versionGeneration[selectedVersion]
                   if (currentGen) {
@@ -1316,6 +1326,16 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                   // No encounter data at all from the API — same priority fallback
                   if (canEvolveFrom) {
                     return <p style={{ margin: '0' }}>Evolve from {canEvolveFrom.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}.</p>
+                  }
+
+                  // Priority 1b: Breeding
+                  const NO_BREEDING_VERSIONS2 = new Set(['red', 'blue', 'yellow', 'colosseum', 'xd', 'legends-arceus', 'legends-za'])
+                  const breedingAvailable2 = !NO_BREEDING_VERSIONS2.has(selectedVersion)
+                  const canBreed2 = breedingAvailable2 && (
+                    !species?.egg_groups?.every(g => g.name === 'no-eggs') || species?.is_baby
+                  )
+                  if (canBreed2) {
+                    return <p style={{ margin: '0' }}>Obtain through breeding.</p>
                   }
 
                   // Check if a pre-evo can be traded from another same-gen game and evolved
