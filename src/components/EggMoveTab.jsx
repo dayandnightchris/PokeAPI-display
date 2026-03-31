@@ -181,7 +181,11 @@ export default function EggMoveTab({
             if (seen.has(moveName)) {
               // Merge version groups into existing entry
               const existing = eggs.find(e => e.name === moveName)
-              if (existing) vgs.forEach(vg => existing.versionGroups.add(vg))
+              if (existing) {
+                vgs.forEach(vg => existing.versionGroups.add(vg))
+                // Update attribution to the lowest pre-evo that has this egg move
+                if (inheritedFrom) existing.inheritedFrom = inheritedFrom
+              }
             } else {
               seen.add(moveName)
               eggs.push({ name: moveName, versionGroups: vgs, inheritedFrom: inheritedFrom || null })
@@ -224,9 +228,10 @@ export default function EggMoveTab({
           }
         }
 
-        // All egg moves come from hatching the baby form, so attribute them all
+        // Moves only found on the evolved form (inheritedFrom still null)
+        // must still come from hatching the baby, so attribute to baby
         if (babyName) {
-          eggs.forEach(e => { e.inheritedFrom = babyName })
+          eggs.forEach(e => { if (!e.inheritedFrom) e.inheritedFrom = babyName })
         }
       }
 
