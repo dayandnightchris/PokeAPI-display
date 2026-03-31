@@ -103,11 +103,11 @@ export default function EggMoveTab({
     const noBreeders = new Set(['red', 'blue', 'yellow', 'colosseum', 'xd', 'lets-go-pikachu', 'lets-go-eevee', 'legends-arceus', 'legends-za'])
     noBreeders.forEach(v => versionSet.delete(v))
 
-    // Group by generation
+    // Group by generation (exclude Gen 8+)
     const grouped = {}
     versionSet.forEach(v => {
       const gen = versionGeneration[v]
-      if (!gen) return
+      if (!gen || gen >= 8) return
       if (!grouped[gen]) grouped[gen] = []
       grouped[gen].push({ name: v, display: versionDisplayNames[v] || formatName(v), gen })
     })
@@ -286,14 +286,9 @@ export default function EggMoveTab({
 
             if (methods.length === 0) return null
 
-            // Get sprite
-            const sprite = learnerPoke.sprites?.front_default ||
-              learnerPoke.sprites?.versions?.['generation-viii']?.icons?.front_default || null
-
             return {
               name: learner.name,
               speciesName: learnerSpeciesName,
-              sprite,
               methods,
               id: learnerPoke.id,
             }
@@ -437,10 +432,6 @@ export default function EggMoveTab({
     }
   }, [loadPokemon, onUnifiedNavigate])
 
-  // Determine the sprite for the target Pokémon
-  const targetSprite = pokemonData?.sprites?.front_default ||
-    pokemonData?.sprites?.versions?.['generation-viii']?.icons?.front_default || null
-
   return (
     <div className="location-page egg-move-page">
       {/* Search + Version row */}
@@ -485,22 +476,13 @@ export default function EggMoveTab({
         <>
           {/* Pokemon info header */}
           <div className="location-detail-card">
-            <div className="location-detail-header" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {targetSprite && (
-                <img
-                  src={targetSprite}
-                  alt={pokemonName}
-                  className="egg-move-target-sprite"
-                />
+            <div className="location-detail-header">
+              <h2 className="location-detail-name">{formatName(pokemonData.name)}</h2>
+              {speciesData?.egg_groups && (
+                <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  Egg Groups: {speciesData.egg_groups.map(g => formatName(g.name)).join(', ')}
+                </div>
               )}
-              <div>
-                <h2 className="location-detail-name">{formatName(pokemonData.name)}</h2>
-                {speciesData?.egg_groups && (
-                  <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    Egg Groups: {speciesData.egg_groups.map(g => formatName(g.name)).join(', ')}
-                  </div>
-                )}
-              </div>
             </div>
           </div>
 
@@ -620,13 +602,6 @@ export default function EggMoveTab({
                               rows.push(
                                 <tr key={`${eggMove.name}-${parent.name}-${idx}`} className="location-detail-row">
                                   <td className="location-pokemon-cell egg-parent-cell">
-                                    {parent.sprite && (
-                                      <img
-                                        src={parent.sprite}
-                                        alt={parent.name}
-                                        className="egg-parent-sprite"
-                                      />
-                                    )}
                                     {onPokemonClick ? (
                                       <button
                                         type="button"
