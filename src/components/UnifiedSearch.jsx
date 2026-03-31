@@ -1,14 +1,20 @@
 import { useState, useRef, useEffect } from 'react'
 
-// Hierarchy: Pokemon > Location > Move > Ability > Item
-const CATEGORY_ORDER = ['pokemon', 'locations', 'moves', 'abilities', 'items']
+// Default hierarchy: Pokemon > Location > Move > Ability > Item
+// Active tab is promoted to the top; the rest keep their relative order.
+const DEFAULT_ORDER = ['pokemon', 'locations', 'moves', 'abilities', 'items']
+
+function getOrderForTab(tab) {
+  if (!tab || !DEFAULT_ORDER.includes(tab) || tab === DEFAULT_ORDER[0]) return DEFAULT_ORDER
+  return [tab, ...DEFAULT_ORDER.filter(c => c !== tab)]
+}
 
 const CATEGORY_META = {
-  pokemon:   { label: 'Pokémon',  priority: 1 },
-  locations: { label: 'Location', priority: 2 },
-  moves:     { label: 'Move',     priority: 3 },
-  abilities: { label: 'Ability',  priority: 4 },
-  items:     { label: 'Item',     priority: 5 },
+  pokemon:   { label: 'Pokémon'  },
+  locations: { label: 'Location' },
+  moves:     { label: 'Move'     },
+  abilities: { label: 'Ability'  },
+  items:     { label: 'Item'     },
 }
 
 /**
@@ -54,7 +60,11 @@ export default function UnifiedSearch({ lists, onNavigate, activeTab, placeholde
     const qNoSep = cleaned.toLowerCase().replace(/[-\s]/g, '')
     const isNumeric = /^\d+$/.test(cleaned)
 
-    const MAX_PER_CATEGORY = 4
+    const MAX_ACTIVE = 8
+    const MAX_OTHER = 4
+
+    // Build hierarchy with active tab promoted to the top
+    const orderedCategories = getOrderForTab(activeTab)
 
     // Helper to score a match within a category — lower is better
     const score = (name) => {
@@ -68,58 +78,43 @@ export default function UnifiedSearch({ lists, onNavigate, activeTab, placeholde
     // Collect matches per category
     const perCategory = {}
 
-    // Pokemon — support numeric dex search
-    if (lists.pokemon?.length) {
-      if (isNumeric && lists.pokemonIdMap) {
-        perCategory.pokemon = Object.entries(lists.pokemonIdMap)
-          .filter(([id]) => id.startsWith(cleaned))
-          .sort((a, b) => Number(a[0]) - Number(b[0]))
-          .slice(0, MAX_PER_CATEGORY)
-          .map(([id, name]) => ({ name, category: 'pokemon', score: score(name), displayId: id }))
-      } else {
-        perCategory.pokemon = lists.pokemon
-          .filter(name => name.includes(q) || name.replace(/-/g, '').includes(qNoSep))
-          .slice(0, MAX_PER_CATEGORY)
-          .map(name => ({ name, category: 'pokemon', score: score(name) }))
+    // Helper: collect matches for a generic name list
+    const collectMatches = (list, category, limit) => {
+      if (!list?.length) return []
+      return list
+        .filter(name => name.includes(q) || name.replace(/-/g, '').includes(qNoSep))
+        .slice(0, limit)
+        .map(name => ({ name, category, score: score(name) }))
+    }
+
+    // Build matches per category, giving the active tab a larger cap
+    for (const cat of orderedCategories) {
+      const limit = cat === activeTab ? MAX_ACTIVE : MAX_OTHER
+
+      if (cat === 'pokemon' && lists.pokemon?.length) {
+        if (isNumeric && lists.pokemonIdMap) {
+          perCategory.pokemon = Object.entries(lists.pokemonIdMap)
+            .filter(([id]) => id.startsWith(cleaned))
+            .sort((a, b) => Number(a[0]) - Number(b[0]))
+            .slice(0, limit)
+            .map(([id, name]) => ({ name, category: 'pokemon', score: score(name), displayId: id }))
+        } else {
+          perCategory.pokemon = collectMatches(lists.pokemon, 'pokemon', limit)
+        }
+      } else if (cat === 'locations') {
+        perCategory.locations = collectMatches(lists.locations, 'locations', limit)
+      } else if (cat === 'moves') {
+        perCategory.moves = collectMatches(lists.moves, 'moves', limit)
+      } else if (cat === 'abilities') {
+        perCategory.abilities = collectMatches(lists.abilities, 'abilities', limit)
+      } else if (cat === 'items') {
+        perCategory.items = collectMatches(lists.items, 'items', limit)
       }
     }
 
-    // Locations
-    if (lists.locations?.length) {
-      perCategory.locations = lists.locations
-        .filter(name => name.includes(q) || name.replace(/-/g, '').includes(qNoSep))
-        .slice(0, MAX_PER_CATEGORY)
-        .map(name => ({ name, category: 'locations', score: score(name) }))
-    }
-
-    // Moves
-    if (lists.moves?.length) {
-      perCategory.moves = lists.moves
-        .filter(name => name.includes(q) || name.replace(/-/g, '').includes(qNoSep))
-        .slice(0, MAX_PER_CATEGORY)
-        .map(name => ({ name, category: 'moves', score: score(name) }))
-    }
-
-    // Abilities
-    if (lists.abilities?.length) {
-      perCategory.abilities = lists.abilities
-        .filter(name => name.includes(q) || name.replace(/-/g, '').includes(qNoSep))
-        .slice(0, MAX_PER_CATEGORY)
-        .map(name => ({ name, category: 'abilities', score: score(name) }))
-    }
-
-    // Items
-    if (lists.items?.length) {
-      perCategory.items = lists.items
-        .filter(name => name.includes(q) || name.replace(/-/g, '').includes(qNoSep))
-        .slice(0, MAX_PER_CATEGORY)
-        .map(name => ({ name, category: 'items', score: score(name) }))
-    }
-
-    // Build grouped list in hierarchy order: Pokemon > Location > Move > Ability > Item
-    // Each category's results are sorted by score within the group
+    // Build grouped list following the dynamic hierarchy
     const grouped = []
-    for (const cat of CATEGORY_ORDER) {
+    for (const cat of orderedCategories) {
       const items = perCategory[cat]
       if (items && items.length > 0) {
         items.sort((a, b) => a.score - b.score || a.name.localeCompare(b.name))
