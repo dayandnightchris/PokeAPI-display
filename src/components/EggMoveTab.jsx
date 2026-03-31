@@ -64,7 +64,8 @@ export default function EggMoveTab({
   const [pokemonName, setPokemonName] = useState(initialPokemon || null)
   const [pokemonData, setPokemonData] = useState(null)
   const [speciesData, setSpeciesData] = useState(null)
-  const [eggMoves, setEggMoves] = useState([]) // [{name, versionGroups: Set}]
+  const [allEggGroups, setAllEggGroups] = useState(new Set()) // egg groups from entire evo chain
+  const [eggMoves, setEggMoves] = useState([]) // [{name, versionGroups: Set, inheritedFrom}]
   const [parentsByMove, setParentsByMove] = useState({}) // moveName → [{name, sprite, methods: [{method, versionGroups}]}]
   const [expandedMoves, setExpandedMoves] = useState({})
   const [tableFullyExpanded, setTableFullyExpanded] = useState(false)
@@ -162,24 +163,66 @@ export default function EggMoveTab({
       setPokemonData(pData)
       setSpeciesData(sData)
 
-      // Extract egg moves with version group info
+      // Extract egg moves with version group info from this Pokemon
       const eggs = []
       const seen = new Set()
-      pData.moves.forEach(moveData => {
-        const moveName = moveData.move.name
-        const vgs = new Set()
-        ;(moveData.version_group_details || []).forEach(vgd => {
-          if (vgd.move_learn_method?.name === 'egg') {
-            const vgName = vgd.version_group?.name
-            if (vgName) vgs.add(vgName)
+
+      const extractEggMoves = (pokemonMoves, inheritedFrom) => {
+        pokemonMoves.forEach(moveData => {
+          const moveName = moveData.move.name
+          const vgs = new Set()
+          ;(moveData.version_group_details || []).forEach(vgd => {
+            if (vgd.move_learn_method?.name === 'egg') {
+              const vgName = vgd.version_group?.name
+              if (vgName) vgs.add(vgName)
+            }
+          })
+          if (vgs.size > 0) {
+            if (seen.has(moveName)) {
+              // Merge version groups into existing entry
+              const existing = eggs.find(e => e.name === moveName)
+              if (existing) vgs.forEach(vg => existing.versionGroups.add(vg))
+            } else {
+              seen.add(moveName)
+              eggs.push({ name: moveName, versionGroups: vgs, inheritedFrom: inheritedFrom || null })
+            }
           }
         })
-        if (vgs.size > 0 && !seen.has(moveName)) {
-          seen.add(moveName)
-          eggs.push({ name: moveName, versionGroups: vgs })
-        }
-      })
+      }
 
+      // Collect egg groups from the entire evo chain for parent matching
+      const chainEggGroups = new Set(
+        (sData?.egg_groups || []).map(g => g.name)
+      )
+
+      // Extract from the Pokemon itself
+      extractEggMoves(pData.moves, null)
+
+      // Walk pre-evolution chain and inherit their egg moves
+      if (sData?.evolves_from_species) {
+        let currentSpecies = sData
+        while (currentSpecies?.evolves_from_species) {
+          const preEvoName = currentSpecies.evolves_from_species.name
+          try {
+            const preEvoPoke = await fetchPokemonCached(preEvoName)
+            if (requestIdRef.current !== myReq) return
+            if (preEvoPoke?.moves) {
+              extractEggMoves(preEvoPoke.moves, preEvoName)
+            }
+            const preEvoSpecies = await fetchSpeciesCached(preEvoName)
+            if (requestIdRef.current !== myReq) return
+            // Add pre-evo's egg groups to the chain set
+            if (preEvoSpecies?.egg_groups) {
+              preEvoSpecies.egg_groups.forEach(g => chainEggGroups.add(g.name))
+            }
+            currentSpecies = preEvoSpecies
+          } catch {
+            break
+          }
+        }
+      }
+
+      setAllEggGroups(chainEggGroups)
       setEggMoves(eggs)
 
       if (eggs.length === 0) {
@@ -215,8 +258,8 @@ export default function EggMoveTab({
         return
       }
 
-      // Get target Pokémon's egg groups
-      const targetEggGroups = new Set(
+      // Use egg groups from the entire evo chain for parent compatibility
+      const targetEggGroups = allEggGroups.size > 0 ? allEggGroups : new Set(
         (speciesData?.egg_groups || []).map(g => g.name)
       )
 
@@ -310,7 +353,7 @@ export default function EggMoveTab({
     } finally {
       setLoadingParents(prev => ({ ...prev, [moveName]: false }))
     }
-  }, [speciesData, parentsByMove])
+  }, [speciesData, allEggGroups, parentsByMove])
 
   // Toggle egg move expansion
   const toggleMove = useCallback((moveName) => {
@@ -556,6 +599,11 @@ export default function EggMoveTab({
                                 </button>
                               ) : (
                                 formatName(eggMove.name)
+                              )}
+                              {eggMove.inheritedFrom && (
+                                <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '6px', fontStyle: 'italic' }}>
+                                  via {formatName(eggMove.inheritedFrom)}
+                                </span>
                               )}
                             </td>
                             <td className="egg-move-type-cell">
