@@ -6,6 +6,7 @@ import MovePage from './components/MovePage'
 import AbilityPage from './components/AbilityPage'
 import ItemPage from './components/ItemPage'
 import LocationPage from './components/LocationPage'
+import EggMoveTab from './components/EggMoveTab'
 
 /**
  * Read URL path parameters on load.
@@ -24,7 +25,7 @@ function getUrlParams() {
   const segments = pathname.split('/').filter(Boolean)
   const tab = segments[0] || null
 
-  if (tab === 'pokemon' || tab === 'moves' || tab === 'abilities' || tab === 'items' || tab === 'locations') {
+  if (tab === 'pokemon' || tab === 'moves' || tab === 'abilities' || tab === 'items' || tab === 'locations' || tab === 'eggmoves') {
     if (segments.length >= 3) {
       return { tab, version: segments[1], name: segments[2] }
     }
@@ -56,6 +57,7 @@ const TABS = [
   { id: 'moves', label: 'Moves' },
   { id: 'items', label: 'Items' },
   { id: 'locations', label: 'Locations' },
+  { id: 'eggmoves', label: 'Egg Moves' },
 ]
 
 const SOLROCK_SPRITE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/338.png'
@@ -112,6 +114,11 @@ function App() {
   const [locationPageInit, setLocationPageInit] = useState({
     location: urlParams.tab === 'locations' ? urlParams.name : null,
     version: urlParams.tab === 'locations' ? urlParams.version : null,
+    key: 0,
+  })
+  const [eggMovePageInit, setEggMovePageInit] = useState({
+    pokemon: urlParams.tab === 'eggmoves' ? urlParams.name : null,
+    version: urlParams.tab === 'eggmoves' ? urlParams.version : null,
     key: 0,
   })
 
@@ -313,6 +320,13 @@ function App() {
     updateUrl('locations', current)
   }, [])
 
+  const handleEggMoveStateChange = useCallback(({ version, eggmoves }) => {
+    const current = urlStateRef.current
+    if (version !== undefined) current.version = version
+    if (eggmoves !== undefined) current.name = eggmoves
+    updateUrl('eggmoves', current)
+  }, [])
+
   // Navigate from PokemonCard → MovePage
   const navigateToMove = useCallback((moveName) => {
     const currentVersion = urlStateRef.current.version
@@ -353,6 +367,16 @@ function App() {
     window.scrollTo(0, 0)
   }, [])
 
+  // Navigate to egg moves tab
+  const navigateToEggMoves = useCallback((pokemonName) => {
+    const currentVersion = urlStateRef.current.version
+    urlStateRef.current = { version: currentVersion, name: pokemonName }
+    updateUrl('eggmoves', urlStateRef.current)
+    setEggMovePageInit(prev => ({ pokemon: pokemonName, version: currentVersion, key: prev.key + 1 }))
+    setActiveTab('eggmoves')
+    window.scrollTo(0, 0)
+  }, [])
+
   // Navigate from MovePage → PokemonCard
   const navigateToPokemon = useCallback((pokemonName, version) => {
     urlStateRef.current = { version: version || null, name: pokemonName }
@@ -382,11 +406,14 @@ function App() {
       case 'locations':
         navigateToLocation(name)
         break
+      case 'eggmoves':
+        navigateToEggMoves(name)
+        break
       default:
         // Fall back to pokemon search
         navigateToPokemon(name)
     }
-  }, [navigateToPokemon, navigateToMove, navigateToAbility, navigateToItem, navigateToLocation])
+  }, [navigateToPokemon, navigateToMove, navigateToAbility, navigateToItem, navigateToLocation, navigateToEggMoves])
 
   // Bundled lists object for UnifiedSearch
   const searchLists = { pokemon: pokemonList, pokemonIdMap, moves: moveList, abilities: abilityList, items: itemList, locations: locationList }
@@ -531,6 +558,8 @@ function App() {
       setItemPageInit(prev => ({ ...prev, version: currentVersion }))
     } else if (tabId === 'locations') {
       setLocationPageInit(prev => ({ ...prev, version: currentVersion }))
+    } else if (tabId === 'eggmoves') {
+      setEggMovePageInit(prev => ({ ...prev, version: currentVersion }))
     }
     setActiveTab(tabId)
   }, [])
@@ -620,6 +649,19 @@ function App() {
           initialVersion={locationPageInit.version}
           onStateChange={handleLocationStateChange}
           onPokemonClick={navigateToPokemon}
+          searchLists={searchLists}
+          onUnifiedNavigate={handleUnifiedNavigate}
+        />
+      )}
+
+      {activeTab === 'eggmoves' && (
+        <EggMoveTab
+          key={eggMovePageInit.key}
+          initialPokemon={eggMovePageInit.pokemon}
+          initialVersion={eggMovePageInit.version}
+          onStateChange={handleEggMoveStateChange}
+          onPokemonClick={navigateToPokemon}
+          onMoveClick={navigateToMove}
           searchLists={searchLists}
           onUnifiedNavigate={handleUnifiedNavigate}
         />

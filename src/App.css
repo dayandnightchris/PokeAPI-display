@@ -1468,6 +1468,36 @@
 }
 
 /* =========================
+   Egg Move Tab
+   ========================= */
+
+.egg-move-page .egg-move-target-sprite {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+}
+
+.egg-move-table .egg-parent-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 28px;
+}
+
+.egg-move-table .egg-parent-sprite {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.egg-move-table .egg-parent-method-cell {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+/* =========================
    Footer
    ========================= */
 
