@@ -416,7 +416,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   const abilityDescriptionsBase = useAbilityDescriptions(formPokemon || pokemon)
   const [extraAbilityDescs, setExtraAbilityDescs] = useState({})
   const evolutions = useEvolutionChain({ species, selectedVersion, selectedForm })
-  const { canEvolveFrom, canTradeAndEvolveFrom } = usePreEvolutionCheck({ species, selectedVersion })
+  const { canEvolveFrom, canTradeAndEvolveFrom, hasEvoFamilyInGen } = usePreEvolutionCheck({ species, selectedVersion })
   // For forms with empty moves (e.g. PLZA megas), fall back to base pokemon's moves
   const movesSource = (formPokemon && formPokemon.moves?.length > 0) ? formPokemon : pokemon
   const { moves, loading: movesLoading } = useGroupedMoves(movesSource, selectedVersion, species)
@@ -1276,9 +1276,10 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                   }
 
                   // Priority 1b: Breeding (available in all games except RBY, Colosseum, XD, Legends Arceus, Legends Z-A)
+                  // Only suggest breeding if some member of the evo family has encounters in this gen
                   const NO_BREEDING_VERSIONS = new Set(['red', 'blue', 'yellow', 'colosseum', 'xd', 'legends-arceus', 'legends-za'])
                   const breedingAvailable = !NO_BREEDING_VERSIONS.has(selectedVersion)
-                  const canBreed = breedingAvailable && (
+                  const canBreed = breedingAvailable && hasEvoFamilyInGen && (
                     !species?.egg_groups?.every(g => g.name === 'no-eggs') || species?.is_baby
                   )
                   if (canBreed) {
@@ -1328,10 +1329,11 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                     return <p style={{ margin: '0' }}>Evolve from {canEvolveFrom.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}.</p>
                   }
 
-                  // Priority 1b: Breeding
+                  // Priority 1b: Breeding — even though this Pokémon has no encounters,
+                  // an evo-family member might exist in this gen (e.g. Magby via Magmar in LeafGreen)
                   const NO_BREEDING_VERSIONS2 = new Set(['red', 'blue', 'yellow', 'colosseum', 'xd', 'legends-arceus', 'legends-za'])
                   const breedingAvailable2 = !NO_BREEDING_VERSIONS2.has(selectedVersion)
-                  const canBreed2 = breedingAvailable2 && (
+                  const canBreed2 = breedingAvailable2 && hasEvoFamilyInGen && (
                     !species?.egg_groups?.every(g => g.name === 'no-eggs') || species?.is_baby
                   )
                   if (canBreed2) {
