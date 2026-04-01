@@ -179,12 +179,11 @@ export default function EggMoveTab({
           })
           if (vgs.size > 0) {
             if (seen.has(moveName)) {
-              // Merge version groups into existing entry
+              // Merge version groups into existing entry but keep existing attribution
+              // (closest pre-evo wins, matching the Pokemon page approach)
               const existing = eggs.find(e => e.name === moveName)
               if (existing) {
                 vgs.forEach(vg => existing.versionGroups.add(vg))
-                // Update attribution to the lowest pre-evo that has this egg move
-                if (inheritedFrom) existing.inheritedFrom = inheritedFrom
               }
             } else {
               seen.add(moveName)
