@@ -66,6 +66,17 @@ const NO_BREEDING_VGS = new Set([
   'legends-arceus', 'legends-za',
 ])
 
+// Moves that cannot be Sketched by Smeargle, by generation
+const UNSKETCHABLE_BY_GEN = {
+  2: new Set(['transform', 'mimic', 'metronome', 'mirror-move', 'sleep-talk', 'self-destruct', 'explosion', 'sketch']),
+  3: new Set(['transform', 'mimic', 'sketch']),
+}
+const UNSKETCHABLE_DEFAULT = new Set(['chatter', 'sketch']) // Gen 4+
+function isSketchable(moveName, gen) {
+  const blocked = UNSKETCHABLE_BY_GEN[gen] || UNSKETCHABLE_DEFAULT
+  return !blocked.has(moveName)
+}
+
 // Version groups that are isolated within their generation (can't trade with
 // the other games in the same gen)
 const ISOLATED_VGS = {
@@ -466,6 +477,32 @@ export default function EggMoveTab({
 
       parents.push(...evoParents)
 
+      // Smeargle clause: Smeargle can Sketch almost any move and breed it.
+      // Only applies if the target shares the Field egg group with Smeargle.
+      if (!parentNames.has('smeargle') && !isUndiscovered && targetEggGroups.has('field')) {
+        // Build version groups where the move CAN be Sketched (Gen 2-7, breeding-capable)
+        const sketchVgs = new Set()
+        for (let gen = 2; gen <= 7; gen++) {
+          if (!isSketchable(moveName, gen)) continue
+          const genVgs = generationVersionGroups[gen] || []
+          for (const vg of genVgs) {
+            if (!NO_BREEDING_VGS.has(vg)) sketchVgs.add(vg)
+          }
+        }
+        if (sketchVgs.size > 0) {
+          const smearglePoke = await fetchPokemonCached('smeargle')
+          if (smearglePoke) {
+            parents.push({
+              name: 'smeargle',
+              speciesName: 'smeargle',
+              methods: [{ method: 'sketch', level: null, versionGroups: sketchVgs }],
+              id: smearglePoke.id,
+            })
+            parentNames.add('smeargle')
+          }
+        }
+      }
+
       // Sort parents: by Pokedex number
       parents.sort((a, b) => (a.id || 999) - (b.id || 999))
 
@@ -652,6 +689,7 @@ export default function EggMoveTab({
     if (method === 'machine') return 'TM/HM'
     if (method === 'tutor') return 'Tutor'
     if (method === 'chain-breed') return 'Chain Breed'
+    if (method === 'sketch') return 'Sketch'
     if (method === 'xd-purification') return 'Purification'
     if (method === 'colosseum-purification') return 'Purification'
     if (method === 'xd-shadow') return 'Shadow'
