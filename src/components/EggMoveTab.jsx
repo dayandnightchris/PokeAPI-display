@@ -3,7 +3,7 @@ import UnifiedSearch from './UnifiedSearch'
 import { fetchPokemonCached, fetchMoveCached, fetchSpeciesCached, preloadPokemonCache } from '../utils/pokeCache'
 import {
   versionGeneration, generationVersionGroups, versionGroupOrder,
-  versionGroupDisplayNames, versionDisplayNames,
+  versionGroupDisplayNames, versionDisplayNames, getTransferSourceVersionGroups,
 } from '../utils/versionInfo'
 
 function formatName(name) {
@@ -49,6 +49,15 @@ const versionGroupToVersions = {
   'legends-za': ['legends-za'], 'mega-dimension': ['scarlet', 'violet'],
 }
 
+// Build reverse map: version name → primary version group name
+const versionToVersionGroup = {}
+for (const [vg, versions] of Object.entries(versionGroupToVersions)) {
+  for (const v of versions) {
+    // First mapping wins (e.g. 'sword' → 'sword-shield', not DLC vgs)
+    if (!versionToVersionGroup[v]) versionToVersionGroup[v] = vg
+  }
+}
+
 // No breeding in these version groups
 const NO_BREEDING_VGS = new Set([
   'red-blue', 'yellow',
@@ -56,6 +65,33 @@ const NO_BREEDING_VGS = new Set([
   'lets-go-pikachu-lets-go-eevee',
   'legends-arceus', 'legends-za',
 ])
+
+// Version groups that are isolated within their generation (can't trade with
+// the other games in the same gen)
+const ISOLATED_VGS = {
+  'lets-go-pikachu-lets-go-eevee': new Set(['lets-go-pikachu-lets-go-eevee']),
+  'brilliant-diamond-and-shining-pearl': new Set(['brilliant-diamond-and-shining-pearl']),
+  'legends-arceus': new Set(['legends-arceus']),
+}
+
+// Return the set of version groups in the selected version's gen that can
+// actually trade with the selected version.  LGPE is isolated from SM/USUM,
+// BDSP and PLA are isolated from SwSh, etc.
+function getCompatibleGenVgs(selectedVersion) {
+  const gen = versionGeneration[selectedVersion]
+  const allGenVgs = generationVersionGroups[gen] || []
+  const selVg = versionToVersionGroup[selectedVersion]
+
+  // If the selected version is itself in an isolated group, only its own VGs
+  if (ISOLATED_VGS[selVg]) return new Set(ISOLATED_VGS[selVg])
+
+  // Otherwise, include everything in the gen EXCEPT isolated VGs
+  const compatible = new Set()
+  for (const vg of allGenVgs) {
+    if (!ISOLATED_VGS[vg]) compatible.add(vg)
+  }
+  return compatible
+}
 
 export default function EggMoveTab({
   initialPokemon, initialVersion, onStateChange, onPokemonClick,
@@ -355,6 +391,73 @@ export default function EggMoveTab({
         results.forEach(r => { if (r) parents.push(r) })
       }
 
+      // Second pass: add evolutions of parents as additional parents.
+      // E.g. Skorupi learns twineedle (egg) → Drapion inherits it and can breed.
+      // We check each parent's evolution chain for evolutions that share an egg
+      // group with the target but aren't already in the parents list.
+      const parentNames = new Set(parents.map(p => p.name))
+      const chainCache = new Map() // chain URL → chain data
+      const evoParents = []
+
+      for (const parent of parents) {
+        try {
+          const sp = await fetchSpeciesCached(parent.speciesName)
+          if (!sp?.evolution_chain?.url) continue
+
+          let chainData = chainCache.get(sp.evolution_chain.url)
+          if (!chainData) {
+            const res = await fetch(sp.evolution_chain.url)
+            if (!res.ok) continue
+            chainData = await res.json()
+            chainCache.set(sp.evolution_chain.url, chainData)
+          }
+
+          // Walk chain to find evolutions of this parent's species
+          const findEvolutions = (node, collecting) => {
+            const evos = []
+            if (collecting && node.species.name !== parent.speciesName) {
+              evos.push(node.species.name)
+            }
+            const startCollecting = collecting || node.species.name === parent.speciesName
+            for (const child of node.evolves_to) {
+              evos.push(...findEvolutions(child, startCollecting))
+            }
+            return evos
+          }
+
+          const evoNames = findEvolutions(chainData.chain, false)
+          for (const evoName of evoNames) {
+            if (parentNames.has(evoName)) continue // Already a parent
+            parentNames.add(evoName)
+
+            try {
+              const evoPoke = await fetchPokemonCached(evoName)
+              if (!evoPoke) continue
+              const evoSpecies = await fetchSpeciesCached(evoPoke.species?.name || evoName)
+              if (!evoSpecies) continue
+
+              const evoGroups = new Set((evoSpecies.egg_groups || []).map(g => g.name))
+              if (evoGroups.has('no-eggs')) continue
+              if (!isUndiscovered) {
+                const shared = [...targetEggGroups].some(g => evoGroups.has(g))
+                if (!shared) continue
+              }
+
+              // Inherit the pre-evo's methods since the evolved form retains the move
+              evoParents.push({
+                name: evoName,
+                speciesName: evoSpecies.name,
+                methods: parent.methods.map(m => ({ ...m })),
+                id: evoPoke.id,
+                viaEvolution: parent.name, // track which pre-evo it came from
+              })
+            } catch { /* skip */ }
+          }
+        } catch { /* skip */ }
+      }
+
+      parents.push(...evoParents)
+
       // Sort parents: by Pokedex number
       parents.sort((a, b) => (a.id || 999) - (b.id || 999))
 
@@ -384,8 +487,7 @@ export default function EggMoveTab({
   const getFilteredEggMoves = () => {
     if (!selectedVersion || eggMoves.length === 0) return []
 
-    const gen = versionGeneration[selectedVersion]
-    const genVgs = new Set(generationVersionGroups[gen] || [])
+    const genVgs = getCompatibleGenVgs(selectedVersion)
 
     return eggMoves.filter(m => {
       return [...m.versionGroups].some(vg => genVgs.has(vg))
@@ -399,40 +501,63 @@ export default function EggMoveTab({
     const parents = parentsByMove[moveName]
     if (!parents || parents.length === 0) return []
 
-    const gen = versionGeneration[selectedVersion]
-    const genVgs = new Set(generationVersionGroups[gen] || [])
+    const genVgs = getCompatibleGenVgs(selectedVersion)
 
-    // Build set of all previous-gen version groups for transfer detection
-    const prevGenVgs = new Set()
-    for (let g = 1; g < gen; g++) {
-      ;(generationVersionGroups[g] || []).forEach(vg => prevGenVgs.add(vg))
-    }
+    // Use the canonical transfer rules (Gen 1-2 only transfer to each other & Gen 7+, etc.)
+    const vg = versionToVersionGroup[selectedVersion]
+    const transferSourceVgs = getTransferSourceVersionGroups(selectedVersion, vg)
 
     return parents
       .map(parent => {
         // Filter methods to those available in the selected gen
-        const currentGenMethods = parent.methods
+        // Separate non-egg (natural) methods from egg (chain breed) methods
+        const currentGenNatural = parent.methods
           .filter(m => [...m.versionGroups].some(vg => genVgs.has(vg)))
-          // Exclude egg method (we want parents who learn it naturally, not by egg themselves)
           .filter(m => m.method !== 'egg')
 
-        if (currentGenMethods.length > 0) {
-          return { ...parent, methods: currentGenMethods }
+        if (currentGenNatural.length > 0) {
+          return { ...parent, methods: currentGenNatural }
         }
 
-        // No current-gen methods — check previous gens for transfer-only parents
-        const transferMethods = parent.methods
-          .filter(m => [...m.versionGroups].some(vg => prevGenVgs.has(vg)))
+        // Check for chain-breed: parent learns the move as an egg move in this gen
+        const currentGenEgg = parent.methods
+          .filter(m => [...m.versionGroups].some(vg => genVgs.has(vg)))
+          .filter(m => m.method === 'egg')
+          .map(m => ({ ...m, method: 'chain-breed' }))
+
+        if (currentGenEgg.length > 0) {
+          return { ...parent, methods: currentGenEgg, isChainBreed: true }
+        }
+
+        // No current-gen methods — check valid transfer sources for transfer-only parents
+        if (!transferSourceVgs) return null
+
+        const transferNatural = parent.methods
+          .filter(m => [...m.versionGroups].some(v => transferSourceVgs.has(v)))
           .filter(m => m.method !== 'egg')
           .map(m => ({
             ...m,
             isTransfer: true,
-            // Keep only the previous-gen version groups where the move was available
-            versionGroups: new Set([...m.versionGroups].filter(vg => prevGenVgs.has(vg))),
+            versionGroups: new Set([...m.versionGroups].filter(v => transferSourceVgs.has(v))),
           }))
 
-        if (transferMethods.length > 0) {
-          return { ...parent, methods: transferMethods, isTransfer: true }
+        if (transferNatural.length > 0) {
+          return { ...parent, methods: transferNatural, isTransfer: true }
+        }
+
+        // Transfer chain-breed: parent learned it as egg move in a prior gen
+        const transferEgg = parent.methods
+          .filter(m => [...m.versionGroups].some(v => transferSourceVgs.has(v)))
+          .filter(m => m.method === 'egg')
+          .map(m => ({
+            ...m,
+            method: 'chain-breed',
+            isTransfer: true,
+            versionGroups: new Set([...m.versionGroups].filter(v => transferSourceVgs.has(v))),
+          }))
+
+        if (transferEgg.length > 0) {
+          return { ...parent, methods: transferEgg, isTransfer: true, isChainBreed: true }
         }
 
         return null
@@ -506,6 +631,7 @@ export default function EggMoveTab({
     if (method === 'level-up') return 'Level Up'
     if (method === 'machine') return 'TM/HM'
     if (method === 'tutor') return 'Tutor'
+    if (method === 'chain-breed') return 'Chain Breed'
     if (method === 'xd-purification') return 'Purification'
     if (method === 'colosseum-purification') return 'Purification'
     if (method === 'xd-shadow') return 'Shadow'
@@ -517,8 +643,7 @@ export default function EggMoveTab({
 
   // Get version group tags for a method's versionGroups
   const renderMethodVgs = (vgs) => {
-    const gen = versionGeneration[selectedVersion]
-    const genVgs = new Set(generationVersionGroups[gen] || [])
+    const genVgs = getCompatibleGenVgs(selectedVersion)
     const filtered = [...vgs].filter(vg => genVgs.has(vg)).sort((a, b) => (versionGroupOrder[a] || 0) - (versionGroupOrder[b] || 0))
     if (filtered.length === genVgs.size) return null // All version groups — don't show tags
     return filtered.map(vg => versionGroupDisplayNames[vg] || vg).join(', ')
@@ -724,6 +849,10 @@ export default function EggMoveTab({
                                 const vgLabel = renderMethodVgs(m.versionGroups)
                                 return vgLabel ? `${label} (${vgLabel})` : label
                               })
+                              // If this parent is an evolution of a learner, note that
+                              const evoNote = parent.viaEvolution
+                                ? ` (via ${formatName(parent.viaEvolution)})`
+                                : ''
 
                               rows.push(
                                 <tr key={`${eggMove.name}-${parent.name}-${idx}`} className="location-detail-row">
@@ -742,7 +871,7 @@ export default function EggMoveTab({
                                     )}
                                   </td>
                                   <td className="egg-parent-method-cell" colSpan="3">
-                                    {methodLabels.join(', ')}
+                                    {methodLabels.join(', ')}{evoNote}
                                   </td>
                                 </tr>
                               )
