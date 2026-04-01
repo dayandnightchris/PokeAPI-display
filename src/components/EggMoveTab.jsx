@@ -448,7 +448,27 @@ export default function EggMoveTab({
 
           const evoNames = findEvolutions(chainData.chain, false)
           for (const evoName of evoNames) {
-            if (parentNames.has(evoName)) continue // Already a parent
+            if (parentNames.has(evoName)) {
+              // Already a parent — merge pre-evo's methods so evolutions
+              // inherit egg move availability from their baby form.
+              // E.g. Mudkip has Avalanche as an egg move in Gen 5;
+              // Marshtomp/Swampert inherit that egg move and are valid
+              // chain-breed parents even if their own PokeAPI data only
+              // lists the move via TM in later gens.
+              const existing = parents.find(p => p.name === evoName)
+              if (existing && !existing.viaEvolution) {
+                for (const m of parent.methods) {
+                  const alreadyHas = existing.methods.some(em =>
+                    em.method === m.method &&
+                    [...em.versionGroups].some(vg => m.versionGroups.has(vg))
+                  )
+                  if (!alreadyHas) {
+                    existing.methods.push({ ...m, versionGroups: new Set(m.versionGroups) })
+                  }
+                }
+              }
+              continue
+            }
             parentNames.add(evoName)
 
             try {
@@ -600,7 +620,7 @@ export default function EggMoveTab({
     const vg = versionToVersionGroup[selectedVersion]
     const transferSourceVgs = getTransferSourceVersionGroups(selectedVersion, vg)
 
-    return parents
+    const filtered = parents
       .map(parent => {
         // Filter methods to those available in the selected gen
         // Separate non-egg (natural) methods from egg (chain breed) methods
@@ -660,6 +680,20 @@ export default function EggMoveTab({
         return null
       })
       .filter(Boolean)
+
+    // Detect transfer-only chain breeds: if NO parent can provide the move
+    // natively in the current gen (all non-chain-breed parents require transfer),
+    // then chain-breed parents are also transfer-dependent.
+    const hasNativeSource = filtered.some(p => !p.isTransfer && !p.isChainBreed)
+    if (!hasNativeSource) {
+      filtered.forEach(p => {
+        if (p.isChainBreed && !p.isTransfer) {
+          p.isTransferDependent = true
+        }
+      })
+    }
+
+    return filtered
       .sort((a, b) => {
         const METHOD_PRIORITY = {
           'level-up': 1, 'machine': 2, 'tutor': 3, 'sketch': 4,
@@ -963,6 +997,12 @@ export default function EggMoveTab({
                                   const vgs = [...m.versionGroups]
                                     .sort((a, b) => (versionGroupOrder[a] || 0) - (versionGroupOrder[b] || 0))
                                   const vgLabel = vgs.map(vg => versionGroupDisplayNames[vg] || vg).join(', ')
+                                  return vgLabel ? `${label} (${vgLabel}) [Transfer]` : `${label} [Transfer]`
+                                }
+                                // Transfer-dependent chain breed: the egg move itself
+                                // can only originate from transferred Pokémon
+                                if (parent.isTransferDependent && m.method === 'chain-breed') {
+                                  const vgLabel = renderMethodVgs(m.versionGroups)
                                   return vgLabel ? `${label} (${vgLabel}) [Transfer]` : `${label} [Transfer]`
                                 }
                                 const vgLabel = renderMethodVgs(m.versionGroups)
