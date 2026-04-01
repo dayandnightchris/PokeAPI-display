@@ -403,16 +403,40 @@ export default function EggMoveTab({
     const gen = versionGeneration[selectedVersion]
     const genVgs = new Set(generationVersionGroups[gen] || [])
 
+    // Build set of all previous-gen version groups for transfer detection
+    const prevGenVgs = new Set()
+    for (let g = 1; g < gen; g++) {
+      ;(generationVersionGroups[g] || []).forEach(vg => prevGenVgs.add(vg))
+    }
+
     return parents
       .map(parent => {
         // Filter methods to those available in the selected gen
-        const filteredMethods = parent.methods
+        const currentGenMethods = parent.methods
           .filter(m => [...m.versionGroups].some(vg => genVgs.has(vg)))
           // Exclude egg method (we want parents who learn it naturally, not by egg themselves)
           .filter(m => m.method !== 'egg')
 
-        if (filteredMethods.length === 0) return null
-        return { ...parent, methods: filteredMethods }
+        if (currentGenMethods.length > 0) {
+          return { ...parent, methods: currentGenMethods }
+        }
+
+        // No current-gen methods — check previous gens for transfer-only parents
+        const transferMethods = parent.methods
+          .filter(m => [...m.versionGroups].some(vg => prevGenVgs.has(vg)))
+          .filter(m => m.method !== 'egg')
+          .map(m => ({
+            ...m,
+            isTransfer: true,
+            // Keep only the previous-gen version groups where the move was available
+            versionGroups: new Set([...m.versionGroups].filter(vg => prevGenVgs.has(vg))),
+          }))
+
+        if (transferMethods.length > 0) {
+          return { ...parent, methods: transferMethods, isTransfer: true }
+        }
+
+        return null
       })
       .filter(Boolean)
   }
@@ -483,6 +507,12 @@ export default function EggMoveTab({
     if (method === 'level-up') return 'Level Up'
     if (method === 'machine') return 'TM/HM'
     if (method === 'tutor') return 'Tutor'
+    if (method === 'xd-purification') return 'Purification'
+    if (method === 'colosseum-purification') return 'Purification'
+    if (method === 'xd-shadow') return 'Shadow'
+    if (method === 'form-change') return 'Form Change'
+    if (method === 'light-ball-egg') return 'Light Ball Egg'
+    if (method === 'stadium-surfing-pikachu') return 'Surfing Pikachu'
     return formatName(method)
   }
 
@@ -685,6 +715,13 @@ export default function EggMoveTab({
                             parents.forEach((parent, idx) => {
                               const methodLabels = parent.methods.map(m => {
                                 const label = formatMethod(m.method, m.level)
+                                if (m.isTransfer) {
+                                  // Show source version groups from past gens with Transfer tag
+                                  const vgs = [...m.versionGroups]
+                                    .sort((a, b) => (versionGroupOrder[a] || 0) - (versionGroupOrder[b] || 0))
+                                  const vgLabel = vgs.map(vg => versionGroupDisplayNames[vg] || vg).join(', ')
+                                  return vgLabel ? `${label} (${vgLabel}) [Transfer]` : `${label} [Transfer]`
+                                }
                                 const vgLabel = renderMethodVgs(m.versionGroups)
                                 return vgLabel ? `${label} (${vgLabel})` : label
                               })
