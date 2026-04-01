@@ -492,8 +492,8 @@ export default function EggMoveTab({
   }, [])
 
   // Filter egg moves to the selected version
-  // Also compute inheritedFrom dynamically: find the closest pre-evo source
-  // that has the egg move in the selected gen's version groups
+  // Compute inheritedFrom dynamically: collect ALL pre-evo sources
+  // that have the egg move in the selected gen's version groups
   const getFilteredEggMoves = () => {
     if (!selectedVersion || eggMoves.length === 0) return []
 
@@ -502,12 +502,11 @@ export default function EggMoveTab({
     return eggMoves
       .filter(m => [...m.versionGroups].some(vg => genVgs.has(vg)))
       .map(m => {
-        // Find the first (closest) source that has VGs in the selected gen
-        const matchingSource = m.sources.find(s =>
-          [...s.versionGroups].some(vg => genVgs.has(vg))
-        )
-        const inheritedFrom = matchingSource?.from || null
-        return { ...m, inheritedFrom }
+        // Collect all distinct non-null sources that have VGs in the selected gen
+        const matchingSources = m.sources
+          .filter(s => s.from && [...s.versionGroups].some(vg => genVgs.has(vg)))
+        const uniqueNames = [...new Set(matchingSources.map(s => s.from))]
+        return { ...m, inheritedFrom: uniqueNames }
       })
   }
 
@@ -808,9 +807,9 @@ export default function EggMoveTab({
                               ) : (
                                 formatName(eggMove.name)
                               )}
-                              {eggMove.inheritedFrom && (
+                              {eggMove.inheritedFrom?.length > 0 && (
                                 <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '6px', fontStyle: 'italic' }}>
-                                  via {formatName(eggMove.inheritedFrom)}
+                                  via {eggMove.inheritedFrom.map(n => formatName(n)).join(' / ')}
                                 </span>
                               )}
                             </td>
