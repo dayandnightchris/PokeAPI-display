@@ -196,8 +196,8 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
     { key: 'pp', label: 'PP', numeric: true },
     { key: 'accuracy', label: compact ? 'Acc' : 'Accuracy', numeric: true },
     { key: 'priority', label: compact ? 'Pri' : 'Priority', numeric: true },
-    ...(hasSourceGames ? [{ key: 'sourceGames', label: 'Game' }] : []),
     ...(onEggMoveParentsClick ? [{ key: 'parents', label: 'Parents' }] : []),
+    ...(hasSourceGames ? [{ key: 'sourceGames', label: 'Game' }] : []),
   ]
 
   // In compact mode, effect becomes a sub-row instead of a column
