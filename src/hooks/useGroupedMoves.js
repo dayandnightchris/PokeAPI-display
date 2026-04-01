@@ -276,9 +276,16 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
               if (methodDetails.length === 0) continue
 
               // Skip if the current pokemon already has this move in this same category
-              if (seenMoves[groupKey].has(moveName)) continue
+              if (seenMoves[groupKey].has(moveName)) {
+                // Append this pre-evo as an additional source for double attribution
+                const existing = groupedMoves[groupKey].find(m => m.name === moveName)
+                if (existing?.inheritedFrom && !existing.inheritedFrom.includes(preEvoName)) {
+                  existing.inheritedFrom.push(preEvoName)
+                }
+                continue
+              }
 
-              const moveEntry = { name: moveName, inheritedFrom: preEvoName }
+              const moveEntry = { name: moveName, inheritedFrom: [preEvoName] }
 
               // For level-up, capture the level (prefer selected version group)
               if (apiMethod === 'level-up') {
@@ -404,8 +411,18 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
 
           for (const moveData of pkmn.moves) {
             const moveName = moveData.move.name
-            // Skip if already available in current gen or already added as transfer
-            if (currentGenMoveNames.has(moveName) || seenTransfer.has(moveName)) continue
+            // Skip if already available in current gen
+            if (currentGenMoveNames.has(moveName)) continue
+            // If already added as transfer, append pre-evo source for double attribution
+            if (seenTransfer.has(moveName)) {
+              if (isPreEvo) {
+                const existing = transferMoves.find(m => m.name === moveName)
+                if (existing?.inheritedFrom && !existing.inheritedFrom.includes(pkmnName)) {
+                  existing.inheritedFrom.push(pkmnName)
+                }
+              }
+              continue
+            }
 
             const vgDetails = moveData.version_group_details || []
             // Find learn methods in transfer source version groups
@@ -431,7 +448,7 @@ export function useGroupedMoves(displayPokemon, selectedVersion, species) {
             transferMoves.push({
               name: moveName,
               sourceGames: sourceLabel,
-              ...(isPreEvo ? { inheritedFrom: pkmn.name || pkmn.species?.name } : {}),
+              ...(isPreEvo ? { inheritedFrom: [pkmnName] } : {}),
             })
             seenTransfer.add(moveName)
           }

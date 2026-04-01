@@ -275,7 +275,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
           ? <button type="button" className="move-name-link" onClick={() => onMoveClick(move.name)}>{formatMoveLabel(move.name)}</button>
           : formatMoveLabel(move.name)
         return move.inheritedFrom
-          ? <>{nameEl} <span style={{ fontSize: '10px', color: '#888' }}>({formatMoveLabel(move.inheritedFrom)})</span></>
+          ? <>{nameEl} <span style={{ fontSize: '10px', color: '#888' }}>({(Array.isArray(move.inheritedFrom) ? move.inheritedFrom.map(n => formatMoveLabel(n)).join(' / ') : formatMoveLabel(move.inheritedFrom))})</span></>
           : nameEl
       case 'type': {
         const typeName = move.details?.type?.name
