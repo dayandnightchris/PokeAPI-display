@@ -519,6 +519,24 @@ export default function EggMoveTab({
           return { ...parent, methods: currentGenNatural }
         }
 
+        // Check transfer natural methods BEFORE chain-breed, since a parent
+        // that learns the move via tutor/purification in a prior gen is more
+        // informative than one that only has it as an egg move in this gen
+        if (transferSourceVgs) {
+          const transferNatural = parent.methods
+            .filter(m => [...m.versionGroups].some(v => transferSourceVgs.has(v)))
+            .filter(m => m.method !== 'egg')
+            .map(m => ({
+              ...m,
+              isTransfer: true,
+              versionGroups: new Set([...m.versionGroups].filter(v => transferSourceVgs.has(v))),
+            }))
+
+          if (transferNatural.length > 0) {
+            return { ...parent, methods: transferNatural, isTransfer: true }
+          }
+        }
+
         // Check for chain-breed: parent learns the move as an egg move in this gen
         const currentGenEgg = parent.methods
           .filter(m => [...m.versionGroups].some(vg => genVgs.has(vg)))
@@ -529,35 +547,21 @@ export default function EggMoveTab({
           return { ...parent, methods: currentGenEgg, isChainBreed: true }
         }
 
-        // No current-gen methods — check valid transfer sources for transfer-only parents
-        if (!transferSourceVgs) return null
-
-        const transferNatural = parent.methods
-          .filter(m => [...m.versionGroups].some(v => transferSourceVgs.has(v)))
-          .filter(m => m.method !== 'egg')
-          .map(m => ({
-            ...m,
-            isTransfer: true,
-            versionGroups: new Set([...m.versionGroups].filter(v => transferSourceVgs.has(v))),
-          }))
-
-        if (transferNatural.length > 0) {
-          return { ...parent, methods: transferNatural, isTransfer: true }
-        }
-
         // Transfer chain-breed: parent learned it as egg move in a prior gen
-        const transferEgg = parent.methods
-          .filter(m => [...m.versionGroups].some(v => transferSourceVgs.has(v)))
-          .filter(m => m.method === 'egg')
-          .map(m => ({
-            ...m,
-            method: 'chain-breed',
-            isTransfer: true,
-            versionGroups: new Set([...m.versionGroups].filter(v => transferSourceVgs.has(v))),
-          }))
+        if (transferSourceVgs) {
+          const transferEgg = parent.methods
+            .filter(m => [...m.versionGroups].some(v => transferSourceVgs.has(v)))
+            .filter(m => m.method === 'egg')
+            .map(m => ({
+              ...m,
+              method: 'chain-breed',
+              isTransfer: true,
+              versionGroups: new Set([...m.versionGroups].filter(v => transferSourceVgs.has(v))),
+            }))
 
-        if (transferEgg.length > 0) {
-          return { ...parent, methods: transferEgg, isTransfer: true, isChainBreed: true }
+          if (transferEgg.length > 0) {
+            return { ...parent, methods: transferEgg, isTransfer: true, isChainBreed: true }
+          }
         }
 
         return null
