@@ -101,7 +101,7 @@ export default function EggMoveTab({
   const [pokemonData, setPokemonData] = useState(null)
   const [speciesData, setSpeciesData] = useState(null)
   const [allEggGroups, setAllEggGroups] = useState(new Set()) // egg groups from entire evo chain
-  const [eggMoves, setEggMoves] = useState([]) // [{name, versionGroups: Set, inheritedFrom}]
+  const [eggMoves, setEggMoves] = useState([]) // [{name, versionGroups: Set, sources: [{from, versionGroups}]}]
   const [parentsByMove, setParentsByMove] = useState({}) // moveName → [{name, sprite, methods: [{method, versionGroups}]}]
   const [expandedMoves, setExpandedMoves] = useState({})
   const [tableFullyExpanded, setTableFullyExpanded] = useState(false)
@@ -215,15 +215,19 @@ export default function EggMoveTab({
           })
           if (vgs.size > 0) {
             if (seen.has(moveName)) {
-              // Merge version groups into existing entry but keep existing attribution
-              // (closest pre-evo wins, matching the Pokemon page approach)
+              // Merge version groups and add this source
               const existing = eggs.find(e => e.name === moveName)
               if (existing) {
                 vgs.forEach(vg => existing.versionGroups.add(vg))
+                existing.sources.push({ from: inheritedFrom || null, versionGroups: new Set(vgs) })
               }
             } else {
               seen.add(moveName)
-              eggs.push({ name: moveName, versionGroups: vgs, inheritedFrom: inheritedFrom || null })
+              eggs.push({
+                name: moveName,
+                versionGroups: vgs,
+                sources: [{ from: inheritedFrom || null, versionGroups: new Set(vgs) }],
+              })
             }
           }
         })
@@ -263,10 +267,14 @@ export default function EggMoveTab({
           }
         }
 
-        // Moves only found on the evolved form (inheritedFrom still null)
-        // must still come from hatching the baby, so attribute to baby
+        // Moves only found on the evolved form (sources[0].from is null)
+        // must still come from hatching the baby, so add baby as a source
         if (babyName) {
-          eggs.forEach(e => { if (!e.inheritedFrom) e.inheritedFrom = babyName })
+          eggs.forEach(e => {
+            if (e.sources.every(s => s.from === null)) {
+              e.sources.forEach(s => { s.from = babyName })
+            }
+          })
         }
       }
 
@@ -484,14 +492,23 @@ export default function EggMoveTab({
   }, [])
 
   // Filter egg moves to the selected version
+  // Also compute inheritedFrom dynamically: find the closest pre-evo source
+  // that has the egg move in the selected gen's version groups
   const getFilteredEggMoves = () => {
     if (!selectedVersion || eggMoves.length === 0) return []
 
     const genVgs = getCompatibleGenVgs(selectedVersion)
 
-    return eggMoves.filter(m => {
-      return [...m.versionGroups].some(vg => genVgs.has(vg))
-    })
+    return eggMoves
+      .filter(m => [...m.versionGroups].some(vg => genVgs.has(vg)))
+      .map(m => {
+        // Find the first (closest) source that has VGs in the selected gen
+        const matchingSource = m.sources.find(s =>
+          [...s.versionGroups].some(vg => genVgs.has(vg))
+        )
+        const inheritedFrom = matchingSource?.from || null
+        return { ...m, inheritedFrom }
+      })
   }
 
   const filteredMoves = getFilteredEggMoves()
