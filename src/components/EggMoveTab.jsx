@@ -479,7 +479,8 @@ export default function EggMoveTab({
 
       // Smeargle clause: Smeargle can Sketch almost any move and breed it.
       // Only applies if the target shares the Field egg group with Smeargle.
-      if (!parentNames.has('smeargle') && !isUndiscovered && targetEggGroups.has('field')) {
+      // PokeAPI calls the Field egg group "ground".
+      if (!parentNames.has('smeargle') && !isUndiscovered && targetEggGroups.has('ground')) {
         // Build version groups where the move CAN be Sketched (Gen 2-7, breeding-capable)
         const sketchVgs = new Set()
         for (let gen = 2; gen <= 7; gen++) {
