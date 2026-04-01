@@ -480,6 +480,11 @@
   width: 120px;
 }
 
+.move-col-parents {
+  width: 60px;
+  text-align: center;
+}
+
 .move-loading {
   display: flex;
   justify-content: center;

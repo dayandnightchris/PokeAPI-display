@@ -368,11 +368,11 @@ function App() {
   }, [])
 
   // Navigate to egg moves tab
-  const navigateToEggMoves = useCallback((pokemonName) => {
+  const navigateToEggMoves = useCallback((pokemonName, moveName) => {
     const currentVersion = urlStateRef.current.version
     urlStateRef.current = { version: currentVersion, name: pokemonName }
     updateUrl('eggmoves', urlStateRef.current)
-    setEggMovePageInit(prev => ({ pokemon: pokemonName, version: currentVersion, key: prev.key + 1 }))
+    setEggMovePageInit(prev => ({ pokemon: pokemonName, version: currentVersion, expandMove: moveName || null, key: prev.key + 1 }))
     setActiveTab('eggmoves')
     window.scrollTo(0, 0)
   }, [])
@@ -601,7 +601,7 @@ function App() {
           
           {error && <div className="error">{error}</div>}
           {loading && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball" /></div>}
-          {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} onMoveClick={navigateToMove} onAbilityClick={navigateToAbility} onItemClick={navigateToItem} onLocationClick={navigateToLocation} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} searchLists={searchLists} onUnifiedNavigate={handleUnifiedNavigate} searchLoading={loading} initialQuery={searchQuery} />}
+          {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} onMoveClick={navigateToMove} onAbilityClick={navigateToAbility} onItemClick={navigateToItem} onLocationClick={navigateToLocation} onEggMoveClick={navigateToEggMoves} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} searchLists={searchLists} onUnifiedNavigate={handleUnifiedNavigate} searchLoading={loading} initialQuery={searchQuery} />}
         </>
       )}
 
@@ -659,6 +659,7 @@ function App() {
           key={eggMovePageInit.key}
           initialPokemon={eggMovePageInit.pokemon}
           initialVersion={eggMovePageInit.version}
+          initialExpandMove={eggMovePageInit.expandMove}
           onStateChange={handleEggMoveStateChange}
           onPokemonClick={navigateToPokemon}
           onMoveClick={navigateToMove}

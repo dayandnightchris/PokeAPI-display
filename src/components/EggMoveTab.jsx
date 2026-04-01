@@ -105,7 +105,7 @@ function getCompatibleGenVgs(selectedVersion) {
 }
 
 export default function EggMoveTab({
-  initialPokemon, initialVersion, onStateChange, onPokemonClick,
+  initialPokemon, initialVersion, initialExpandMove, onStateChange, onPokemonClick,
   searchLists, onUnifiedNavigate, onMoveClick,
 }) {
   const [pokemonName, setPokemonName] = useState(initialPokemon || null)
@@ -124,6 +124,8 @@ export default function EggMoveTab({
   const [sortConfig, setSortConfig] = useState({ key: 'move', direction: 'asc' })
 
   const requestIdRef = useRef(0)
+  const expandMoveRef = useRef(initialExpandMove || null)
+  const scrolledToMoveRef = useRef(false)
 
   // Compute available versions from egg move data
   useEffect(() => {
@@ -524,6 +526,23 @@ export default function EggMoveTab({
     })
   }, [eggMoves, speciesData, allEggGroups]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-expand and scroll to a specific move if initialExpandMove was provided
+  useEffect(() => {
+    if (!expandMoveRef.current || scrolledToMoveRef.current) return
+    if (eggMoves.length === 0) return
+    const targetMove = expandMoveRef.current
+    // Check the move exists in the egg moves list
+    if (eggMoves.some(m => m.name === targetMove)) {
+      setExpandedMoves(prev => ({ ...prev, [targetMove]: true }))
+      // Scroll to the move row after a short delay to let DOM render
+      scrolledToMoveRef.current = true
+      setTimeout(() => {
+        const row = document.querySelector(`[data-egg-move="${targetMove}"]`)
+        if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 300)
+    }
+  }, [eggMoves])
+
   // Toggle egg move expansion
   const toggleMove = useCallback((moveName) => {
     setExpandedMoves(prev => ({ ...prev, [moveName]: !prev[moveName] }))
@@ -830,6 +849,7 @@ export default function EggMoveTab({
                         rows.push(
                           <tr
                             key={eggMove.name}
+                            data-egg-move={eggMove.name}
                             className="location-header-row"
                             onClick={() => toggleMove(eggMove.name)}
                           >

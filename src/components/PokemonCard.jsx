@@ -166,7 +166,7 @@ function getMoveCategoryForGen(move, generationNum) {
   return move.details?.damage_class?.name || null
 }
 
-function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading, onMoveClick, compact, generationNum }) {
+function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading, onMoveClick, onEggMoveParentsClick, compact, generationNum }) {
   const [sortConfig, setSortConfig] = useState({
     key: showLevel ? 'level' : showTmNumber ? 'tmNumber' : 'name',
     direction: 'asc'
@@ -196,6 +196,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
     { key: 'accuracy', label: compact ? 'Acc' : 'Accuracy', numeric: true },
     { key: 'priority', label: compact ? 'Pri' : 'Priority', numeric: true },
     ...(hasSourceGames ? [{ key: 'sourceGames', label: 'Game' }] : []),
+    ...(onEggMoveParentsClick ? [{ key: 'parents', label: 'Parents' }] : []),
   ]
 
   // In compact mode, effect becomes a sub-row instead of a column
@@ -234,6 +235,8 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
         return move.sourceGames ?? ''
       case 'learnMethod':
         return move.learnMethod ?? ''
+      case 'parents':
+        return move.name
       //case 'introduced':
         //return move.details?.generation?.name
       default:
@@ -328,6 +331,16 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
       }
       case 'learnMethod':
         return methodDisplayNames[move.learnMethod] || formatMoveLabel(move.learnMethod) || 'N/A'
+      case 'parents':
+        return (
+          <button
+            type="button"
+            className="move-name-link"
+            onClick={() => onEggMoveParentsClick(move.name)}
+          >
+            Parents
+          </button>
+        )
       case 'introduced':
         return formatMoveLabel(move.details?.generation?.name)
       default:
@@ -401,7 +414,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
   )
 }
 
-export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, onAbilityClick, onItemClick, onLocationClick, initialForm, initialVersion, onStateChange, searchLists, onUnifiedNavigate, searchLoading, initialQuery }) {
+export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, onAbilityClick, onItemClick, onLocationClick, onEggMoveClick, initialForm, initialVersion, onStateChange, searchLists, onUnifiedNavigate, searchLoading, initialQuery }) {
   // UI state
   const [hoveredType, setHoveredType] = useState(null)
   const [versionInfo, setVersionInfo] = useState(null)
@@ -1459,7 +1472,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
           moves.tutor.length > 0 && { key: 'tutor', title: 'Tutor', content: <MoveTable title="Tutor" moves={moves.tutor} loading={movesLoading} onMoveClick={onMoveClick} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="Tutor" moves={moves.tutor} loading={movesLoading} onMoveClick={onMoveClick} compact generationNum={selectedGenerationRank} /> },
           moves.special.length > 0 && { key: 'special', title: 'Special', content: <MoveTable title="Special" moves={moves.special} showMethod loading={movesLoading} onMoveClick={onMoveClick} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="Special" moves={moves.special} showMethod loading={movesLoading} onMoveClick={onMoveClick} compact generationNum={selectedGenerationRank} /> },
           moves.transfer.length > 0 && { key: 'transfer', title: 'Transfer', content: <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} onMoveClick={onMoveClick} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} onMoveClick={onMoveClick} compact generationNum={selectedGenerationRank} /> },
-          moves.egg.length > 0 && { key: 'egg', title: 'Egg', content: <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} compact generationNum={selectedGenerationRank} /> },
+          moves.egg.length > 0 && { key: 'egg', title: 'Egg', content: <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} onEggMoveParentsClick={onEggMoveClick ? (moveName) => onEggMoveClick(species?.name || pokemon.name, moveName) : undefined} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} onEggMoveParentsClick={onEggMoveClick ? (moveName) => onEggMoveClick(species?.name || pokemon.name, moveName) : undefined} compact generationNum={selectedGenerationRank} /> },
         ].filter(Boolean)
 
         const safeTab = activeMoveTab < moveTabs.length ? activeMoveTab : 0
