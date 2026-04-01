@@ -506,8 +506,28 @@ export default function EggMoveTab({
         }
       }
 
-      // Sort parents: by Pokedex number
-      parents.sort((a, b) => (a.id || 999) - (b.id || 999))
+      // Sort parents: by method priority, then by Pokedex number within each method
+      const METHOD_PRIORITY = {
+        'level-up': 1, 'machine': 2, 'tutor': 3, 'sketch': 4,
+        'egg': 5, 'chain-breed': 5,
+        'stadium-surfing-pikachu': 6, 'light-ball-egg': 6,
+        'xd-purification': 7, 'colosseum-purification': 7, 'xd-shadow': 7,
+        'form-change': 8,
+      }
+      const getPrimaryMethodPriority = (p) => {
+        let best = 99
+        p.methods.forEach(m => {
+          const pri = METHOD_PRIORITY[m.method] ?? 90
+          if (pri < best) best = pri
+        })
+        return best
+      }
+      parents.sort((a, b) => {
+        const priA = getPrimaryMethodPriority(a)
+        const priB = getPrimaryMethodPriority(b)
+        if (priA !== priB) return priA - priB
+        return (a.id || 999) - (b.id || 999)
+      })
 
       setParentsByMove(prev => ({ ...prev, [moveName]: parents }))
     } catch (err) {
@@ -640,6 +660,26 @@ export default function EggMoveTab({
         return null
       })
       .filter(Boolean)
+      .sort((a, b) => {
+        const METHOD_PRIORITY = {
+          'level-up': 1, 'machine': 2, 'tutor': 3, 'sketch': 4,
+          'chain-breed': 5,
+          'stadium-surfing-pikachu': 6, 'light-ball-egg': 6,
+          'xd-purification': 7, 'colosseum-purification': 7, 'xd-shadow': 7,
+          'form-change': 8,
+        }
+        const pri = (p) => {
+          let best = 99
+          p.methods.forEach(m => {
+            const v = METHOD_PRIORITY[m.method] ?? 90
+            if (v < best) best = v
+          })
+          return best
+        }
+        const pa = pri(a), pb = pri(b)
+        if (pa !== pb) return pa - pb
+        return (a.id || 999) - (b.id || 999)
+      })
   }
 
   // Count distinct learn methods across all parents for an egg move

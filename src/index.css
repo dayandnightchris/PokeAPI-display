@@ -978,11 +978,16 @@ body {
   /* Tab navigation */
   .tab-nav {
     gap: 0;
+    flex-wrap: wrap;
   }
 
   .tab-button {
     padding: 8px 12px;
     font-size: 0.85rem;
+  }
+
+  .tab-button:last-child {
+    margin-top: 2px;
   }
 
   /* Show mobile moves, hide desktop moves */
@@ -1116,6 +1121,10 @@ body {
   .tab-button {
     padding: 6px 8px;
     font-size: 0.8rem;
+  }
+
+  .tab-button:last-child {
+    margin-top: 2px;
   }
 
   /* Ultra-compact boxes — left-aligned, minimal spacing */

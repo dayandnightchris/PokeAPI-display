@@ -15,7 +15,7 @@ import {
   usePreEvolutionCheck
 } from '../hooks'
 
-function CollapsibleInfoBox({ title, children, className = '', style, contentClassName = '', contentStyle }) {
+function CollapsibleInfoBox({ title, children, className = '', style, contentClassName = '', contentStyle, headerExtra }) {
   const [collapsed, setCollapsed] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
@@ -30,6 +30,7 @@ function CollapsibleInfoBox({ title, children, className = '', style, contentCla
       <div className="box-title collapsible-title">
         <span>{title}</span>
         <div className="collapsible-title-buttons">
+          {headerExtra}
           {hasMaxHeight && !collapsed && (
             <button
               type="button"
@@ -166,7 +167,7 @@ function getMoveCategoryForGen(move, generationNum) {
   return move.details?.damage_class?.name || null
 }
 
-function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading, onMoveClick, onEggMoveParentsClick, compact, generationNum }) {
+function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading, onMoveClick, onEggMoveParentsClick, onNavigateToEggTab, compact, generationNum }) {
   const [sortConfig, setSortConfig] = useState({
     key: showLevel ? 'level' : showTmNumber ? 'tmNumber' : 'name',
     direction: 'asc'
@@ -349,7 +350,20 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
   }
 
   return (
-    <CollapsibleInfoBox title={title} contentStyle={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
+    <CollapsibleInfoBox title={title} contentStyle={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }} headerExtra={onNavigateToEggTab && (
+      <button
+        type="button"
+        className="expand-toggle egg-tab-navigate"
+        onClick={onNavigateToEggTab}
+        title="View on Egg Moves tab"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <ellipse cx="12" cy="13" rx="8" ry="10" />
+          <path d="M7 9c0 0 2.5-3 5-3s5 3 5 3" strokeWidth="1.5" />
+          <line x1="7" y1="9" x2="17" y2="9" strokeWidth="1.5" />
+        </svg>
+      </button>
+    )}>
       {loading ? (
         <div className="move-loading">
           <video src="/simple_pokeball.webm" autoPlay loop muted className="move-loading-gif" />
@@ -1472,7 +1486,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
           moves.tutor.length > 0 && { key: 'tutor', title: 'Tutor', content: <MoveTable title="Tutor" moves={moves.tutor} loading={movesLoading} onMoveClick={onMoveClick} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="Tutor" moves={moves.tutor} loading={movesLoading} onMoveClick={onMoveClick} compact generationNum={selectedGenerationRank} /> },
           moves.special.length > 0 && { key: 'special', title: 'Special', content: <MoveTable title="Special" moves={moves.special} showMethod loading={movesLoading} onMoveClick={onMoveClick} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="Special" moves={moves.special} showMethod loading={movesLoading} onMoveClick={onMoveClick} compact generationNum={selectedGenerationRank} /> },
           moves.transfer.length > 0 && { key: 'transfer', title: 'Transfer', content: <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} onMoveClick={onMoveClick} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="Transfer Only" moves={moves.transfer} loading={movesLoading} onMoveClick={onMoveClick} compact generationNum={selectedGenerationRank} /> },
-          moves.egg.length > 0 && { key: 'egg', title: 'Egg', content: <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} onEggMoveParentsClick={onEggMoveClick ? (moveName) => onEggMoveClick(species?.name || pokemon.name, moveName) : undefined} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} onEggMoveParentsClick={onEggMoveClick ? (moveName) => onEggMoveClick(species?.name || pokemon.name, moveName) : undefined} compact generationNum={selectedGenerationRank} /> },
+          moves.egg.length > 0 && { key: 'egg', title: 'Egg', content: <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} onEggMoveParentsClick={onEggMoveClick ? (moveName) => onEggMoveClick(species?.name || pokemon.name, moveName) : undefined} onNavigateToEggTab={onEggMoveClick ? () => onEggMoveClick(species?.name || pokemon.name) : undefined} generationNum={selectedGenerationRank} />, compactContent: <MoveTable title="Egg" moves={moves.egg} loading={movesLoading} onMoveClick={onMoveClick} onEggMoveParentsClick={onEggMoveClick ? (moveName) => onEggMoveClick(species?.name || pokemon.name, moveName) : undefined} onNavigateToEggTab={onEggMoveClick ? () => onEggMoveClick(species?.name || pokemon.name) : undefined} compact generationNum={selectedGenerationRank} /> },
         ].filter(Boolean)
 
         const safeTab = activeMoveTab < moveTabs.length ? activeMoveTab : 0

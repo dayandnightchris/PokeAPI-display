@@ -1492,6 +1492,15 @@
   vertical-align: middle;
 }
 
+.egg-tab-navigate {
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+
+.egg-tab-navigate:hover {
+  color: var(--primary-color);
+}
+
 /* =========================
    Footer
    ========================= */
