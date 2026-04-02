@@ -474,6 +474,8 @@ export default function EggMoveTab({
             try {
               const evoPoke = await fetchPokemonCached(evoName)
               if (!evoPoke) continue
+              // Skip Gen 8+ evolutions (id >= 810) — they don't exist in earlier gens
+              if (evoPoke.id >= 810) continue
               const evoSpecies = await fetchSpeciesCached(evoPoke.species?.name || evoName)
               if (!evoSpecies) continue
 
