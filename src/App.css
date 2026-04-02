@@ -11,6 +11,7 @@
   background: var(--bg-color);
   border-radius: 4px;
   border: 1px solid var(--border-light);
+
 }
 
 .version-selector label {
@@ -1944,12 +1945,13 @@
 
 @media (max-width: 480px) {
   .version-selector {
-    padding: 4px;
+    padding: px;
     gap: 3px;
+    margin-bottom: 5px;
   }
 
   .search-input-wrapper {
-    flex-direction: column;
+    
   }
 
   .search-container button {
