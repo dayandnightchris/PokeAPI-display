@@ -15,9 +15,9 @@ import {
   usePreEvolutionCheck
 } from '../hooks'
 
-function CollapsibleInfoBox({ title, children, className = '', style, contentClassName = '', contentStyle, headerExtra }) {
+function CollapsibleInfoBox({ title, children, className = '', style, contentClassName = '', contentStyle, headerExtra, initialExpanded = false }) {
   const [collapsed, setCollapsed] = useState(false)
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(initialExpanded)
 
   const hasMaxHeight = contentStyle && contentStyle.maxHeight != null
 
@@ -349,8 +349,11 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
     }
   }
 
+  // On mobile (<=768px), default to expanded (no max-height scroll)
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768
+
   return (
-    <CollapsibleInfoBox title={title} contentStyle={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }} headerExtra={onNavigateToEggTab && (
+    <CollapsibleInfoBox title={title} contentStyle={{ fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }} initialExpanded={isMobile} headerExtra={onNavigateToEggTab && (
       <button
         type="button"
         className="expand-toggle egg-tab-navigate"
