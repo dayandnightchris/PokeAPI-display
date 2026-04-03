@@ -1229,6 +1229,11 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                                   </td>
                                   <td style={{ padding: '6px 8px' }}>
                                     {methodDisplay}
+                                    {entry.conditions.length > 0 && (
+                                      <div style={{ fontSize: '11px', color: '#888', fontStyle: 'italic' }}>
+                                        {entry.conditions.map(c => c.replace(/-/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase())).join(', ')}
+                                      </div>
+                                    )}
                                   </td>
                                   <td style={{ padding: '6px 8px', textAlign: 'center' }}>{levelDisplay}</td>
                                   <td style={{ padding: '6px 8px', textAlign: 'center' }}>{entry.rate}%</td>
