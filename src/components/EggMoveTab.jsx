@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import UnifiedSearch from './UnifiedSearch'
 import { fetchPokemonCached, fetchMoveCached, fetchSpeciesCached, preloadPokemonCache } from '../utils/pokeCache'
 import {
-  versionGeneration, generationVersionGroups, versionGroupOrder,
+  versionGeneration, generationVersionGroups, generationOrder, versionGroupOrder,
   versionGroupDisplayNames, versionDisplayNames, getTransferSourceVersionGroups,
 } from '../utils/versionInfo'
 
@@ -338,7 +338,9 @@ export default function EggMoveTab({
       // Collect all learner names
       const learnerNames = moveData.learned_by_pokemon.map(p => p.name)
 
-      // Filter out Gen 8+ pokemon (id >= 810)
+      // Filter out Gen 8+ pokemon (id >= 810) — quick pre-filter to avoid
+      // fetching data for hundreds of Gen 8-9 Pokemon we'll never display.
+      // The real generation check happens in getFilteredParents.
       const filteredLearners = moveData.learned_by_pokemon.filter(p => {
         const idMatch = p.url?.match(/\/pokemon\/(\d+)\/?$/)
         if (idMatch && Number(idMatch[1]) >= 810) return false
@@ -398,11 +400,16 @@ export default function EggMoveTab({
 
             if (methods.length === 0) return null
 
+            // Store the generation this species was introduced in for
+            // filtering: a parent can only appear when viewing its gen or later.
+            const introGen = generationOrder[learnerSpecies.generation?.name] || 99
+
             return {
               name: learner.name,
               speciesName: learnerSpeciesName,
               methods,
               id: learnerPoke.id,
+              introGen,
             }
           } catch {
             return null
@@ -474,8 +481,7 @@ export default function EggMoveTab({
             try {
               const evoPoke = await fetchPokemonCached(evoName)
               if (!evoPoke) continue
-              // Skip Gen 8+ evolutions (id >= 810) — they don't exist in earlier gens, and we're trying to filter 8+ 
-              // learners out of the parents list anyway, so they can't be valid parents.
+              // Quick pre-filter: skip Gen 8+ (id >= 810) entirely to save fetches
               if (evoPoke.id >= 810) continue
               const evoSpecies = await fetchSpeciesCached(evoPoke.species?.name || evoName)
               if (!evoSpecies) continue
@@ -488,11 +494,13 @@ export default function EggMoveTab({
               }
 
               // Inherit the pre-evo's methods since the evolved form retains the move
+              const evoIntroGen = generationOrder[evoSpecies.generation?.name] || 99
               evoParents.push({
                 name: evoName,
                 speciesName: evoSpecies.name,
                 methods: parent.methods.map(m => ({ ...m })),
                 id: evoPoke.id,
+                introGen: evoIntroGen,
                 viaEvolution: parent.name, // track which pre-evo it came from
               })
             } catch { /* skip */ }
@@ -523,6 +531,7 @@ export default function EggMoveTab({
               speciesName: 'smeargle',
               methods: [{ method: 'sketch', level: null, versionGroups: sketchVgs }],
               id: smearglePoke.id,
+              introGen: 2, // Smeargle was introduced in Gen 2
             })
             parentNames.add('smeargle')
           }
@@ -623,7 +632,14 @@ export default function EggMoveTab({
     const vg = versionToVersionGroup[selectedVersion]
     const transferSourceVgs = getTransferSourceVersionGroups(selectedVersion, vg)
 
+    const selectedGen = versionGeneration[selectedVersion]
+
     const filtered = parents
+      .filter(parent => {
+        // A parent can only appear if it existed in the selected generation.
+        // E.g. Electivire (Gen 4) can't be a parent when viewing Gen 3.
+        return !parent.introGen || parent.introGen <= selectedGen
+      })
       .map(parent => {
         // Filter methods to those available in the selected gen
         // Separate non-egg (natural) methods from egg (chain breed) methods
