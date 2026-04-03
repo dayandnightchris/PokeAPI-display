@@ -1895,6 +1895,62 @@
     max-height: 400px;
   }
 
+  /* Compact non-Pokemon page tables on mobile */
+  .move-learners-table,
+  .ability-pokemon-table,
+  .item-holders-table,
+  .location-encounters-table {
+    font-size: 12px;
+  }
+
+  .move-learners-table th,
+  .ability-pokemon-table th,
+  .item-holders-table th,
+  .location-encounters-table th {
+    padding: 6px 6px;
+  }
+
+  .move-learners-table td,
+  .ability-pokemon-table td,
+  .item-holders-table td,
+  .location-encounters-table td {
+    padding: 4px 6px;
+  }
+
+  .learner-id {
+    font-size: 11px;
+    min-width: 28px;
+  }
+
+  .method-badge {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+
+  .ability-type-badge {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+
+  /* Location encounters table has 6 columns — tighten further */
+  .location-encounters-table {
+    font-size: 11px;
+  }
+
+  .location-encounters-table th,
+  .location-encounters-table td {
+    padding: 4px 4px;
+  }
+
+  .location-method-cell,
+  .location-level-cell {
+    white-space: normal;
+  }
+
+  .location-versions-cell {
+    font-size: 10px;
+  }
+
   .page-search-row {
     flex-direction: column;
     align-items: stretch;
@@ -1999,6 +2055,53 @@
 
   .move-effect-subrow-cell {
     padding: 1px 3px 3px;
+    font-size: 9px;
+  }
+
+  /* Ultra-compact non-Pokemon page tables at 480px */
+  .move-learners-table,
+  .ability-pokemon-table,
+  .item-holders-table {
+    font-size: 11px;
+  }
+
+  .move-learners-table th,
+  .ability-pokemon-table th,
+  .item-holders-table th {
+    padding: 4px 4px;
+  }
+
+  .move-learners-table td,
+  .ability-pokemon-table td,
+  .item-holders-table td {
+    padding: 3px 4px;
+  }
+
+  .location-encounters-table {
+    font-size: 10px;
+  }
+
+  .location-encounters-table th,
+  .location-encounters-table td {
+    padding: 3px 2px;
+  }
+
+  .learner-id {
+    font-size: 10px;
+    min-width: 22px;
+  }
+
+  .method-badge {
+    padding: 1px 4px;
+    font-size: 9px;
+  }
+
+  .ability-type-badge {
+    padding: 1px 4px;
+    font-size: 9px;
+  }
+
+  .location-versions-cell {
     font-size: 9px;
   }
 }
