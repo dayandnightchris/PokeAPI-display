@@ -187,6 +187,7 @@ body {
   margin-bottom: 1.5rem;
   border-bottom: 2px solid var(--border-light);
   padding-bottom: 0;
+  margin-bottom: 5px;
 }
 
 .tab-button {
@@ -263,6 +264,7 @@ body {
   flex-direction: column;
   gap: 10px;
   animation: slideIn 0.3s ease-out;
+
 }
 
 @keyframes slideIn {
@@ -281,12 +283,14 @@ body {
   display: flex;
   gap: 5px;
   animation: fadeIn 0.3s ease-out;
+  
 }
 
 .card-section.grid-4 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 5px;
+  margin-top: 500px;
 }
 
 .card-section.grid-3 {
@@ -307,7 +311,7 @@ body {
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: auto auto;
   gap: 5px;
-  margin: 5px 0;
+  margin: -4px 0;
 }
 
 .main-info-grid .image-breeding-stack {
@@ -1120,7 +1124,8 @@ body {
 
   .tab-button {
     padding: 6px 8px;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
+
   }
 
   .tab-button:last-child {
