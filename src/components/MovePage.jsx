@@ -86,6 +86,20 @@ const categoryIcons = {
   status: '📊',
 }
 
+// In Gens 1-3 move category was determined by type, not per-move
+const physicalTypes = new Set(['normal', 'fighting', 'flying', 'poison', 'ground', 'rock', 'bug', 'ghost', 'steel'])
+const specialTypes = new Set(['fire', 'water', 'grass', 'electric', 'psychic', 'ice', 'dragon', 'dark'])
+
+function getMoveCategoryForGen(moveData, typeName, generationNum) {
+  if (generationNum && generationNum <= 3) {
+    if (!typeName) return moveData.damage_class?.name || null
+    if (moveData.damage_class?.name === 'status') return 'status'
+    if (physicalTypes.has(typeName)) return 'physical'
+    if (specialTypes.has(typeName)) return 'special'
+  }
+  return moveData.damage_class?.name || null
+}
+
 function formatMoveName(name) {
   return name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
@@ -790,9 +804,15 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
                 >
                   {moveStats.type}
                 </span>
-                <span className="move-category-badge" data-category={moveData.damage_class?.name}>
-                  {categoryIcons[moveData.damage_class?.name] || ''} {moveData.damage_class?.name}
-                </span>
+                {(() => {
+                  const gen = selectedVersion ? versionGeneration[selectedVersion] : null
+                  const category = getMoveCategoryForGen(moveData, moveStats.type, gen)
+                  return (
+                    <span className="move-category-badge" data-category={category}>
+                      {categoryIcons[category] || ''} {category}
+                    </span>
+                  )
+                })()}
               </div>
             </div>
 
