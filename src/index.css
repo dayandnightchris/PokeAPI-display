@@ -1227,3 +1227,10 @@ body {
   }
 }
 
+@media (max-width: 380px) {
+  .tab-button {
+    padding: 5px 3px;
+    font-size: 0.58rem;
+  }
+}
+
