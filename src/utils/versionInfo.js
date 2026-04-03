@@ -280,3 +280,50 @@ export async function getVersionInfo(versionName) {
     return null
   }
 }
+
+/**
+ * Return the display name for an egg group, adjusted for the selected generation.
+ *
+ * PokeAPI uses the original Stadium 2-era internal names (ground, plant,
+ * humanshape, indeterminate, no-eggs).  The in-game names were updated:
+ *   - Gen 4 (Diamond/Pearl): ground → Field, plant → Grass,
+ *     humanshape → Human-Like, indeterminate → Amorphous
+ *   - Gen 5 (Black/White): no-eggs → No Eggs Discovered
+ *
+ * For gens before those thresholds we display the legacy name; otherwise the
+ * modern one.  If no generation is provided we default to the modern name.
+ */
+const eggGroupModernNames = {
+  'ground':        'Field',
+  'plant':         'Grass',
+  'humanshape':    'Human-Like',
+  'indeterminate': 'Amorphous',
+  'no-eggs':       'No Eggs Discovered',
+}
+
+const eggGroupLegacyNames = {
+  'ground':        'Ground',
+  'plant':         'Plant',
+  'humanshape':    'Humanshape',
+  'indeterminate': 'Indeterminate',
+  'no-eggs':       'No Eggs',
+}
+
+function titleCase(str) {
+  return str.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
+export function getEggGroupDisplayName(apiName, generationNum) {
+  // Groups that changed in Gen 4
+  if (['ground', 'plant', 'humanshape', 'indeterminate'].includes(apiName)) {
+    if (generationNum && generationNum < 4) return eggGroupLegacyNames[apiName]
+    return eggGroupModernNames[apiName]
+  }
+  // "no-eggs" changed in Gen 5
+  if (apiName === 'no-eggs') {
+    if (generationNum && generationNum < 5) return eggGroupLegacyNames[apiName]
+    return eggGroupModernNames[apiName]
+  }
+  // All other groups: just title-case the API name
+  return titleCase(apiName)
+}

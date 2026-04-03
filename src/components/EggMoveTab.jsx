@@ -4,6 +4,7 @@ import { fetchPokemonCached, fetchMoveCached, fetchSpeciesCached, preloadPokemon
 import {
   versionGeneration, generationVersionGroups, generationOrder, versionGroupOrder,
   versionGroupDisplayNames, versionDisplayNames, getTransferSourceVersionGroups,
+  getEggGroupDisplayName,
 } from '../utils/versionInfo'
 
 function formatName(name) {
@@ -876,7 +877,7 @@ export default function EggMoveTab({
               <h2 className="location-detail-name">{formatName(pokemonData.name)}</h2>
               {speciesData?.egg_groups && (
                 <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  Egg Groups: {speciesData.egg_groups.map(g => formatName(g.name)).join(', ')}
+                  Egg Groups: {speciesData.egg_groups.map(g => getEggGroupDisplayName(g.name, versionGeneration[selectedVersion])).join(', ')}
                 </div>
               )}
             </div>

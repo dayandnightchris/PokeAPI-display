@@ -3,7 +3,7 @@ import StatsCalculator from './StatsCalculator'
 import VersionSelector from './VersionSelector'
 import UnifiedSearch from './UnifiedSearch'
 import { renderEvolutionForest } from './EvolutionTree'
-import { getVersionInfo, generationOrder, generationVersions, versionGeneration, versionDisplayNames } from '../utils/versionInfo'
+import { getVersionInfo, generationOrder, generationVersions, versionGeneration, versionDisplayNames, getEggGroupDisplayName } from '../utils/versionInfo'
 import { getTypeEffectiveness } from '../utils/typeEffectiveness'
 import {
   usePokemonSpecies,
@@ -869,7 +869,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                   <span className="label">Egg Groups:</span>
                   <span className="value">
                     {species.egg_groups?.length > 0
-                      ? species.egg_groups.map(g => g.name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())).join(', ')
+                      ? species.egg_groups.map(g => getEggGroupDisplayName(g.name, selectedGenerationRank)).join(', ')
                       : 'N/A'}
                   </span>
                 </div>
