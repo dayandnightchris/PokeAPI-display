@@ -489,7 +489,7 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
             </select>
           </div>
         )}
-        <div className="search-container page-search-inline">
+        <div className="page-search-inline">
           <UnifiedSearch lists={searchLists} onNavigate={onUnifiedNavigate} activeTab="items" initialQuery={initialItem || ''} loading={itemLoading} />
         </div>
       </div>

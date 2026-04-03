@@ -783,7 +783,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
             </select>
           </div>
         )}
-        <div className="search-container page-search-inline">
+        <div className="page-search-inline">
           <UnifiedSearch lists={searchLists} onNavigate={onUnifiedNavigate} activeTab="moves" initialQuery={initialMove || ''} loading={moveLoading} />
         </div>
       </div>

@@ -516,7 +516,7 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
             </select>
           </div>
         )}
-        <div className="search-container page-search-inline">
+        <div className="page-search-inline">
           <UnifiedSearch lists={searchLists} onNavigate={onUnifiedNavigate} activeTab="abilities" initialQuery={initialAbility || ''} loading={abilityLoading} />
         </div>
       </div>

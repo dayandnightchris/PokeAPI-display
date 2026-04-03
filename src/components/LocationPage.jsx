@@ -453,7 +453,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
             </select>
           </div>
         )}
-        <div className="search-container page-search-inline">
+        <div className="page-search-inline">
           <UnifiedSearch lists={searchLists} onNavigate={onUnifiedNavigate} activeTab="locations" initialQuery={initialLocation || ''} loading={locationLoading} />
         </div>
       </div>
