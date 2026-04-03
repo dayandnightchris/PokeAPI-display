@@ -4,7 +4,7 @@ import { fetchPokemonCached, fetchMoveCached, fetchSpeciesCached, preloadPokemon
 import {
   versionGeneration, generationVersionGroups, generationOrder, versionGroupOrder,
   versionGroupDisplayNames, versionDisplayNames, getTransferSourceVersionGroups,
-  getEggGroupDisplayName,
+  getEggGroupDisplayName, defaultVersionGroups,
 } from '../utils/versionInfo'
 
 function formatName(name) {
@@ -833,28 +833,26 @@ export default function EggMoveTab({
     <div className="location-page egg-move-page">
       {/* Search + Version row */}
       <div className="page-search-row">
-        {pokemonData && availableVersions.length > 0 && (
-          <div className="page-version-inline">
-            <label htmlFor="eggmove-version-select">Version:</label>
-            <select
-              id="eggmove-version-select"
-              value={selectedVersion || ''}
-              onChange={(e) => setSelectedVersion(e.target.value)}
-              className="version-dropdown"
-            >
-              {availableVersions.map((group, idx) => {
-                const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
-                return (
-                  <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
-                    {group.map(({ display, name }) => (
-                      <option key={name} value={name}>{display}</option>
-                    ))}
-                  </optgroup>
-                )
-              })}
-            </select>
-          </div>
-        )}
+        <div className="page-version-inline">
+          <label htmlFor="eggmove-version-select">Version:</label>
+          <select
+            id="eggmove-version-select"
+            value={selectedVersion || ''}
+            onChange={(e) => setSelectedVersion(e.target.value)}
+            className="version-dropdown"
+          >
+            {(availableVersions.length > 0 ? availableVersions : defaultVersionGroups).map((group, idx) => {
+              const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
+              return (
+                <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
+                  {group.map(({ display, name }) => (
+                    <option key={name} value={name}>{display}</option>
+                  ))}
+                </optgroup>
+              )
+            })}
+          </select>
+        </div>
         <div className="page-search-inline">
           <UnifiedSearch
             lists={searchLists}

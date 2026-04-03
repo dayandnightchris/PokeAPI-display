@@ -327,3 +327,15 @@ export function getEggGroupDisplayName(apiName, generationNum) {
   // All other groups: just title-case the API name
   return titleCase(apiName)
 }
+
+/**
+ * Static version groups for use as a fallback dropdown before entity-specific
+ * versions are loaded.  Gen 1-7 only (matching VersionSelector's < 8 filter).
+ */
+export const defaultVersionGroups = Object.entries(generationVersions)
+  .filter(([gen]) => Number(gen) < 8)
+  .map(([gen, versions]) => versions.map(v => ({
+    name: v,
+    display: versionDisplayNames[v] || v,
+    gen: Number(gen),
+  })))

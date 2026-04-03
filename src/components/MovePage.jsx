@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import UnifiedSearch from './UnifiedSearch'
-import { versionDisplayNames, versionGeneration, versionGroupDisplayNames, generationVersionGroups, generationOrder, versionGroupOrder, getTransferSourceVersionGroups } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, versionGroupDisplayNames, generationVersionGroups, generationOrder, versionGroupOrder, getTransferSourceVersionGroups, defaultVersionGroups } from '../utils/versionInfo'
 import { fetchPokemonCached, fetchMoveCached, fetchSpeciesCached, preloadPokemonCache } from '../utils/pokeCache'
 import gen1TradebackMoves from '../utils/tradebackMoves'
 
@@ -761,28 +761,26 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
     <div className="move-page">
       {/* Search + Version row */}
       <div className="page-search-row">
-        {moveData && moveStats && availableVersions.length > 0 && (
-          <div className="page-version-inline">
-            <label htmlFor="move-version-select">Version:</label>
-            <select
-              id="move-version-select"
-              value={selectedVersion || ''}
-              onChange={(e) => setSelectedVersion(e.target.value)}
-              className="version-dropdown"
-            >
-              {availableVersions.map((group, idx) => {
-                const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
-                return (
-                  <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
-                    {group.map(({ display, name }) => (
-                      <option key={name} value={name}>{display}</option>
-                    ))}
-                  </optgroup>
-                )
-              })}
-            </select>
-          </div>
-        )}
+        <div className="page-version-inline">
+          <label htmlFor="move-version-select">Version:</label>
+          <select
+            id="move-version-select"
+            value={selectedVersion || ''}
+            onChange={(e) => setSelectedVersion(e.target.value)}
+            className="version-dropdown"
+          >
+            {(availableVersions.length > 0 ? availableVersions : defaultVersionGroups).map((group, idx) => {
+              const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
+              return (
+                <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
+                  {group.map(({ display, name }) => (
+                    <option key={name} value={name}>{display}</option>
+                  ))}
+                </optgroup>
+              )
+            })}
+          </select>
+        </div>
         <div className="page-search-inline">
           <UnifiedSearch lists={searchLists} onNavigate={onUnifiedNavigate} activeTab="moves" initialQuery={initialMove || ''} loading={moveLoading} />
         </div>

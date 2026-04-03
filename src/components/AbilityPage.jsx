@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import UnifiedSearch from './UnifiedSearch'
-import { versionDisplayNames, versionGeneration, generationVersionGroups, generationOrder, generationVersions } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, generationVersionGroups, generationOrder, generationVersions, defaultVersionGroups } from '../utils/versionInfo'
 import { fetchAbilityCached, fetchPokemonCached } from '../utils/pokeCache'
 
 function formatAbilityName(name) {
@@ -494,28 +494,26 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
     <div className="ability-page">
       {/* Search + Version row */}
       <div className="page-search-row">
-        {abilityData && availableVersions.length > 0 && (
-          <div className="page-version-inline">
-            <label htmlFor="ability-version-select">Version:</label>
-            <select
-              id="ability-version-select"
-              value={selectedVersion || ''}
-              onChange={(e) => setSelectedVersion(e.target.value)}
-              className="version-dropdown"
-            >
-              {availableVersions.map((group, idx) => {
-                const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
-                return (
-                  <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
-                    {group.map(({ display, name }) => (
-                      <option key={name} value={name}>{display}</option>
-                    ))}
-                  </optgroup>
-                )
-              })}
-            </select>
-          </div>
-        )}
+        <div className="page-version-inline">
+          <label htmlFor="ability-version-select">Version:</label>
+          <select
+            id="ability-version-select"
+            value={selectedVersion || ''}
+            onChange={(e) => setSelectedVersion(e.target.value)}
+            className="version-dropdown"
+          >
+            {(availableVersions.length > 0 ? availableVersions : defaultVersionGroups).map((group, idx) => {
+              const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
+              return (
+                <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
+                  {group.map(({ display, name }) => (
+                    <option key={name} value={name}>{display}</option>
+                  ))}
+                </optgroup>
+              )
+            })}
+          </select>
+        </div>
         <div className="page-search-inline">
           <UnifiedSearch lists={searchLists} onNavigate={onUnifiedNavigate} activeTab="abilities" initialQuery={initialAbility || ''} loading={abilityLoading} />
         </div>

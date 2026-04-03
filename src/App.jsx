@@ -6,6 +6,7 @@ import MovePage from './components/MovePage'
 import AbilityPage from './components/AbilityPage'
 import ItemPage from './components/ItemPage'
 import LocationPage from './components/LocationPage'
+import { defaultVersionGroups } from './utils/versionInfo'
 import EggMoveTab from './components/EggMoveTab'
 
 /**
@@ -77,7 +78,7 @@ function App() {
   const [itemList, setItemList] = useState([])
   const [locationList, setLocationList] = useState([])
   const [requestedForm, setRequestedForm] = useState(null)
-  const [initialVersion, setInitialVersion] = useState(null)
+  const [initialVersion, setInitialVersion] = useState(urlParams.version || 'ultra-moon')
   const [searchQuery, setSearchQuery] = useState('')
 
   // Apply theme to document
@@ -417,7 +418,6 @@ function App() {
 
   // Bundled lists object for UnifiedSearch
   const searchLists = { pokemon: pokemonList, pokemonIdMap, moves: moveList, abilities: abilityList, items: itemList, locations: locationList }
-
   const fetchPokemon = async (nameOrId) => {
     const query = String(nameOrId).trim().toLowerCase().replace(/\s+/g, '-')
     if (!query) return
@@ -597,7 +597,37 @@ function App() {
 
       {activeTab === 'pokemon' && (
         <>
-          {!pokemon && <UnifiedSearch lists={searchLists} onNavigate={handleUnifiedNavigate} activeTab="pokemon" loading={loading} initialQuery={searchQuery} />}
+          {!pokemon && (
+            <div className="page-search-row" style={{ justifyContent: 'center' }}>
+              <div className="page-version-inline">
+                <label htmlFor="startup-version-select">Version:</label>
+                <select
+                  id="startup-version-select"
+                  value={initialVersion || ''}
+                  onChange={(e) => {
+                    const v = e.target.value || null
+                    setInitialVersion(v)
+                    urlStateRef.current.version = v
+                  }}
+                  className="version-dropdown"
+                >
+                  {defaultVersionGroups.map((group, idx) => {
+                    const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
+                    return (
+                      <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
+                        {group.map(({ display, name }) => (
+                          <option key={name} value={name}>{display}</option>
+                        ))}
+                      </optgroup>
+                    )
+                  })}
+                </select>
+              </div>
+              <div className="page-search-inline">
+                <UnifiedSearch lists={searchLists} onNavigate={handleUnifiedNavigate} activeTab="pokemon" loading={loading} initialQuery={searchQuery} />
+              </div>
+            </div>
+          )}
           
           {error && <div className="error">{error}</div>}
           {loading && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball" /></div>}

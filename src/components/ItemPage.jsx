@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import UnifiedSearch from './UnifiedSearch'
-import { versionDisplayNames, versionGeneration, generationOrder, generationVersions } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, generationOrder, generationVersions, defaultVersionGroups } from '../utils/versionInfo'
 import { fetchItemCached, fetchMachineCached } from '../utils/pokeCache'
 
 function formatItemName(name) {
@@ -467,28 +467,26 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
     <div className="item-page">
       {/* Search + Version row */}
       <div className="page-search-row">
-        {itemData && availableVersions.length > 0 && (
-          <div className="page-version-inline">
-            <label htmlFor="item-version-select">Version:</label>
-            <select
-              id="item-version-select"
-              value={selectedVersion || ''}
-              onChange={(e) => setSelectedVersion(e.target.value)}
-              className="version-dropdown"
-            >
-              {availableVersions.map((group, idx) => {
-                const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
-                return (
-                  <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
-                    {group.map(({ display, name }) => (
-                      <option key={name} value={name}>{display}</option>
-                    ))}
-                  </optgroup>
-                )
-              })}
-            </select>
-          </div>
-        )}
+        <div className="page-version-inline">
+          <label htmlFor="item-version-select">Version:</label>
+          <select
+            id="item-version-select"
+            value={selectedVersion || ''}
+            onChange={(e) => setSelectedVersion(e.target.value)}
+            className="version-dropdown"
+          >
+            {(availableVersions.length > 0 ? availableVersions : defaultVersionGroups).map((group, idx) => {
+              const genLabel = group[0]?.gen ? `Gen ${group[0].gen}` : 'Other'
+              return (
+                <optgroup key={`${genLabel}-${idx}`} label={genLabel}>
+                  {group.map(({ display, name }) => (
+                    <option key={name} value={name}>{display}</option>
+                  ))}
+                </optgroup>
+              )
+            })}
+          </select>
+        </div>
         <div className="page-search-inline">
           <UnifiedSearch lists={searchLists} onNavigate={onUnifiedNavigate} activeTab="items" initialQuery={initialItem || ''} loading={itemLoading} />
         </div>
