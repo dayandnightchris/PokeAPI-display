@@ -1250,8 +1250,8 @@
 .page-version-inline {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 10px;
+  padding: 4px;
   background: var(--bg-color);
   border: 1px solid var(--border-light);
   border-radius: 4px;
@@ -1263,11 +1263,6 @@
   font-weight: 600;
   font-size: 14px;
   color: var(--text-color);
-}
-
-.page-version-inline .version-dropdown {
-  padding: 6px 8px;
-  font-size: 13px;
 }
 
 .page-search-inline {
