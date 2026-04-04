@@ -1,13 +1,18 @@
-# PokéAPI Display
+# BlisyDex
 
-A modern Pokémon information website built with React and Vite, powered by [PokéAPI](https://pokeapi.co/). Browse Pokémon, moves, abilities, and items with accurate version-specific data spanning Generations 1–7.
+A modern Pokémon information website built with React and Vite, powered by [PokéAPI](https://pokeapi.co/). Browse Pokémon, moves, abilities, items, locations, and egg move breeding chains with accurate version-specific data spanning Generations 1–7.
 
 ## Features
 
+### Unified Search
+- **Cross-category search bar** that searches Pokémon, moves, abilities, items, and locations simultaneously
+- Results are grouped by category with the active tab's category prioritised
+- Supports search by name, ID, or form name
+
 ### Pokémon Tab
-- **Search with Autocomplete**: Find any Pokémon by name, ID, or form name
 - **Version-Aware Display**: Select a game version to see generation-accurate stats, moves, abilities, and sprites
 - **Interactive Stats Calculator**: Adjust level, nature, IVs, and EVs to see calculated stats (supports both modern and legacy Gen 1–2 formulas)
+- **Type Effectiveness**: Defensive type matchups that update per generation (Gen 1, Gen 2–5, Gen 6+ charts)
 - **Evolution Chain**: Visual tree of all evolution paths with clickable navigation
 - **Form Selector**: Switch between alternate forms (Mega, Alolan, Galarian, etc.)
 - **Grouped Move List**: Moves organized by learn method, filtered to the selected version
@@ -28,19 +33,34 @@ A modern Pokémon information website built with React and Vite, powered by [Pok
 - **Item Details**: Sprite, category, cost, fling power, effect, and version-specific description
 - **Wild Holders Table**: Pokémon that hold the item in the wild for the selected version, with hold chance percentages
 
+### Locations Tab
+- **Location Search**: Look up any in-game location with autocomplete
+- **Encounter Tables**: See which Pokémon appear at a location, grouped by area and sorted by encounter method, level range, conditions, and encounter rate
+- **Version Filtering**: Select a game version to see only that version's encounters, with version availability tags on each row
+- **Collapsible Rows**: Pokémon with multiple encounter methods are grouped into expandable rows
+
+### Egg Moves Tab
+- **Egg Move Lookup**: Search for any breedable Pokémon to see its full egg move list
+- **Breeding Chain Parents**: Expand any egg move to see which Pokémon can pass it down, with learn method details (level-up, TM, tutor, chain breed, Smeargle Sketch)
+- **Version-Aware Breeding**: Filters parents and learn methods to the selected version group, respecting isolated games (LGPE, BDSP, PLA) and cross-generation transfer rules
+- **Version-Aware Egg Groups**: Collects egg groups from the entire evolutionary line for accurate parent matching
+
 ### Cross-Tab Navigation
 - Click a move name on the Pokémon page → jumps to the Moves tab
 - Click an ability name → jumps to the Abilities tab
 - Click a held item name → jumps to the Items tab
+- Click a location name → jumps to the Locations tab
+- Click an egg move → jumps to the Egg Moves tab with the move pre-expanded
 - Click a Pokémon name on any tab → jumps back to the Pokémon tab
-- URL routing keeps deep links shareable (e.g. `/moves/emerald/thunderbolt`)
+- The selected game version carries across tab switches
+- URL routing keeps deep links shareable (e.g. `/moves/emerald/thunderbolt`, `/locations/ultra-moon/mt-coronet`)
 
 ### General
 - **Version Filtering**: Gen 8/9 excluded from selectors and autocomplete (Gens 1–7 focus)
 - **Form Clamping**: Mega, Primal, G-Max, and Totem forms only appear in games where they exist
-- **Caching**: Dual-layer cache (memory + localStorage with 7-day TTL) for fast repeat lookups
+- **Caching**: Dual-layer cache (memory + localStorage with 7-day TTL) for fast repeat lookups, with batch preloading for egg move parents
 - **Responsive Design**: Works on desktop and tablet
-- **Dark mode**: For those who appreciate it
+- **Dark Mode**: Solrock/Lunatone toggle for light/dark themes
 
 ## Project Structure
 
@@ -51,14 +71,17 @@ src/
 ├── App.css                         # All app styles
 ├── index.css                       # Global styles
 ├── components/
-│   ├── PokemonCard.jsx             # Pokémon display (stats, moves, abilities, encounters)
-│   ├── PokemonSearch.jsx           # Search input with autocomplete
+│   ├── UnifiedSearch.jsx           # Cross-category search bar (Pokémon, moves, abilities, items, locations)
+│   ├── PokemonCard.jsx             # Pokémon display (stats, types, moves, abilities, encounters)
+│   ├── PokemonSearch.jsx           # Legacy search input with autocomplete
 │   ├── StatsCalculator.jsx         # Interactive stat calculator (modern + legacy formulas)
 │   ├── EvolutionTree.jsx           # Evolution chain visualization
 │   ├── VersionSelector.jsx         # Game version dropdown
 │   ├── MovePage.jsx                # Move lookup page
 │   ├── AbilityPage.jsx             # Ability lookup page
-│   └── ItemPage.jsx                # Item lookup page
+│   ├── ItemPage.jsx                # Item lookup page
+│   ├── LocationPage.jsx            # Location encounter lookup page
+│   └── EggMoveTab.jsx              # Egg move breeding chain explorer
 ├── hooks/
 │   ├── useAbilityDescriptions.js   # Fetch and cache ability flavor text
 │   ├── useEvolutionChain.js        # Fetch and process evolution chains
@@ -69,9 +92,10 @@ src/
 │   ├── useVersionSprite.js         # Select version-appropriate sprites
 │   └── index.js                    # Hook barrel export
 └── utils/
-    ├── pokeCache.js                # Dual-layer caching (memory + localStorage)
+    ├── pokeCache.js                # Dual-layer caching (memory + localStorage) with batch preloading
     ├── tradebackMoves.js           # Gen 1 tradeback move compatibility data
-    └── versionInfo.js              # Version/generation mappings and utilities
+    ├── typeEffectiveness.js        # Defensive type charts for Gen 1, Gen 2–5, and Gen 6+
+    └── versionInfo.js              # Version/generation mappings, transfer rules, and egg group utilities
 ```
 
 ## Getting Started
@@ -101,6 +125,12 @@ npm run build
 ```
 
 The optimized production build will be output to the `dist/` folder.
+
+### Deploying to GitHub Pages
+
+```bash
+npm run deploy
+```
 
 ## Tech Stack
 
