@@ -865,7 +865,7 @@ export default function EggMoveTab({
       </div>
 
       {error && !loadingPokemon && eggMoves.length === 0 && <div className="error">{error}</div>}
-      {loadingPokemon && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball" /></div>}
+      {loadingPokemon && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted playsInline className="loading-pokeball" /></div>}
 
       {pokemonData && eggMoves.length > 0 && (
         <>
@@ -967,7 +967,7 @@ export default function EggMoveTab({
                             <td className="location-method-cell" style={{ color: 'var(--text-muted)' }}>
                               {parentsByMove[eggMove.name]
                                 ? `${parents.length} parent${parents.length !== 1 ? 's' : ''}`
-                                : <video src="/simple_pokeball.webm" autoPlay loop muted className="egg-move-inline-loader" />
+                                : <video src="/simple_pokeball.webm" autoPlay loop muted playsInline className="egg-move-inline-loader" />
                               }
                             </td>
                             <td className="location-method-cell" style={{ color: 'var(--text-muted)' }}>
@@ -976,7 +976,7 @@ export default function EggMoveTab({
                                     const count = getDistinctMethodCount(eggMove.name)
                                     return `${count} method${count !== 1 ? 's' : ''}`
                                   })()
-                                : <video src="/simple_pokeball.webm" autoPlay loop muted className="egg-move-inline-loader" />
+                                : <video src="/simple_pokeball.webm" autoPlay loop muted playsInline className="egg-move-inline-loader" />
                               }
                             </td>
                             <td className="egg-move-type-cell">
@@ -994,7 +994,7 @@ export default function EggMoveTab({
                             rows.push(
                               <tr key={`${eggMove.name}-loading`} className="location-detail-row">
                                 <td colSpan="5" style={{ textAlign: 'center', padding: '8px' }}>
-                                  <video src="/simple_pokeball.webm" autoPlay loop muted className="egg-move-inline-loader" />
+                                  <video src="/simple_pokeball.webm" autoPlay loop muted playsInline className="egg-move-inline-loader" />
                                 </td>
                               </tr>
                             )

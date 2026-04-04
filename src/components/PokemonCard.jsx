@@ -369,7 +369,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
     )}>
       {loading ? (
         <div className="move-loading">
-          <video src="/simple_pokeball.webm" autoPlay loop muted className="move-loading-gif" />
+          <video src="/simple_pokeball.webm" autoPlay loop muted playsInline className="move-loading-gif" />
         </div>
       ) : (
       <table className={`move-table${compact ? ' move-table-compact' : ''}`} style={{ margin: '0', ...(compact ? {} : { tableLayout: 'fixed' }) }}>
@@ -773,7 +773,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   }
 
   if (!pokemon) {
-    return <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball" /></div>
+    return <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted playsInline className="loading-pokeball" /></div>
   }
 
   const englishEntries = species?.flavor_text_entries?.filter(entry => entry.language?.name === 'en') || []

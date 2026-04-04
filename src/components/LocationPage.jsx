@@ -457,7 +457,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
       </div>
 
       {locationError && <div className="error">{locationError}</div>}
-      {locationLoading && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball" /></div>}
+      {locationLoading && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted playsInline className="loading-pokeball" /></div>}
 
       {locationData && (
         <>

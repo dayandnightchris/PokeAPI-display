@@ -493,7 +493,7 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
       </div>
 
       {itemError && <div className="error">{itemError}</div>}
-      {itemLoading && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball" /></div>}
+      {itemLoading && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted playsInline className="loading-pokeball" /></div>}
 
       {itemData && (
         <>

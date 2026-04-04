@@ -520,7 +520,7 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
       </div>
 
       {abilityError && <div className="error">{abilityError}</div>}
-      {abilityLoading && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball" /></div>}
+      {abilityLoading && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted playsInline className="loading-pokeball" /></div>}
 
       {abilityData && (
         <>
@@ -561,7 +561,7 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
               <h3>Pokémon with {formatAbilityName(abilityData.name)}</h3>
               {pokemonLoading && (
                 <span className="ability-pokemon-progress">
-                  <video src="/simple_pokeball.webm" autoPlay loop muted className="loading-pokeball-inline" />
+                  <video src="/simple_pokeball.webm" autoPlay loop muted playsInline className="loading-pokeball-inline" />
                   {pokemonProgress.loaded}/{pokemonProgress.total}
                 </span>
               )}
