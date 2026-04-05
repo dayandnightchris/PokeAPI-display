@@ -1751,6 +1751,61 @@
 }
 
 /* =========================
+   Type Matchup Tooltip
+   ========================= */
+
+.type-matchup-tooltip {
+  position: absolute;
+  z-index: 10000;
+  background-color: #222;
+  border: 2px solid #555;
+  border-radius: 6px;
+  padding: 12px;
+  width: max-content;
+  max-width: 320px;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  cursor: default;
+}
+
+.type-matchup-tooltip .matchup-section {
+  margin-bottom: 8px;
+}
+
+.type-matchup-tooltip .matchup-section:last-child {
+  margin-bottom: 0;
+}
+
+.type-matchup-tooltip .matchup-label {
+  color: #aaa;
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.type-matchup-tooltip .matchup-types {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.type-matchup-tooltip .matchup-type-chip {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
+.type-matchup-tooltip .matchup-none {
+  color: #888;
+  font-size: 11px;
+}
+
+/* =========================
    Responsive / Mobile
    ========================= */
 
@@ -1772,13 +1827,21 @@
   }
 
   .search-container input {
-    font-size: 0.9rem;
+    font-size: 16px; /* Prevents iOS auto-zoom on focus */
     padding: 0.6rem;
   }
 
   .search-container button {
     padding: 0.6rem 1rem;
-    font-size: 0.9rem;
+    font-size: 16px;
+  }
+
+  /* Prevent iOS auto-zoom on all interactive elements */
+  .version-dropdown,
+  select,
+  input[type="text"],
+  input[type="number"] {
+    font-size: 16px !important;
   }
 
   /* Version selector stacks */
@@ -1987,6 +2050,14 @@
   .location-box table th:nth-child(4),
   .location-box table td:nth-child(4) {
     width: 17%;
+  }
+
+  /* Type matchup tooltip — constrain to viewport on mobile */
+  .type-matchup-tooltip {
+    max-width: calc(100vw - 32px);
+    width: auto;
+    left: 0;
+    right: auto;
   }
 
   /* Show/hide helpers for responsive text */

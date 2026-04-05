@@ -939,105 +939,47 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                       textTransform: 'capitalize',
                       fontSize: '12px',
                       fontWeight: 'bold',
-                      position: 'relative',
                       cursor: 'help',
                       display: 'inline-block',
                       marginRight: '8px'
                     }}
                     onMouseEnter={() => setHoveredType(type.type.name)}
                     onMouseLeave={() => setHoveredType(null)}
+                    onClick={() => setHoveredType(prev => prev === type.type.name ? null : type.type.name)}
                   >
                     {type.type.name}
-                    {getCombinedTypeMatchups() && hoveredType === type.type.name && (
-                        <div style={{
-                          position: 'absolute',
-                          zIndex: 10000,
-                          backgroundColor: '#222',
-                          border: '2px solid #555',
-                          borderRadius: '6px',
-                          padding: '12px',
-                          minWidth: '280px',
-                          bottom: '100%',
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          marginBottom: '6px',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
-                        }}>
-                          <div style={{ marginBottom: '8px' }}>
-                            <div style={{ color: '#aaa', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>Immune to:</div>
-                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                              {getCombinedTypeMatchups().immune.length > 0 ? (
-                                getCombinedTypeMatchups().immune.map(t => (
-                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t), padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
-                                    {t}
-                                  </span>
-                                ))
-                              ) : (
-                                <span style={{ color: '#888', fontSize: '11px' }}>None</span>
-                              )}
-                            </div>
-                          </div>
-                          <div style={{ marginBottom: '8px' }}>
-                            <div style={{ color: '#aaa', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>Very Resistant to:</div>
-                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                              {getCombinedTypeMatchups().veryResistant.length > 0 ? (
-                                getCombinedTypeMatchups().veryResistant.map(t => (
-                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t), padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
-                                    {t}
-                                  </span>
-                                ))
-                              ) : (
-                                <span style={{ color: '#888', fontSize: '11px' }}>None</span>
-                              )}
-                            </div>
-                          </div>
-                          <div style={{ marginBottom: '8px' }}>
-                            <div style={{ color: '#aaa', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>Resists:</div>
-                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                              {getCombinedTypeMatchups().resists.length > 0 ? (
-                                getCombinedTypeMatchups().resists.map(t => (
-                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t), padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
-                                    {t}
-                                  </span>
-                                ))
-                              ) : (
-                                <span style={{ color: '#888', fontSize: '11px' }}>None</span>
-                              )}
-                            </div>
-                          </div>
-                          <div style={{ marginBottom: '8px' }}>
-                            <div style={{ color: '#aaa', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>Weak to:</div>
-                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                              {getCombinedTypeMatchups().weak.length > 0 ? (
-                                getCombinedTypeMatchups().weak.map(t => (
-                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t), padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
-                                    {t}
-                                  </span>
-                                ))
-                              ) : (
-                                <span style={{ color: '#888', fontSize: '11px' }}>None</span>
-                              )}
-                            </div>
-                          </div>
-                          <div>
-                            <div style={{ color: '#aaa', fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>Very Weak to:</div>
-                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                              {getCombinedTypeMatchups().veryWeak.length > 0 ? (
-                                getCombinedTypeMatchups().veryWeak.map(t => (
-                                  <span key={t} style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t), padding: '2px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
-                                    {t}
-                                  </span>
-                                ))
-                              ) : (
-                                <span style={{ color: '#888', fontSize: '11px' }}>None</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </span>
-                  ))}
+                  </span>
+                ))}
               </div>
+              {getCombinedTypeMatchups() && hoveredType && (
+                <div
+                  className="type-matchup-tooltip"
+                  onMouseLeave={() => setHoveredType(null)}
+                >
+                  {[
+                    { label: 'Immune to', types: getCombinedTypeMatchups().immune },
+                    { label: 'Very Resistant to', types: getCombinedTypeMatchups().veryResistant },
+                    { label: 'Resists', types: getCombinedTypeMatchups().resists },
+                    { label: 'Weak to', types: getCombinedTypeMatchups().weak },
+                    { label: 'Very Weak to', types: getCombinedTypeMatchups().veryWeak },
+                  ].map(({ label, types: matchupTypes }) => (
+                    <div key={label} className="matchup-section">
+                      <div className="matchup-label">{label}:</div>
+                      <div className="matchup-types">
+                        {matchupTypes.length > 0 ? (
+                          matchupTypes.map(t => (
+                            <span key={t} className="matchup-type-chip" style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t) }}>
+                              {t}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="matchup-none">None</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="info-row">
               <span className="label">Height:</span>
