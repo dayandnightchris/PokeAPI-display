@@ -41,15 +41,21 @@ function getUrlParams() {
 /**
  * Update the URL path without triggering a page reload.
  * Produces paths like /PokeAPI-display/pokemon/[version]/[form], etc.
+ * @param {boolean} push - If true, creates a new history entry (pushState);
+ *                         if false (default), replaces the current entry (replaceState).
  */
-function updateUrl(tab, { version, name }) {
+function updateUrl(tab, { version, name }, push = false) {
   let path = BASE_PATH + '/'
   if (name && tab) {
     path = version
       ? `${BASE_PATH}/${tab}/${version}/${name}`
       : `${BASE_PATH}/${tab}/${name}`
   }
-  window.history.replaceState(null, '', path)
+  if (push) {
+    window.history.pushState({ tab, version, name }, '', path)
+  } else {
+    window.history.replaceState({ tab, version, name }, '', path)
+  }
 }
 
 const TABS = [
@@ -332,7 +338,7 @@ function App() {
   const navigateToMove = useCallback((moveName) => {
     const currentVersion = urlStateRef.current.version
     urlStateRef.current = { version: currentVersion, name: moveName }
-    updateUrl('moves', urlStateRef.current)
+    updateUrl('moves', urlStateRef.current, true)
     setMovePageInit(prev => ({ move: moveName, version: currentVersion, key: prev.key + 1 }))
     setActiveTab('moves')
     window.scrollTo(0, 0)
@@ -342,7 +348,7 @@ function App() {
   const navigateToAbility = useCallback((abilityName) => {
     const currentVersion = urlStateRef.current.version
     urlStateRef.current = { version: currentVersion, name: abilityName }
-    updateUrl('abilities', urlStateRef.current)
+    updateUrl('abilities', urlStateRef.current, true)
     setAbilityPageInit(prev => ({ ability: abilityName, version: currentVersion, key: prev.key + 1 }))
     setActiveTab('abilities')
     window.scrollTo(0, 0)
@@ -352,7 +358,7 @@ function App() {
   const navigateToItem = useCallback((itemName) => {
     const currentVersion = urlStateRef.current.version
     urlStateRef.current = { version: currentVersion, name: itemName }
-    updateUrl('items', urlStateRef.current)
+    updateUrl('items', urlStateRef.current, true)
     setItemPageInit(prev => ({ item: itemName, version: currentVersion, key: prev.key + 1 }))
     setActiveTab('items')
     window.scrollTo(0, 0)
@@ -362,7 +368,7 @@ function App() {
   const navigateToLocation = useCallback((locationName) => {
     const currentVersion = urlStateRef.current.version
     urlStateRef.current = { version: currentVersion, name: locationName }
-    updateUrl('locations', urlStateRef.current)
+    updateUrl('locations', urlStateRef.current, true)
     setLocationPageInit(prev => ({ location: locationName, version: currentVersion, key: prev.key + 1 }))
     setActiveTab('locations')
     window.scrollTo(0, 0)
@@ -372,7 +378,7 @@ function App() {
   const navigateToEggMoves = useCallback((pokemonName, moveName) => {
     const currentVersion = urlStateRef.current.version
     urlStateRef.current = { version: currentVersion, name: pokemonName }
-    updateUrl('eggmoves', urlStateRef.current)
+    updateUrl('eggmoves', urlStateRef.current, true)
     setEggMovePageInit(prev => ({ pokemon: pokemonName, version: currentVersion, expandMove: moveName || null, key: prev.key + 1 }))
     setActiveTab('eggmoves')
     window.scrollTo(0, 0)
@@ -381,7 +387,7 @@ function App() {
   // Navigate from MovePage → PokemonCard
   const navigateToPokemon = useCallback((pokemonName, version) => {
     urlStateRef.current = { version: version || null, name: pokemonName }
-    updateUrl('pokemon', urlStateRef.current)
+    updateUrl('pokemon', urlStateRef.current, true)
     if (version) setInitialVersion(version)
     setPokemonPageInit(prev => ({ name: pokemonName, version: version || null, key: prev.key + 1 }))
     setActiveTab('pokemon')
@@ -544,6 +550,50 @@ function App() {
       }
     }
   }
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = getUrlParams()
+      const tab = params.tab || 'pokemon'
+      const { version, name } = params
+
+      // Sync the URL state ref
+      urlStateRef.current = { version: version || null, name: name || null }
+
+      // Restore the correct tab and its init state
+      setActiveTab(tab)
+
+      if (tab === 'pokemon') {
+        if (version) setInitialVersion(version)
+        if (name) {
+          setSearchQuery(name)
+          setPokemonPageInit(prev => ({ name, version, key: prev.key + 1 }))
+          fetchPokemon(name)
+        } else {
+          // Going back to empty pokemon landing
+          setPokemon(null)
+          setError(null)
+          setSearchQuery('')
+        }
+      } else if (tab === 'moves') {
+        setMovePageInit(prev => ({ move: name || null, version: version || null, key: prev.key + 1 }))
+      } else if (tab === 'abilities') {
+        setAbilityPageInit(prev => ({ ability: name || null, version: version || null, key: prev.key + 1 }))
+      } else if (tab === 'items') {
+        setItemPageInit(prev => ({ item: name || null, version: version || null, key: prev.key + 1 }))
+      } else if (tab === 'locations') {
+        setLocationPageInit(prev => ({ location: name || null, version: version || null, key: prev.key + 1 }))
+      } else if (tab === 'eggmoves') {
+        setEggMovePageInit(prev => ({ pokemon: name || null, version: version || null, key: prev.key + 1 }))
+      }
+
+      window.scrollTo(0, 0)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Switch tabs, carrying the most recently set game version to the destination tab
   const handleTabSwitch = useCallback((tabId) => {
