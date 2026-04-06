@@ -38,9 +38,14 @@
 }
 
 .version-dropdown:focus {
-  outline: none;
   border-color: #ff0000;
   box-shadow: 0 0 3px rgba(255, 0, 0, 0.3);
+  outline: 2px solid transparent;
+}
+
+.version-dropdown:focus-visible {
+  outline: 2px solid #ff0000;
+  outline-offset: 2px;
 }
 
 .version-loading {
@@ -183,8 +188,13 @@
 }
 
 .search-container input:focus {
-  outline: none;
   border-color: #ff0000;
+  outline: 2px solid transparent;
+}
+
+.search-container input:focus-visible {
+  outline: 2px solid #ff0000;
+  outline-offset: 2px;
 }
 
 .search-container button {
