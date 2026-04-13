@@ -106,6 +106,21 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
 }
 
+[data-theme="dark"] .hidden-badge {
+  background: #2a1a3a;
+  color: #ce93d8;
+}
+
+[data-theme="dark"] .slot-badge-1 {
+  background: #1a2a3a;
+  color: #90caf9;
+}
+
+[data-theme="dark"] .slot-badge-2 {
+  background: #1a3a1a;
+  color: #81c784;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -512,13 +527,31 @@ body {
   border-left: 2px solid var(--primary-color);
 }
 
+.hidden-badge,
+.slot-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 70px;
+  text-align: center;
+}
+
 .hidden-badge {
-  font-size: 13px;
-  background: var(--primary-color);
-  color: white;
-  padding: 2px 6px;
-  border-radius: 2px;
-  font-weight: bold;
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.slot-badge-1 {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.slot-badge-2 {
+  background: #e8f5e9;
+  color: #2e7d32;
 }
 
 /* Stats Compact Display */
@@ -1183,9 +1216,10 @@ body {
     font-size: 10px;
   }
 
-  .hidden-badge {
-    font-size: 9px;
+  .hidden-badge,
+  .slot-badge {
     padding: 1px 4px;
+    font-size: 9px;
   }
 
   .evo-button {

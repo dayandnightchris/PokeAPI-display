@@ -1008,7 +1008,10 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                       <span className="tooltip-text">{abilityDescriptions[ability.ability.name].description}</span>
                     )}
                   </span>
-                  {showHiddenBadge(ability.is_hidden) && <span className="hidden-badge">Hidden</span>}
+                  {showHiddenBadge(ability.is_hidden)
+                    ? <span className="hidden-badge">Hidden</span>
+                    : <span className={`slot-badge slot-badge-${ability.slot}`}>Ability {ability.slot}</span>
+                  }
                 </div>
               ))
             ) : (
