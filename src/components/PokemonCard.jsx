@@ -957,10 +957,13 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                 ))}
                 {getCombinedTypeMatchups() && (hoveredType || pinnedType) && (
                   <div
-                    className="type-matchup-tooltip"
+                    className={`type-matchup-tooltip${pinnedType ? ' is-pinned' : ''}`}
                     onPointerLeave={(e) => { if (e.pointerType === 'mouse') setHoveredType(null) }}
                     onClick={() => setPinnedType(null)}
                   >
+                    <span className="matchup-lock-icon" title={pinnedType ? 'Tap to dismiss' : ''}>
+                      {pinnedType ? '🔒' : '🔓'}
+                    </span>
                     {[
                       { label: 'Immune to', types: getCombinedTypeMatchups().immune },
                       { label: 'Very Resistant to', types: getCombinedTypeMatchups().veryResistant },

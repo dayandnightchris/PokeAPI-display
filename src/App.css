@@ -1774,10 +1774,20 @@
   width: max-content;
   max-width: 320px;
   bottom: 100%;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   margin-bottom: 6px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
   cursor: default;
+}
+
+.type-matchup-tooltip.is-pinned {
+  border-color: #f8c300;
+}
+
+/* Hidden on desktop, shown on mobile via media query */
+.matchup-lock-icon {
+  display: none;
 }
 
 .type-matchup-tooltip .matchup-section {
@@ -2064,10 +2074,24 @@
 
   /* Type matchup tooltip — constrain to viewport on mobile */
   .type-matchup-tooltip {
-    max-width: calc(100vw - 32px);
-    width: calc(100vw - 32px);
-    left: 0;
-    right: auto;
+    max-width: 260px;
+    width: max-content;
+    left: auto;
+    right: 0;
+    transform: none;
+    padding-top: 28px;
+  }
+
+  .matchup-lock-icon {
+    display: block;
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 12px;
+    opacity: 0.6;
+    pointer-events: none;
+    user-select: none;
+    line-height: 1;
   }
 
   /* Show/hide helpers for responsive text */
@@ -2077,7 +2101,9 @@
 
 @media (max-width: 480px) {
   .type-matchup-tooltip {
-    left: 0;
+    left: auto;
+    right: 0;
+    transform: none;
   }
 
   .version-selector {
