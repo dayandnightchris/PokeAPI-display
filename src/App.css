@@ -2065,7 +2065,7 @@
   /* Type matchup tooltip — constrain to viewport on mobile */
   .type-matchup-tooltip {
     max-width: calc(100vw - 32px);
-    width: auto;
+    width: calc(100vw - 32px);
     left: 0;
     right: auto;
   }
@@ -2076,14 +2076,14 @@
 }
 
 @media (max-width: 480px) {
+  .type-matchup-tooltip {
+    left: 0;
+  }
+
   .version-selector {
     padding: px;
     gap: 3px;
     margin-bottom: 5px;
-  }
-
-  .search-input-wrapper {
-    
   }
 
   .search-container button {

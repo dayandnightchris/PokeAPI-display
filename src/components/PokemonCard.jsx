@@ -434,6 +434,7 @@ function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading,
 export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, onAbilityClick, onItemClick, onLocationClick, onEggMoveClick, initialForm, initialVersion, onStateChange, searchLists, onUnifiedNavigate, searchLoading, initialQuery }) {
   // UI state
   const [hoveredType, setHoveredType] = useState(null)
+  const [pinnedType, setPinnedType] = useState(null)
   const [versionInfo, setVersionInfo] = useState(null)
 
   // Refs for scroll navigation
@@ -924,7 +925,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
               <span className="label">#</span>
               <span className="value">{nationalDexNumber || 'Unknown'}</span>
             </div>
-            <div className="info-row" style={{ position: 'relative' }}>
+            <div className="info-row">
               <span className="label">Type:</span>
               <div className="types-inline">
                 {generationTypes?.map(type => (
@@ -943,43 +944,48 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                       display: 'inline-block',
                       marginRight: '8px'
                     }}
-                    onMouseEnter={() => setHoveredType(type.type.name)}
-                    onMouseLeave={() => setHoveredType(null)}
-                    onClick={() => setHoveredType(prev => prev === type.type.name ? null : type.type.name)}
+                    onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHoveredType(type.type.name) }}
+                    onPointerLeave={(e) => { if (e.pointerType === 'mouse') setHoveredType(null) }}
+                    onClick={(e) => {
+                      if (e.pointerType !== 'mouse') {
+                        setPinnedType(prev => prev === type.type.name ? null : type.type.name)
+                      }
+                    }}
                   >
                     {type.type.name}
                   </span>
                 ))}
-              </div>
-              {getCombinedTypeMatchups() && hoveredType && (
-                <div
-                  className="type-matchup-tooltip"
-                  onMouseLeave={() => setHoveredType(null)}
-                >
-                  {[
-                    { label: 'Immune to', types: getCombinedTypeMatchups().immune },
-                    { label: 'Very Resistant to', types: getCombinedTypeMatchups().veryResistant },
-                    { label: 'Resists', types: getCombinedTypeMatchups().resists },
-                    { label: 'Weak to', types: getCombinedTypeMatchups().weak },
-                    { label: 'Very Weak to', types: getCombinedTypeMatchups().veryWeak },
-                  ].map(({ label, types: matchupTypes }) => (
-                    <div key={label} className="matchup-section">
-                      <div className="matchup-label">{label}:</div>
-                      <div className="matchup-types">
-                        {matchupTypes.length > 0 ? (
-                          matchupTypes.map(t => (
-                            <span key={t} className="matchup-type-chip" style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t) }}>
-                              {t}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="matchup-none">None</span>
-                        )}
+                {getCombinedTypeMatchups() && (hoveredType || pinnedType) && (
+                  <div
+                    className="type-matchup-tooltip"
+                    onPointerLeave={(e) => { if (e.pointerType === 'mouse') setHoveredType(null) }}
+                    onClick={() => setPinnedType(null)}
+                  >
+                    {[
+                      { label: 'Immune to', types: getCombinedTypeMatchups().immune },
+                      { label: 'Very Resistant to', types: getCombinedTypeMatchups().veryResistant },
+                      { label: 'Resists', types: getCombinedTypeMatchups().resists },
+                      { label: 'Weak to', types: getCombinedTypeMatchups().weak },
+                      { label: 'Very Weak to', types: getCombinedTypeMatchups().veryWeak },
+                    ].map(({ label, types: matchupTypes }) => (
+                      <div key={label} className="matchup-section">
+                        <div className="matchup-label">{label}:</div>
+                        <div className="matchup-types">
+                          {matchupTypes.length > 0 ? (
+                            matchupTypes.map(t => (
+                              <span key={t} className="matchup-type-chip" style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t) }}>
+                                {t}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="matchup-none">None</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="info-row">
               <span className="label">Height:</span>
