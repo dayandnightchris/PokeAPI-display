@@ -946,10 +946,9 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                     }}
                     onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHoveredType(type.type.name) }}
                     onPointerLeave={(e) => { if (e.pointerType === 'mouse') setHoveredType(null) }}
-                    onClick={(e) => {
-                      if (e.pointerType !== 'mouse') {
-                        setPinnedType(prev => prev === type.type.name ? null : type.type.name)
-                      }
+                    onTouchEnd={(e) => {
+                      e.preventDefault()
+                      setPinnedType(prev => prev === type.type.name ? null : type.type.name)
                     }}
                   >
                     {type.type.name}
@@ -959,7 +958,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                   <div
                     className={`type-matchup-tooltip${pinnedType ? ' is-pinned' : ''}`}
                     onPointerLeave={(e) => { if (e.pointerType === 'mouse') setHoveredType(null) }}
-                    onClick={() => setPinnedType(null)}
+                    onTouchEnd={(e) => { e.preventDefault(); setPinnedType(null) }}
                   >
                     <span className="matchup-lock-icon" title={pinnedType ? 'Tap to dismiss' : ''}>
                       {pinnedType ? '🔒' : '🔓'}
