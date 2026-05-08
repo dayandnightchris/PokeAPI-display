@@ -123,6 +123,7 @@ export default function EggMoveTab({
   const [loadingParents, setLoadingParents] = useState({}) // moveName → bool
   const [error, setError] = useState(null)
   const [sortConfig, setSortConfig] = useState({ key: 'move', direction: 'asc' })
+  const [moveInfoCache, setMoveInfoCache] = useState({}) // moveName → { type, power }
 
   const requestIdRef = useRef(0)
   const expandMoveRef = useRef(initialExpandMove || null)
@@ -579,6 +580,22 @@ export default function EggMoveTab({
     })
   }, [eggMoves, speciesData, allEggGroups]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Pre-fetch move type/power for sorting
+  useEffect(() => {
+    if (eggMoves.length === 0) return
+    eggMoves.forEach(m => {
+      if (moveInfoCache[m.name]) return
+      fetchMoveCached(m.name).then(data => {
+        if (data) {
+          setMoveInfoCache(prev => ({
+            ...prev,
+            [m.name]: { type: data.type?.name || null, power: data.power ?? null },
+          }))
+        }
+      })
+    })
+  }, [eggMoves]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-expand and scroll to a specific move if initialExpandMove was provided
   useEffect(() => {
     if (!expandMoveRef.current || scrolledToMoveRef.current) return
@@ -774,6 +791,18 @@ export default function EggMoveTab({
         result = getDistinctMethodCount(a.name) - getDistinctMethodCount(b.name)
         break
       }
+      case 'type': {
+        const aType = moveInfoCache[a.name]?.type || 'zzz'
+        const bType = moveInfoCache[b.name]?.type || 'zzz'
+        result = aType.localeCompare(bType)
+        break
+      }
+      case 'power': {
+        const aPow = moveInfoCache[a.name]?.power ?? -1
+        const bPow = moveInfoCache[b.name]?.power ?? -1
+        result = aPow - bPow
+        break
+      }
       default:
         result = a.name.localeCompare(b.name)
     }
@@ -926,8 +955,16 @@ export default function EggMoveTab({
                             Methods{getSortIndicator('methods')}
                           </button>
                         </th>
-                        <th style={{ width: '20%' }}>Type</th>
-                        <th style={{ width: '15%' }}>Power</th>
+                        <th style={{ width: '20%' }}>
+                          <button type="button" onClick={() => handleSort('type')}>
+                            Type{getSortIndicator('type')}
+                          </button>
+                        </th>
+                        <th style={{ width: '15%' }}>
+                          <button type="button" onClick={() => handleSort('power')}>
+                            Power{getSortIndicator('power')}
+                          </button>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
