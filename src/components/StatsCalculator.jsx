@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { versionGeneration } from '../utils/versionInfo'
+import { getTypeEffectiveness } from '../utils/typeEffectiveness'
 
 export default function StatsCalculator({ pokemon, stats: statsProp, selectedVersion }) {
   const [level, setLevel] = useState(50)
@@ -7,6 +8,18 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
   const [ivs, setIvs] = useState({ hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31, spc: 15 })
   const [evs, setEvs] = useState({ hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0, spc: 0 })
   const [maxedOrder, setMaxedOrder] = useState([]) // FILO tracking for maxed EVs
+
+  // Damage calculator mode
+  const [calcMode, setCalcMode] = useState('stats') // 'stats' | 'damage'
+  const [dmgMoveType, setDmgMoveType] = useState('normal')
+  const [dmgCategory, setDmgCategory] = useState('physical')
+  const [dmgPower, setDmgPower] = useState(80)
+  const [dmgDefType1, setDmgDefType1] = useState('normal')
+  const [dmgDefType2, setDmgDefType2] = useState('none')
+  const [dmgDefStat, setDmgDefStat] = useState(100)
+  const [dmgStab, setDmgStab] = useState(false)
+  const [dmgCrit, setDmgCrit] = useState(false)
+  const [dmgBurned, setDmgBurned] = useState(false)
 
   // Determine if we're in a legacy generation (Gen 1-2)
   const currentGen = selectedVersion ? versionGeneration[selectedVersion] : null
@@ -202,8 +215,93 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
     setLevel(prev => clampLevel(prev + delta))
   }
 
+  // ── Damage Calculator helpers ─────────────────────────────────────────────
+  const GEN1_TYPES = ['normal','fire','water','electric','grass','ice','fighting','poison','ground','flying','psychic','bug','rock','ghost','dragon']
+  const GEN2_5_TYPES = [...GEN1_TYPES, 'dark','steel']
+  const MODERN_TYPES = [...GEN1_TYPES, 'dark','steel','fairy']
+  const availableTypes = currentGen === 1 ? GEN1_TYPES : (currentGen >= 2 && currentGen <= 5) ? GEN2_5_TYPES : MODERN_TYPES
+
+  const pokemonTypes = pokemon?.types?.map(t => t.type.name) || []
+
+  // Auto-detect STAB when move type changes
+  useEffect(() => {
+    setDmgStab(pokemonTypes.includes(dmgMoveType))
+  }, [dmgMoveType]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const getTypeMultiplier = (chart, moveType, defType) => {
+    const entry = chart[defType]
+    if (!entry) return 1
+    if (entry.immune.includes(moveType)) return 0
+    if (entry.weak.includes(moveType)) return 2
+    if (entry.resists.includes(moveType)) return 0.5
+    return 1
+  }
+
+  const getAttackerStatForDmg = () => {
+    const key = isLegacy
+      ? (dmgCategory === 'physical' ? 'atk' : 'spc')
+      : (dmgCategory === 'physical' ? 'atk' : 'spa')
+    return stats.find(s => s.key === key)?.calculated || 0
+  }
+
+  const calcDamageRange = () => {
+    const power = parseInt(dmgPower) || 0
+    const defStat = parseInt(dmgDefStat) || 0
+    if (power <= 0 || defStat <= 0) return null
+    const atkStat = getAttackerStatForDmg()
+    if (!atkStat) return null
+
+    const base = Math.floor(Math.floor((2 * level / 5 + 2) * power * atkStat / defStat) / 50) + 2
+
+    const chart = getTypeEffectiveness(selectedVersion)
+    const mult1 = getTypeMultiplier(chart, dmgMoveType, dmgDefType1)
+    const mult2 = dmgDefType2 !== 'none' ? getTypeMultiplier(chart, dmgMoveType, dmgDefType2) : 1
+    const effectiveness = mult1 * mult2
+
+    let damage = base
+    if (dmgStab) damage = Math.floor(damage * 1.5)
+    damage = Math.floor(damage * effectiveness)
+    if (dmgCrit) damage = Math.floor(damage * (currentGen && currentGen <= 5 ? 2 : 1.5))
+    if (dmgBurned && dmgCategory === 'physical') damage = Math.floor(damage * 0.5)
+
+    return { min: Math.floor(damage * 0.85), max: damage, effectiveness, atkStat }
+  }
+
+  const effectivenessLabel = (mult) => {
+    if (mult === 0) return { text: 'Immune (0×)', color: '#888' }
+    if (mult <= 0.25) return { text: 'Not very effective (0.25×)', color: '#6890F0' }
+    if (mult < 1) return { text: 'Not very effective (0.5×)', color: '#6890F0' }
+    if (mult >= 4) return { text: 'Super effective (4×)', color: '#b71c1c' }
+    if (mult === 2) return { text: 'Super effective (2×)', color: '#e53935' }
+    return { text: 'Normal (1×)', color: 'var(--text-secondary, #888)' }
+  }
+
   return (
     <div className="stats-calculator">
+      {/* Mode toggle */}
+      <div style={{ display: 'flex', marginBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-light, #ddd)' }}>
+          {[['stats', 'Stats'], ['damage', 'Damage']].map(([mode, label], i) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setCalcMode(mode)}
+              style={{
+                padding: '0.35rem 1.1rem',
+                background: calcMode === mode ? 'var(--accent, #6890F0)' : 'var(--control-bg, #fafafa)',
+                color: calcMode === mode ? '#fff' : 'var(--text-color, #333)',
+                border: 'none',
+                borderLeft: i > 0 ? '1px solid var(--border-light, #ddd)' : 'none',
+                cursor: 'pointer',
+                fontWeight: calcMode === mode ? 'bold' : 'normal',
+                fontSize: '0.9rem',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="calculator-controls" style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div className="control-group">
           <label htmlFor="level">Level:</label>
@@ -271,6 +369,8 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
         )}
       </div>
 
+      {calcMode === 'stats' && (
+        <>
       <div className="stats-display" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         {stats.map(stat => {
           const barColor = getStatColor(stat.calculated) // Use calculated stat for color
@@ -393,6 +493,155 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
         <span></span>
         <span style={{ fontWeight: 'bold', textAlign: 'right' }}>Final</span>
       </div>
+        </>
+      )}
+
+      {calcMode === 'damage' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Move config */}
+          <div style={{ background: 'var(--control-bg, #fafafa)', borderRadius: '6px', padding: '0.75rem 1rem' }}>
+            <div style={{ fontWeight: '600', marginBottom: '0.6rem', fontSize: '0.8rem', color: 'var(--text-secondary, #666)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Move</div>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div className="control-group">
+                <label>Type</label>
+                <select value={dmgMoveType} onChange={e => setDmgMoveType(e.target.value)}>
+                  {availableTypes.map(t => (
+                    <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="control-group">
+                <label>Category</label>
+                <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-light, #ddd)' }}>
+                  {['physical', 'special'].map((cat, i) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setDmgCategory(cat)}
+                      style={{
+                        padding: '0.35rem 0.75rem',
+                        background: dmgCategory === cat ? 'var(--accent, #6890F0)' : 'transparent',
+                        color: dmgCategory === cat ? '#fff' : 'var(--text-color, #333)',
+                        border: 'none',
+                        borderLeft: i > 0 ? '1px solid var(--border-light, #ddd)' : 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem',
+                        fontWeight: dmgCategory === cat ? 'bold' : 'normal',
+                      }}
+                    >
+                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="control-group">
+                <label>Base Power</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="999"
+                  value={dmgPower}
+                  onChange={e => setDmgPower(e.target.value)}
+                  style={{ width: '70px', textAlign: 'center', padding: '0.35rem' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Defender config */}
+          <div style={{ background: 'var(--control-bg, #fafafa)', borderRadius: '6px', padding: '0.75rem 1rem' }}>
+            <div style={{ fontWeight: '600', marginBottom: '0.6rem', fontSize: '0.8rem', color: 'var(--text-secondary, #666)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Defender</div>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div className="control-group">
+                <label>Type 1</label>
+                <select value={dmgDefType1} onChange={e => setDmgDefType1(e.target.value)}>
+                  {availableTypes.map(t => (
+                    <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="control-group">
+                <label>Type 2</label>
+                <select value={dmgDefType2} onChange={e => setDmgDefType2(e.target.value)}>
+                  <option value="none">—</option>
+                  {availableTypes.map(t => (
+                    <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="control-group">
+                <label>{isLegacy ? (dmgCategory === 'physical' ? 'Def Stat' : 'Spc Stat') : (dmgCategory === 'physical' ? 'Def Stat' : 'SpD Stat')}</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="999"
+                  value={dmgDefStat}
+                  onChange={e => setDmgDefStat(e.target.value)}
+                  style={{ width: '70px', textAlign: 'center', padding: '0.35rem' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Modifiers */}
+          <div style={{ background: 'var(--control-bg, #fafafa)', borderRadius: '6px', padding: '0.75rem 1rem' }}>
+            <div style={{ fontWeight: '600', marginBottom: '0.6rem', fontSize: '0.8rem', color: 'var(--text-secondary, #666)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Modifiers</div>
+            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', userSelect: 'none' }}>
+                <input type="checkbox" checked={dmgStab} onChange={e => setDmgStab(e.target.checked)} />
+                STAB (1.5×)
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', userSelect: 'none' }}>
+                <input type="checkbox" checked={dmgCrit} onChange={e => setDmgCrit(e.target.checked)} />
+                Critical Hit ({currentGen && currentGen <= 5 ? '2×' : '1.5×'})
+              </label>
+              {dmgCategory === 'physical' && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', userSelect: 'none' }}>
+                  <input type="checkbox" checked={dmgBurned} onChange={e => setDmgBurned(e.target.checked)} />
+                  Burned Attacker (0.5×)
+                </label>
+              )}
+            </div>
+          </div>
+
+          {/* Output */}
+          {(() => {
+            const result = calcDamageRange()
+            const atkStatLabel = isLegacy
+              ? (dmgCategory === 'physical' ? 'Atk' : 'Spc')
+              : (dmgCategory === 'physical' ? 'Atk' : 'SpA')
+            if (!result) {
+              return (
+                <div style={{ color: 'var(--text-muted, #888)', fontStyle: 'italic', padding: '0.5rem 0' }}>
+                  Enter a valid base power and defender stat to calculate damage.
+                </div>
+              )
+            }
+            const { min, max, effectiveness, atkStat } = result
+            const effInfo = effectivenessLabel(effectiveness)
+            return (
+              <div style={{ background: 'var(--control-bg, #fafafa)', borderRadius: '6px', padding: '1rem', border: '2px solid var(--border-light, #ddd)' }}>
+                <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary, #666)' }}>
+                    Attacker {atkStatLabel}: <strong>{atkStat}</strong>
+                  </span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: effInfo.color }}>
+                    {effInfo.text}
+                  </span>
+                </div>
+                {effectiveness === 0 ? (
+                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#888' }}>No Effect</div>
+                ) : (
+                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--text-color, #333)' }}>
+                    {min === max ? `${max}` : `${min}–${max}`}
+                    <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: 'var(--text-secondary, #666)', marginLeft: '0.5rem' }}>damage</span>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+        </div>
+      )}
     </div>
   )
 }
