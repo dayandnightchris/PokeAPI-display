@@ -1496,7 +1496,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
       <div className="info-box full-width" style={{ marginTop: '10px' }} ref={statsCalcRef}>
         <div className="box-title">Stats Calculator</div>
         <div className="box-content">
-          <StatsCalculator pokemon={displayPokemon} stats={generationStats} selectedVersion={selectedVersion} />
+          <StatsCalculator pokemon={displayPokemon} stats={generationStats} selectedVersion={selectedVersion} moves={moves} />
         </div>
       </div>
 

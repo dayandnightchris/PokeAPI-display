@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { versionGeneration } from '../utils/versionInfo'
 import { getTypeEffectiveness } from '../utils/typeEffectiveness'
 
-export default function StatsCalculator({ pokemon, stats: statsProp, selectedVersion }) {
+export default function StatsCalculator({ pokemon, stats: statsProp, selectedVersion, moves: movesProp }) {
   const [level, setLevel] = useState(50)
   const [nature, setNature] = useState('hardy')
   const [ivs, setIvs] = useState({ hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31, spc: 15 })
@@ -20,6 +20,13 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
   const [dmgStab, setDmgStab] = useState(false)
   const [dmgCrit, setDmgCrit] = useState(false)
   const [dmgBurned, setDmgBurned] = useState(false)
+  const [selectedMove, setSelectedMove] = useState('')
+  const [dmgWeather, setDmgWeather] = useState('none')
+  const [dmgTerrain, setDmgTerrain] = useState('none')
+  const [dmgReflect, setDmgReflect] = useState(false)
+  const [dmgLightScreen, setDmgLightScreen] = useState(false)
+  const [dmgAuroraVeil, setDmgAuroraVeil] = useState(false)
+  const [dmgHelpingHand, setDmgHelpingHand] = useState(false)
 
   // Determine if we're in a legacy generation (Gen 1-2)
   const currentGen = selectedVersion ? versionGeneration[selectedVersion] : null
@@ -223,6 +230,38 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
 
   const pokemonTypes = pokemon?.types?.map(t => t.type.name) || []
 
+  const allMoves = (() => {
+    if (!movesProp) return []
+    const seen = new Set()
+    const list = []
+    for (const cat of ['levelUp', 'tm', 'tutor', 'egg', 'special', 'transfer']) {
+      for (const m of (movesProp[cat] || [])) {
+        if (!seen.has(m.name) && m.details) {
+          seen.add(m.name)
+          list.push(m)
+        }
+      }
+    }
+    return list.sort((a, b) => a.name.localeCompare(b.name))
+  })()
+
+  const formatMoveName = (name) =>
+    name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+
+  const handleMoveSelect = (moveName) => {
+    setSelectedMove(moveName)
+    if (!moveName) return
+    const move = allMoves.find(m => m.name === moveName)
+    if (!move?.details) return
+    const type = move.details.type?.name
+    const category = move.details.damage_class?.name
+    const power = move.details.power
+    if (type && availableTypes.includes(type)) setDmgMoveType(type)
+    if (category === 'physical' || category === 'special') setDmgCategory(category)
+    setDmgPower(power || 0)
+    if (type) setDmgStab(pokemonTypes.includes(type))
+  }
+
   // Auto-detect STAB when move type changes
   useEffect(() => {
     setDmgStab(pokemonTypes.includes(dmgMoveType))
@@ -251,7 +290,8 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
     const atkStat = getAttackerStatForDmg()
     if (!atkStat) return null
 
-    const base = Math.floor(Math.floor((2 * level / 5 + 2) * power * atkStat / defStat) / 50) + 2
+    const effectivePower = dmgHelpingHand ? Math.floor(power * 1.5) : power
+    const base = Math.floor(Math.floor((2 * level / 5 + 2) * effectivePower * atkStat / defStat) / 50) + 2
 
     const chart = getTypeEffectiveness(selectedVersion)
     const mult1 = getTypeMultiplier(chart, dmgMoveType, dmgDefType1)
@@ -263,6 +303,27 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
     damage = Math.floor(damage * effectiveness)
     if (dmgCrit) damage = Math.floor(damage * (currentGen && currentGen <= 5 ? 2 : 1.5))
     if (dmgBurned && dmgCategory === 'physical') damage = Math.floor(damage * 0.5)
+
+    if (dmgWeather === 'sun') {
+      if (dmgMoveType === 'fire') damage = Math.floor(damage * 1.5)
+      else if (dmgMoveType === 'water') damage = Math.floor(damage * 0.5)
+    } else if (dmgWeather === 'rain') {
+      if (dmgMoveType === 'water') damage = Math.floor(damage * 1.5)
+      else if (dmgMoveType === 'fire') damage = Math.floor(damage * 0.5)
+    }
+
+    if (!currentGen || currentGen >= 6) {
+      if (dmgTerrain === 'electric' && dmgMoveType === 'electric') damage = Math.floor(damage * 1.3)
+      else if (dmgTerrain === 'grassy' && dmgMoveType === 'grass') damage = Math.floor(damage * 1.3)
+      else if (dmgTerrain === 'psychic' && dmgMoveType === 'psychic') damage = Math.floor(damage * 1.3)
+      else if (dmgTerrain === 'misty' && dmgMoveType === 'dragon') damage = Math.floor(damage * 0.5)
+    }
+
+    if (!dmgCrit) {
+      if (dmgAuroraVeil) damage = Math.floor(damage * 0.5)
+      else if (dmgReflect && dmgCategory === 'physical') damage = Math.floor(damage * 0.5)
+      else if (dmgLightScreen && dmgCategory === 'special') damage = Math.floor(damage * 0.5)
+    }
 
     return { min: Math.floor(damage * 0.85), max: damage, effectiveness, atkStat }
   }
@@ -502,6 +563,25 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
           <div style={{ background: 'var(--control-bg, #fafafa)', borderRadius: '6px', padding: '0.75rem 1rem' }}>
             <div style={{ fontWeight: '600', marginBottom: '0.6rem', fontSize: '0.8rem', color: 'var(--text-secondary, #666)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Move</div>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              {allMoves.length > 0 && (
+                <div className="control-group" style={{ minWidth: '200px', flex: '1' }}>
+                  <label>Select Move</label>
+                  <select
+                    value={selectedMove}
+                    onChange={e => handleMoveSelect(e.target.value)}
+                    style={{ width: '100%' }}
+                  >
+                    <option value="">— Custom —</option>
+                    {allMoves.map(m => {
+                      const type = m.details?.type?.name
+                      const power = m.details?.power
+                      const cat = m.details?.damage_class?.name
+                      const label = `${formatMoveName(m.name)}${type ? ` (${type.charAt(0).toUpperCase() + type.slice(1)}` : ''}${power ? `, ${power}` : ''}${cat && cat !== 'status' ? `, ${cat.charAt(0).toUpperCase() + cat.slice(1)}` : ''}${type ? ')' : ''}`
+                      return <option key={m.name} value={m.name}>{label}</option>
+                    })}
+                  </select>
+                </div>
+              )}
               <div className="control-group">
                 <label>Type</label>
                 <select value={dmgMoveType} onChange={e => setDmgMoveType(e.target.value)}>
@@ -544,6 +624,93 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
                   onChange={e => setDmgPower(e.target.value)}
                   style={{ width: '70px', textAlign: 'center', padding: '0.35rem' }}
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Field conditions */}
+          <div style={{ background: 'var(--control-bg, #fafafa)', borderRadius: '6px', padding: '0.75rem 1rem' }}>
+            <div style={{ fontWeight: '600', marginBottom: '0.6rem', fontSize: '0.8rem', color: 'var(--text-secondary, #666)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Field</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              {/* Weather */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary, #666)', minWidth: '60px' }}>Weather</span>
+                <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-light, #ddd)' }}>
+                  {[['none', 'None'], ['sun', 'Sun'], ['rain', 'Rain'], ['sand', 'Sand'], ['snow', 'Snow']].map(([val, label], i) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setDmgWeather(dmgWeather === val ? 'none' : val)}
+                      style={{
+                        padding: '0.3rem 0.6rem',
+                        background: dmgWeather === val ? 'var(--accent, #6890F0)' : 'transparent',
+                        color: dmgWeather === val ? '#fff' : 'var(--text-color, #333)',
+                        border: 'none',
+                        borderLeft: i > 0 ? '1px solid var(--border-light, #ddd)' : 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        fontWeight: dmgWeather === val ? 'bold' : 'normal',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Terrain (Gen 6+) */}
+              {(!currentGen || currentGen >= 6) && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary, #666)', minWidth: '60px' }}>Terrain</span>
+                  <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-light, #ddd)' }}>
+                    {[['none', 'None'], ['electric', 'Electric'], ['grassy', 'Grassy'], ['misty', 'Misty'], ['psychic', 'Psychic']].map(([val, label], i) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setDmgTerrain(dmgTerrain === val ? 'none' : val)}
+                        style={{
+                          padding: '0.3rem 0.6rem',
+                          background: dmgTerrain === val ? 'var(--accent, #6890F0)' : 'transparent',
+                          color: dmgTerrain === val ? '#fff' : 'var(--text-color, #333)',
+                          border: 'none',
+                          borderLeft: i > 0 ? '1px solid var(--border-light, #ddd)' : 'none',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          fontWeight: dmgTerrain === val ? 'bold' : 'normal',
+                        }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Screens + Helping Hand */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary, #666)', minWidth: '60px' }}>Screens</span>
+                {[
+                  [dmgReflect, setDmgReflect, 'Reflect'],
+                  [dmgLightScreen, setDmgLightScreen, 'Light Screen'],
+                  [dmgAuroraVeil, setDmgAuroraVeil, 'Aurora Veil'],
+                  [dmgHelpingHand, setDmgHelpingHand, 'Helping Hand'],
+                ].map(([active, setter, label]) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => setter(v => !v)}
+                    style={{
+                      padding: '0.3rem 0.65rem',
+                      background: active ? 'var(--accent, #6890F0)' : 'transparent',
+                      color: active ? '#fff' : 'var(--text-color, #333)',
+                      border: '1px solid var(--border-light, #ddd)',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                      fontWeight: active ? 'bold' : 'normal',
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
