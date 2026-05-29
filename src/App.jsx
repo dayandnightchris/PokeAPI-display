@@ -84,7 +84,7 @@ function App() {
   const [itemList, setItemList] = useState([])
   const [locationList, setLocationList] = useState([])
   const [requestedForm, setRequestedForm] = useState(null)
-  const [initialVersion, setInitialVersion] = useState(urlParams.version || 'ultra-moon')
+  const [initialVersion, setInitialVersion] = useState(urlParams.version || 'moon')
   const [searchQuery, setSearchQuery] = useState('')
 
   // Apply theme to document

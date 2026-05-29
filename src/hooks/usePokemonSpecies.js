@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { versionGeneration } from '../utils/versionInfo'
 
 // Pokedex names that map to specific game versions.
 // Used to detect game availability when the API hasn't populated moves/game_indices yet.
@@ -159,10 +160,15 @@ export function usePokemonSpecies(pokemon, initialVersion) {
             return initialVersion
           }
           if (prev && available.has(prev)) return prev
-          // Fall back to last game_indices entry, or first available version
-          const gameIndices = pokemon.game_indices || []
-          if (gameIndices.length > 0) return gameIndices[gameIndices.length - 1].version.name
-          return Array.from(available)[0]
+          // Pick the latest available gen (capped at 7, since gen 8+ is hidden in the selector)
+          const all = Array.from(available)
+          const capped = all.filter(v => versionGeneration[v] && versionGeneration[v] < 8)
+          if (capped.length > 0) {
+            return capped.reduce((best, v) =>
+              (versionGeneration[v] || 0) > (versionGeneration[best] || 0) ? v : best
+            )
+          }
+          return all[0]
         })
       }
     } else {
