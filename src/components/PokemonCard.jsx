@@ -717,60 +717,25 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
     const types = generationTypes?.map(t => t.type.name) || []
     if (types.length === 0) return null
 
-    let resists = new Set()
-    let weak = new Set()
-    let veryWeak = new Set()
-    let veryResistant = new Set()
-    let immune = new Set()
+    const result = { immune: [], veryResistant: [], resists: [], weak: [], veryWeak: [] }
 
-    types.forEach(type => {
-      const matchup = typeEffectiveness[type]
-      if (matchup) {
-        matchup.resists?.forEach(t => resists.add(t))
-        matchup.weak?.forEach(t => weak.add(t))
-        matchup.veryWeak?.forEach(t => veryWeak.add(t))
-        matchup.immune?.forEach(t => immune.add(t))
+    for (const attackType of Object.keys(typeEffectiveness)) {
+      let multiplier = 1
+      for (const defType of types) {
+        const matchup = typeEffectiveness[defType]
+        if (!matchup) continue
+        if (matchup.immune?.includes(attackType)) { multiplier = 0; break }
+        if (matchup.weak?.includes(attackType)) multiplier *= 2
+        if (matchup.resists?.includes(attackType)) multiplier *= 0.5
       }
-    })
-
-    // Calculate very weak for dual types: types that BOTH component types are weak to
-    if (types.length === 2) {
-      const type1Weak = new Set(typeEffectiveness[types[0]]?.weak || [])
-      const type2Weak = new Set(typeEffectiveness[types[1]]?.weak || [])
-      const intersection = new Set([...type1Weak].filter(t => type2Weak.has(t)))
-      intersection.forEach(t => veryWeak.add(t))
-      // Remove very weak from regular weak
-      intersection.forEach(t => weak.delete(t))
-
-      // Calculate very resistant for dual types: types that BOTH component types resist
-      const type1Resists = new Set(typeEffectiveness[types[0]]?.resists || [])
-      const type2Resists = new Set(typeEffectiveness[types[1]]?.resists || [])
-      const resistIntersection = new Set([...type1Resists].filter(t => type2Resists.has(t)))
-      resistIntersection.forEach(t => veryResistant.add(t))
-      // Remove very resistant from regular resists
-      resistIntersection.forEach(t => resists.delete(t))
+      if (multiplier === 0) result.immune.push(attackType)
+      else if (multiplier <= 0.25) result.veryResistant.push(attackType)
+      else if (multiplier < 1) result.resists.push(attackType)
+      else if (multiplier >= 4) result.veryWeak.push(attackType)
+      else if (multiplier >= 2) result.weak.push(attackType)
     }
 
-    // Remove overlaps: if a type resists and is weak, it cancels out
-    weak.forEach(t => resists.delete(t))
-    veryWeak.forEach(t => resists.delete(t))
-    veryWeak.forEach(t => weak.delete(t))
-    weak.forEach(t => veryResistant.delete(t))
-    veryWeak.forEach(t => veryResistant.delete(t))
-    immune.forEach(t => {
-      resists.delete(t)
-      weak.delete(t)
-      veryWeak.delete(t)
-      veryResistant.delete(t)
-    })
-
-    return {
-      immune: Array.from(immune),
-      veryResistant: Array.from(veryResistant),
-      resists: Array.from(resists),
-      weak: Array.from(weak),
-      veryWeak: Array.from(veryWeak)
-    }
+    return result
   }
 
   if (!pokemon) {
@@ -964,11 +929,11 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                       {pinnedType ? '🔒' : '🔓'}
                     </span>
                     {[
-                      { label: 'Immune to', types: getCombinedTypeMatchups().immune },
-                      { label: 'Very Resistant to', types: getCombinedTypeMatchups().veryResistant },
-                      { label: 'Resists', types: getCombinedTypeMatchups().resists },
-                      { label: 'Weak to', types: getCombinedTypeMatchups().weak },
                       { label: 'Very Weak to', types: getCombinedTypeMatchups().veryWeak },
+                      { label: 'Weak to', types: getCombinedTypeMatchups().weak },
+                      { label: 'Resists', types: getCombinedTypeMatchups().resists },
+                      { label: 'Very Resistant to', types: getCombinedTypeMatchups().veryResistant },
+                      { label: 'Immune to', types: getCombinedTypeMatchups().immune },
                     ].map(({ label, types: matchupTypes }) => (
                       <div key={label} className="matchup-section">
                         <div className="matchup-label">{label}:</div>
