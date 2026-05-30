@@ -447,7 +447,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   const abilityDescriptionsBase = useAbilityDescriptions(formPokemon || pokemon)
   const [extraAbilityDescs, setExtraAbilityDescs] = useState({})
   const evolutions = useEvolutionChain({ species, selectedVersion, selectedForm })
-  const { canEvolveFrom, canTradeAndEvolveFrom, evoFamilyVersions } = usePreEvolutionCheck({ species, selectedVersion })
+  const { canEvolveFrom, canEvolveFromChain, canTradeAndEvolveFrom, evoFamilyVersions } = usePreEvolutionCheck({ species, selectedVersion })
   // For forms with empty moves (e.g. PLZA megas), fall back to base pokemon's moves
   const movesSource = (formPokemon && formPokemon.moves?.length > 0) ? formPokemon : pokemon
   const { moves, loading: movesLoading } = useGroupedMoves(movesSource, selectedVersion, species)
@@ -1260,7 +1260,11 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                   // --- No wild encounters for this version: priority fallback ---
                   // Priority 1: Can it evolve from a pre-evolution available in this game?
                   if (canEvolveFrom) {
-                    return <p style={{ margin: '0' }}>Evolve from {canEvolveFrom.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}.</p>
+                    const fmt = n => n.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                    const catchText = canEvolveFromChain.length > 1
+                      ? canEvolveFromChain.map(fmt).join(' or ')
+                      : fmt(canEvolveFrom)
+                    return <p style={{ margin: '0' }}>Catch {catchText} and evolve.</p>
                   }
 
                   // Priority 1b: Breeding (available in all games except RBY, Colosseum, XD, Legends Arceus, Legends Z-A)
@@ -1319,7 +1323,11 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                 (() => {
                   // No encounter data at all from the API — same priority fallback
                   if (canEvolveFrom) {
-                    return <p style={{ margin: '0' }}>Evolve from {canEvolveFrom.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}.</p>
+                    const fmt = n => n.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                    const catchText = canEvolveFromChain.length > 1
+                      ? canEvolveFromChain.map(fmt).join(' or ')
+                      : fmt(canEvolveFrom)
+                    return <p style={{ margin: '0' }}>Catch {catchText} and evolve.</p>
                   }
 
                   // Priority 1b: Breeding — even though this Pokémon has no encounters,

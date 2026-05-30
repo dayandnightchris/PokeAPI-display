@@ -134,6 +134,7 @@ function hasEncountersInGen(encounters, genVersions) {
 
 export function usePreEvolutionCheck({ species, selectedVersion }) {
   const [canEvolveFrom, setCanEvolveFrom] = useState(null)
+  const [canEvolveFromChain, setCanEvolveFromChain] = useState([])
   const [canTradeAndEvolveFrom, setCanTradeAndEvolveFrom] = useState(null)
   const [evoFamilyVersions, setEvoFamilyVersions] = useState([])
   const [loading, setLoading] = useState(false)
@@ -141,6 +142,7 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
   useEffect(() => {
     if (!species?.evolution_chain?.url || !selectedVersion || !species?.name) {
       setCanEvolveFrom(null)
+      setCanEvolveFromChain([])
       setCanTradeAndEvolveFrom(null)
       setEvoFamilyVersions([])
       return
@@ -153,7 +155,7 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
       try {
         const chainRes = await fetch(species.evolution_chain.url)
         if (!chainRes.ok) {
-          if (active) { setCanEvolveFrom(null); setCanTradeAndEvolveFrom(null); setEvoFamilyVersions([]); setLoading(false) }
+          if (active) { setCanEvolveFrom(null); setCanEvolveFromChain([]); setCanTradeAndEvolveFrom(null); setEvoFamilyVersions([]); setLoading(false) }
           return
         }
         const chainData = await chainRes.json()
@@ -174,20 +176,31 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
 
         const preEvos = getPreEvolutions(chainData.chain, species.name)
         if (!preEvos || preEvos.length === 0) {
-          if (active) { setCanEvolveFrom(null); setCanTradeAndEvolveFrom(null); setLoading(false) }
+          if (active) { setCanEvolveFrom(null); setCanEvolveFromChain([]); setCanTradeAndEvolveFrom(null); setLoading(false) }
           return
         }
 
         // Check pre-evolutions from closest to farthest
         const reversed = [...preEvos].reverse()
 
-        // Priority 1: Does any pre-evo have encounters in the selected version?
+        // Priority 1: Collect ALL pre-evos with encounters in the selected version
+        const catchable = []
         for (const preEvoName of reversed) {
           const encounters = await fetchEncounters(preEvoName)
           if (hasEncountersInVersion(encounters, selectedVersion)) {
-            if (active) { setCanEvolveFrom(preEvoName); setCanTradeAndEvolveFrom(null); setLoading(false) }
-            return
+            catchable.push(preEvoName)
           }
+        }
+        if (catchable.length > 0) {
+          // reversed is closest→farthest, so reverse back to earliest-stage-first for display
+          const ordered = [...catchable].reverse()
+          if (active) {
+            setCanEvolveFrom(ordered[0])
+            setCanEvolveFromChain(ordered)
+            setCanTradeAndEvolveFrom(null)
+            setLoading(false)
+          }
+          return
         }
 
         // Priority 2: Does any pre-evo have encounters in another game of the same gen?
@@ -209,10 +222,10 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
           }
         }
 
-        if (active) { setCanEvolveFrom(null); setCanTradeAndEvolveFrom(null); setLoading(false) }
+        if (active) { setCanEvolveFrom(null); setCanEvolveFromChain([]); setCanTradeAndEvolveFrom(null); setLoading(false) }
       } catch (err) {
         console.error('Pre-evolution check failed:', err)
-        if (active) { setCanEvolveFrom(null); setCanTradeAndEvolveFrom(null); setEvoFamilyVersions([]); setLoading(false) }
+        if (active) { setCanEvolveFrom(null); setCanEvolveFromChain([]); setCanTradeAndEvolveFrom(null); setEvoFamilyVersions([]); setLoading(false) }
       }
     }
 
@@ -220,5 +233,5 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
     return () => { active = false }
   }, [species?.evolution_chain?.url, species?.name, selectedVersion])
 
-  return { canEvolveFrom, canTradeAndEvolveFrom, evoFamilyVersions, loading }
+  return { canEvolveFrom, canEvolveFromChain, canTradeAndEvolveFrom, evoFamilyVersions, loading }
 }
