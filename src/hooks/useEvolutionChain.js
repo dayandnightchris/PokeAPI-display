@@ -71,7 +71,9 @@ function formatEvolutionDetail(detail) {
 
 function formatEvolutionDetails(details) {
   if (!Array.isArray(details) || details.length === 0) return 'Unknown'
-  return details.map(formatEvolutionDetail).join(' OR ')
+  const seen = new Set()
+  const unique = details.map(formatEvolutionDetail).filter(t => !seen.has(t) && seen.add(t))
+  return unique.join(' OR ')
 }
 
 // Map version groups to individual version names (for Gen 6+ where game_indices is empty)
