@@ -113,14 +113,15 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
     const statKey = statTypeMap[stat.stat.name] || stat.stat.name
     const ivKey = statKey
     const evKey = statKey
-    const calculated = calculateStat(
-      stat.base_stat, 
-      level, 
-      ivs[ivKey] ?? ivs['spa'], 
-      evs[evKey] ?? evs['spa'], 
-      nature, 
+    let calculated = calculateStat(
+      stat.base_stat,
+      level,
+      ivs[ivKey] ?? ivs['spa'],
+      evs[evKey] ?? evs['spa'],
+      nature,
       statKey === 'spc' ? 'spa' : statKey
     )
+    if (statKey === 'hp' && pokemon?.name === 'shedinja') calculated = 1
     
     return {
       name: stat.stat.name.toUpperCase().replace(/-/g, ' '),
