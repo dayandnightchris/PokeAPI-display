@@ -820,7 +820,14 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                     />
                   )}
                   {current.label && <span className="shiny-badge">{current.label}</span>}
-                  {femaleSrc && <span className="gender-badge" title="Male / Female available. Click sprite to cycle">⚥</span>}
+                  <div className="sprite-badges">
+                    {shinySrc && (
+                      <span className="shiny-hint-badge" title="Shiny available. Click sprite to cycle">✦</span>
+                    )}
+                    {femaleSrc && (
+                      <span className="gender-badge" title="Male / Female available. Click sprite to cycle">⚥</span>
+                    )}
+                  </div>
                 </>
               )
             })()}

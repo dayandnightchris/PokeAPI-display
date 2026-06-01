@@ -449,10 +449,28 @@ body {
   pointer-events: none;
 }
 
-.gender-badge {
+.sprite-badges {
   position: absolute;
   top: 6px;
   right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+.shiny-hint-badge {
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffd700;
+  font-size: 13px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  cursor: default;
+  line-height: 1;
+  user-select: none;
+}
+
+.gender-badge {
   background: rgba(0, 0, 0, 0.55);
   color: #f0a0d0;
   font-size: 14px;
