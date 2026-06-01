@@ -318,9 +318,10 @@
   padding: 10px;
   position: absolute;
   z-index: 1000;
-  bottom: 125%;
+  top: 100%;
   left: 50%;
   margin-left: -125px;
+  margin-top: 6px;
   opacity: 0;
   transition: opacity 0.3s;
   font-size: 12px;
@@ -331,12 +332,12 @@
 .tooltip-text::after {
   content: "";
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   left: 50%;
   margin-left: -5px;
   border-width: 5px;
   border-style: solid;
-  border-color: var(--tooltip-bg) transparent transparent transparent;
+  border-color: transparent transparent var(--tooltip-bg) transparent;
 }
 
 .tooltip-trigger:hover .tooltip-text {

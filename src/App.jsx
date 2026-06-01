@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
+import ErrorBoundary from './components/ErrorBoundary'
 import PokemonCard from './components/PokemonCard'
 import UnifiedSearch from './components/UnifiedSearch'
 import MovePage from './components/MovePage'

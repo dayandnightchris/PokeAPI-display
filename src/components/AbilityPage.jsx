@@ -450,7 +450,7 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
   }
 
   const description = getDescription()
-  const shortEffect = getShortEffect()
+  const shortEffect = getEffect()
 
   const handleSort = (key) => {
     setSortConfig(prev => ({
