@@ -29,14 +29,6 @@ function formatLocationName(name) {
     .replace(/Heartgold/g, 'Heart Gold')
     .replace(/Soulsilver/g, 'Soul Silver')
 }
-// Darken a hex color by a factor (0 = black, 1 = original) for readable text on light backgrounds
-const darkenColor = (hex, factor = 0.65) => {
-  const r = Math.round(parseInt(hex.slice(1,3), 16) * factor)
-  const g = Math.round(parseInt(hex.slice(3,5), 16) * factor)
-  const b = Math.round(parseInt(hex.slice(5,7), 16) * factor)
-  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`
-}
-
 export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, onAbilityClick, onItemClick, onLocationClick, onEggMoveClick, initialForm, initialVersion, onStateChange, searchLists, onUnifiedNavigate, searchLoading, initialQuery }) {
   // UI state
   const [hoveredType, setHoveredType] = useState(null)
