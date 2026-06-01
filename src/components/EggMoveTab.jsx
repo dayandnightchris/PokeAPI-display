@@ -129,6 +129,15 @@ export default function EggMoveTab({
   const expandMoveRef = useRef(initialExpandMove || null)
   const scrolledToMoveRef = useRef(false)
 
+  // Latest-value refs so async guards can read current state without listing it
+  // as an effect/callback dependency (which would create fetch cycles).
+  const onStateChangeRef = useRef(onStateChange)
+  onStateChangeRef.current = onStateChange
+  const parentsByMoveRef = useRef(parentsByMove)
+  parentsByMoveRef.current = parentsByMove
+  const moveInfoCacheRef = useRef(moveInfoCache)
+  moveInfoCacheRef.current = moveInfoCache
+
   // Compute available versions from egg move data
   useEffect(() => {
     if (!eggMoves || eggMoves.length === 0) {
@@ -182,10 +191,8 @@ export default function EggMoveTab({
 
   // Notify parent of state changes
   useEffect(() => {
-    if (onStateChange) {
-      onStateChange({ version: selectedVersion, eggmoves: pokemonName })
-    }
-  }, [selectedVersion, pokemonName]) // eslint-disable-line react-hooks/exhaustive-deps
+    onStateChangeRef.current?.({ version: selectedVersion, eggmoves: pokemonName })
+  }, [selectedVersion, pokemonName])
 
   // Load a Pokémon and extract its egg moves
   const loadPokemon = useCallback(async (name) => {
@@ -317,7 +324,7 @@ export default function EggMoveTab({
 
   // Fetch parents for a specific egg move
   const fetchParentsForMove = useCallback(async (moveName) => {
-    if (parentsByMove[moveName]) return // Already loaded
+    if (parentsByMoveRef.current[moveName]) return // Already loaded
 
     setLoadingParents(prev => ({ ...prev, [moveName]: true }))
 
@@ -570,7 +577,7 @@ export default function EggMoveTab({
     } finally {
       setLoadingParents(prev => ({ ...prev, [moveName]: false }))
     }
-  }, [speciesData, allEggGroups, parentsByMove])
+  }, [speciesData, allEggGroups])
 
   // Auto-fetch parents for all egg moves once they're loaded
   useEffect(() => {
@@ -578,13 +585,13 @@ export default function EggMoveTab({
     eggMoves.forEach(m => {
       fetchParentsForMove(m.name)
     })
-  }, [eggMoves, speciesData, allEggGroups]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [eggMoves, speciesData, allEggGroups, fetchParentsForMove])
 
   // Pre-fetch move type/power for sorting
   useEffect(() => {
     if (eggMoves.length === 0) return
     eggMoves.forEach(m => {
-      if (moveInfoCache[m.name]) return
+      if (moveInfoCacheRef.current[m.name]) return
       fetchMoveCached(m.name).then(data => {
         if (data) {
           setMoveInfoCache(prev => ({
@@ -594,7 +601,7 @@ export default function EggMoveTab({
         }
       })
     })
-  }, [eggMoves]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [eggMoves])
 
   // Auto-expand and scroll to a specific move if initialExpandMove was provided
   useEffect(() => {
