@@ -1,3 +1,5 @@
+import { titleCase } from './format'
+
 const versionInfoCache = new Map()
 
 export const generationOrder = {
@@ -307,10 +309,6 @@ const eggGroupLegacyNames = {
   'humanshape':    'Humanshape',
   'indeterminate': 'Indeterminate',
   'no-eggs':       'No Eggs',
-}
-
-function titleCase(str) {
-  return str.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
 export function getEggGroupDisplayName(apiName, generationNum) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { versionGeneration } from '../utils/versionInfo'
 import { getTypeEffectiveness } from '../utils/typeEffectiveness'
+import { titleCase } from '../utils/format'
 
 export default function StatsCalculator({ pokemon, stats: statsProp, selectedVersion, moves: movesProp }) {
   const [level, setLevel] = useState(50)
@@ -246,8 +247,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
     return list.sort((a, b) => a.name.localeCompare(b.name))
   })()
 
-  const formatMoveName = (name) =>
-    name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  const formatMoveName = (name) => titleCase(name)
 
   const handleMoveSelect = (moveName) => {
     setSelectedMove(moveName)

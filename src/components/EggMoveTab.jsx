@@ -7,10 +7,7 @@ import {
   getEggGroupDisplayName, defaultVersionGroups,
 } from '../utils/versionInfo'
 import { getTypeColor, getTypeTextColor } from '../utils/typeColors'
-
-function formatName(name) {
-  return name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-}
+import { titleCase as formatName } from '../utils/format'
 
 // Map version group name → Set of individual version names
 const versionGroupToVersions = {

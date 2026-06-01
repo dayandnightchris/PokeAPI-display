@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { titleCase } from '../utils/format'
 
 // Default hierarchy: Pokemon > Location > Move > Ability > Item
 // Active tab is promoted to the top; the rest keep their relative order.
@@ -212,7 +213,7 @@ export default function UnifiedSearch({ lists, onNavigate, activeTab, placeholde
     }
   }
 
-  const formatName = (name) => name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  const formatName = (name) => titleCase(name)
 
   return (
     <div className="search-container" ref={containerRef}>

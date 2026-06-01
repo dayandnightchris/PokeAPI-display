@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { getTypeColor, getTypeTextColor } from '../utils/typeColors'
+import { titleCase } from '../utils/format'
 
 function CollapsibleInfoBox({ title, children, className = '', style, contentClassName = '', contentStyle, headerExtra, initialExpanded = false }) {
   const [collapsed, setCollapsed] = useState(false)
@@ -67,7 +68,7 @@ function CollapsibleInfoBox({ title, children, className = '', style, contentCla
 const formatMoveLabel = (value) => {
   if (!value) return 'N/A'
   if (value === 'unknown') return '???'
-  return value.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  return titleCase(value)
 }
 
 const getMoveEffectEntry = (details) => {

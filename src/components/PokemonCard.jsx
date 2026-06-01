@@ -6,6 +6,7 @@ import { renderEvolutionForest } from './EvolutionTree'
 import { getVersionInfo, generationOrder, versionGeneration, getEggGroupDisplayName } from '../utils/versionInfo'
 import { getTypeEffectiveness } from '../utils/typeEffectiveness'
 import { getTypeColor, getTypeTextColor } from '../utils/typeColors'
+import { titleCase } from '../utils/format'
 import MoveTable from './MoveTable'
 import LocationBox from './LocationBox'
 import {
@@ -478,7 +479,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
           <div className="box-content">
             <div className="info-row">
               <span className="label">Name:</span>
-              <span className="value">{displayPokemon.name?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Unknown'}</span>
+              <span className="value">{titleCase(displayPokemon.name) || 'Unknown'}</span>
             </div>
             <div className="info-row">
               <span className="label">#</span>
@@ -568,8 +569,8 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                 <div key={idx} className="ability-item">
                   <span className="tooltip-trigger">
                     {onAbilityClick
-                      ? <button type="button" className="ability-name-link" onClick={() => onAbilityClick(ability.ability.name)}>{ability.ability.name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</button>
-                      : ability.ability.name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                      ? <button type="button" className="ability-name-link" onClick={() => onAbilityClick(ability.ability.name)}>{titleCase(ability.ability.name)}</button>
+                      : titleCase(ability.ability.name)
                     }
                     {abilityDescriptions[ability.ability.name]?.description && (
                       <span className="tooltip-text">{abilityDescriptions[ability.ability.name].description}</span>
@@ -602,7 +603,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                       ? hi.version_details?.find(v => v.version?.name === selectedVersion)
                       : hi.version_details?.[0]
                     if (!vd) return null
-                    return { name: hi.item.name, displayName: hi.item.name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), rarity: vd.rarity }
+                    return { name: hi.item.name, displayName: titleCase(hi.item.name), rarity: vd.rarity }
                   })
                   .filter(Boolean)
                 if (items.length === 0) return 'None'
@@ -624,7 +625,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                     {generationStats.map(stat => (
                       stat.effort > 0 && (
                         <li key={stat.stat.name}>
-                          {stat.stat.name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}: {stat.effort}
+                          {titleCase(stat.stat.name)}: {stat.effort}
                         </li>
                       )
                     ))}

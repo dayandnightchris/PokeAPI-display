@@ -2,15 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import UnifiedSearch from './UnifiedSearch'
 import { versionDisplayNames, versionGeneration, versionAbbreviations, generationVersions, versionColors, defaultVersionGroups } from '../utils/versionInfo'
 import { fetchLocationCached, fetchLocationAreaCached } from '../utils/pokeCache'
+import { titleCase, formatLocationName } from '../utils/format'
 
 function formatName(name) {
-  return name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-    .replace(/Firered/g, 'Fire Red').replace(/Leafgreen/g, 'Leaf Green')
-    .replace(/Heartgold/g, 'Heart Gold').replace(/Soulsilver/g, 'Soul Silver')
-}
-
-function formatLocationName(name) {
-  return name.replace(/-/g, ' ').replace(/ area$/i, '').replace(/\b\w/g, c => c.toUpperCase())
+  return titleCase(name)
     .replace(/Firered/g, 'Fire Red').replace(/Leafgreen/g, 'Leaf Green')
     .replace(/Heartgold/g, 'Heart Gold').replace(/Soulsilver/g, 'Soul Silver')
 }

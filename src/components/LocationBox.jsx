@@ -1,17 +1,5 @@
 import { versionDisplayNames, versionGeneration, generationVersions } from '../utils/versionInfo'
-
-function formatLocationName(name) {
-  // Remove trailing -area, then replace dashes with spaces, title case
-  return name
-    .replace(/-area$/, '')
-    .replace(/-/g, ' ')
-    .trim()
-    .replace(/\b\w/g, c => c.toUpperCase())
-    .replace(/Firered/g, 'Fire Red')
-    .replace(/Leafgreen/g, 'Leaf Green')
-    .replace(/Heartgold/g, 'Heart Gold')
-    .replace(/Soulsilver/g, 'Soul Silver')
-}
+import { titleCase, formatLocationName } from '../utils/format'
 
 export default function LocationBox({
   selectedVersion,
@@ -119,7 +107,7 @@ export default function LocationBox({
                             if (!isCollapsible) {
                               // Single entry — flat row
                               const entry = entryList[0]
-                              const methodDisplay = entry.method.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                              const methodDisplay = titleCase(entry.method)
                               const levelDisplay = entry.minLevel === entry.maxLevel
                                 ? `${entry.minLevel}`
                                 : `${entry.minLevel}–${entry.maxLevel}`
@@ -135,7 +123,7 @@ export default function LocationBox({
                                     {methodDisplay}
                                     {entry.conditions.length > 0 && (
                                       <div style={{ fontSize: '11px', color: '#888', fontStyle: 'italic' }}>
-                                        {entry.conditions.map(c => c.replace(/-/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase())).join(', ')}
+                                        {entry.conditions.map(titleCase).join(', ')}
                                       </div>
                                     )}
                                   </td>
@@ -171,7 +159,7 @@ export default function LocationBox({
 
                             if (isExpanded) {
                               entryList.forEach((entry, idx) => {
-                                const methodDisplay = entry.method.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                                const methodDisplay = titleCase(entry.method)
                                 const levelDisplay = entry.minLevel === entry.maxLevel
                                   ? `${entry.minLevel}`
                                   : `${entry.minLevel}–${entry.maxLevel}`
@@ -184,7 +172,7 @@ export default function LocationBox({
                                     <td style={{ padding: '4px 8px 4px 24px' }}>
                                       {entry.conditions.length > 0 && (
                                         <span style={{ fontSize: '11px', color: '#888', fontStyle: 'italic' }}>
-                                          {entry.conditions.map(c => c.replace(/-/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase())).join(', ')}
+                                          {entry.conditions.map(titleCase).join(', ')}
                                         </span>
                                       )}
                                     </td>
@@ -208,7 +196,7 @@ export default function LocationBox({
                   // --- No wild encounters for this version: priority fallback ---
                   // Priority 1: Can it evolve from a pre-evolution available in this game?
                   if (canEvolveFrom) {
-                    const fmt = n => n.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                    const fmt = titleCase
                     const catchText = canEvolveFromChain.length > 1
                       ? canEvolveFromChain.map(fmt).join(' or ')
                       : fmt(canEvolveFrom)
@@ -260,7 +248,7 @@ export default function LocationBox({
                   // Priority 2b: Can a pre-evolution be traded from another game and then evolved?
                   if (canTradeAndEvolveFrom) {
                     const tradeNames = canTradeAndEvolveFrom.tradeVersions.map(v => versionDisplayNames[v] || v).join(', ')
-                    const preEvoName = canTradeAndEvolveFrom.preEvo.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                    const preEvoName = titleCase(canTradeAndEvolveFrom.preEvo)
                     return <p style={{ margin: '0' }}>Trade from {tradeNames} and/or evolve from {preEvoName}.</p>
                   }
 
@@ -271,7 +259,7 @@ export default function LocationBox({
                 (() => {
                   // No encounter data at all from the API — same priority fallback
                   if (canEvolveFrom) {
-                    const fmt = n => n.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                    const fmt = titleCase
                     const catchText = canEvolveFromChain.length > 1
                       ? canEvolveFromChain.map(fmt).join(' or ')
                       : fmt(canEvolveFrom)
@@ -301,7 +289,7 @@ export default function LocationBox({
                   // Check if a pre-evo can be traded from another same-gen game and evolved
                   if (canTradeAndEvolveFrom) {
                     const tradeNames = canTradeAndEvolveFrom.tradeVersions.map(v => versionDisplayNames[v] || v).join(', ')
-                    const preEvoName = canTradeAndEvolveFrom.preEvo.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                    const preEvoName = titleCase(canTradeAndEvolveFrom.preEvo)
                     return <p style={{ margin: '0' }}>Trade from {tradeNames} and/or evolve from {preEvoName}.</p>
                   }
 
