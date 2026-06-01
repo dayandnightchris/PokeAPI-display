@@ -80,11 +80,6 @@ const getTypeTextColor = (typeName) => {
   return lum > 0.35 ? '#333' : '#fff'
 }
 
-const categoryIcons = {
-  physical: '⚔️',
-  special: '🔮',
-  status: '📊',
-}
 
 // In Gens 1-3 move category was determined by type, not per-move
 const physicalTypes = new Set(['normal', 'fighting', 'flying', 'poison', 'ground', 'rock', 'bug', 'ghost', 'steel'])
@@ -807,7 +802,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
                   const category = getMoveCategoryForGen(moveData, moveStats.type, gen)
                   return (
                     <span className="move-category-badge" data-category={category}>
-                      {categoryIcons[category] || ''} {category}
+                      {category}
                     </span>
                   )
                 })()}
