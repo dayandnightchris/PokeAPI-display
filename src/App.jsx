@@ -136,6 +136,17 @@ function App() {
   const abortRef = useRef(null)
   const requestIdRef = useRef(0)
 
+  // Inject AdSense only after first search result — keeps the landing page ad-free
+  useEffect(() => {
+    if (!pokemon) return
+    if (document.querySelector('script[src*="adsbygoogle"]')) return
+    const script = document.createElement('script')
+    script.async = true
+    script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3943102684396180'
+    script.crossOrigin = 'anonymous'
+    document.head.appendChild(script)
+  }, [pokemon])
+
   // Fetch all Pokemon names for autocomplete on mount
   useEffect(() => {
     const fetchPokemonList = async () => {
