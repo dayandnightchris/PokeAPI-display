@@ -627,6 +627,7 @@ function App() {
   }, [])
 
   return (
+    <ErrorBoundary>
     <div className="app">
       <header className="app-header">
         <h1>BlisyDex</h1>
@@ -771,6 +772,7 @@ function App() {
         </div>
       </footer>
     </div>
+    </ErrorBoundary>
   )
 }
 
