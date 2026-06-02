@@ -3,10 +3,12 @@ import StatsCalculator from './StatsCalculator'
 import VersionSelector from './VersionSelector'
 import UnifiedSearch from './UnifiedSearch'
 import { renderEvolutionForest } from './EvolutionTree'
-import { getVersionInfo, generationOrder, versionGeneration, getEggGroupDisplayName } from '../utils/versionInfo'
+import { getVersionInfo, generationOrder, versionGeneration } from '../utils/versionInfo'
 import { titleCase } from '../utils/format'
 import MoveTable from './MoveTable'
 import TypeMatchupDisplay from './TypeMatchupDisplay'
+import BreedingInfoBox from './BreedingInfoBox'
+import AbilitiesBox from './AbilitiesBox'
 import LocationBox from './LocationBox'
 import {
   usePokemonSpecies,
@@ -119,12 +121,6 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   const selectedGenerationRank = versionInfo?.generation
     ? generationOrder[versionInfo.generation]
     : null
-
-  const showHiddenBadge = (isHidden) => {
-    if (!isHidden) return false
-    if (!selectedGenerationRank) return true
-    return selectedGenerationRank >= generationOrder['generation-v']
-  }
 
   const getGenerationAbilities = () => {
     // If no generation is selected, use current abilities
@@ -391,55 +387,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
           </div>
 
           {/* Breeding Info Box */}
-          {species && (!selectedGenerationRank || selectedGenerationRank >= 2) && (
-            <div className="info-box breeding-info-box">
-              <div className="box-title">Breeding Info</div>
-              <div className="box-content" style={{ fontSize: '12px', lineHeight: '1.6' }}>
-                <div className="info-row">
-                  <span className="label">Egg Groups:</span>
-                  <span className="value">
-                    {species.egg_groups?.length > 0
-                      ? species.egg_groups.map(g => getEggGroupDisplayName(g.name, selectedGenerationRank)).join(', ')
-                      : 'N/A'}
-                  </span>
-                </div>
-                <div className="info-row">
-                  <span className="label">Hatch Steps:</span>
-                  <span className="value">{species.hatch_counter ? (species.hatch_counter * 255).toLocaleString() : 'N/A'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="label">Hatch Cycles:</span>
-                  <span className="value">{species.hatch_counter ? species.hatch_counter.toLocaleString() : 'N/A'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="label">Gender:</span>
-                  <span className="value">
-                    {species.gender_rate === -1 ? 'Genderless'
-                      : species.gender_rate === 0 ? '♂ 100% Male'
-                      : species.gender_rate === 8 ? '♀ 100% Female'
-                      : `♂ ${100 - species.gender_rate * 12.5}% / ♀ ${species.gender_rate * 12.5}%`}
-                  </span>
-                </div>
-                {species.gender_rate > 0 && species.gender_rate < 8 && (
-                  <div style={{
-                    width: '100%',
-                    height: '6px',
-                    backgroundColor: '#EE99AC',
-                    borderRadius: '3px',
-                    overflow: 'hidden',
-                    marginTop: '2px'
-                  }}>
-                    <div style={{
-                      width: `${100 - species.gender_rate * 12.5}%`,
-                      height: '100%',
-                      backgroundColor: '#6890F0',
-                      borderRadius: '3px 0 0 3px'
-                    }} />
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          <BreedingInfoBox species={species} selectedGenerationRank={selectedGenerationRank} />
         </div>
 
         {/* Species Info Box */}
@@ -470,32 +418,12 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
         </div>
 
         {/* Abilities Box */}
-        <div className="info-box abilities-box">
-          <div className="box-title">Abilities</div>
-          <div className="box-content abilities-list">
-            {filteredAbilities.length > 0 ? (
-              filteredAbilities.map((ability, idx) => (
-                <div key={idx} className="ability-item">
-                  <span className="tooltip-trigger">
-                    {onAbilityClick
-                      ? <button type="button" className="ability-name-link" onClick={() => onAbilityClick(ability.ability.name)}>{titleCase(ability.ability.name)}</button>
-                      : titleCase(ability.ability.name)
-                    }
-                    {abilityDescriptions[ability.ability.name]?.description && (
-                      <span className="tooltip-text">{abilityDescriptions[ability.ability.name].description}</span>
-                    )}
-                  </span>
-                  {showHiddenBadge(ability.is_hidden)
-                    ? <span className="hidden-badge">Hidden</span>
-                    : <span className={`slot-badge slot-badge-${ability.slot}`}>Ability {ability.slot}</span>
-                  }
-                </div>
-              ))
-            ) : (
-              <p style={{ margin: '0', color: 'var(--text-muted, #888)', fontSize: '12px' }}>No abilities in this version.</p>
-            )}
-          </div>
-        </div>
+        <AbilitiesBox
+          abilities={filteredAbilities}
+          abilityDescriptions={abilityDescriptions}
+          onAbilityClick={onAbilityClick}
+          selectedGenerationRank={selectedGenerationRank}
+        />
 
         {/* Encounter Info + Location stacked in column 4, spanning both rows */}
         <div className="encounter-location-stack">
