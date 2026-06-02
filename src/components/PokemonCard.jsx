@@ -53,7 +53,9 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   // Derive display pokemon
   const displayPokemon = formPokemon || pokemon
 
-  // Fetch description for hardcoded exception abilities not in the API data
+  // Fetch description for hardcoded exception abilities not in the API data. 
+  // Currently only Blue-Striped Basculin's Reckless in BW, which was changed to Rock Head in B2W2. 
+  // The API only has Rock Head, but in BW both were valid. Insane.
   const isBasculinBW = displayPokemon?.name === 'basculin-blue-striped' && ['black', 'white'].includes(selectedVersion)
   useEffect(() => {
     if (!isBasculinBW) {
