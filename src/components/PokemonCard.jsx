@@ -4,10 +4,9 @@ import VersionSelector from './VersionSelector'
 import UnifiedSearch from './UnifiedSearch'
 import { renderEvolutionForest } from './EvolutionTree'
 import { getVersionInfo, generationOrder, versionGeneration, getEggGroupDisplayName } from '../utils/versionInfo'
-import { getTypeEffectiveness } from '../utils/typeEffectiveness'
-import { getTypeColor, getTypeTextColor } from '../utils/typeColors'
 import { titleCase } from '../utils/format'
 import MoveTable from './MoveTable'
+import TypeMatchupDisplay from './TypeMatchupDisplay'
 import LocationBox from './LocationBox'
 import {
   usePokemonSpecies,
@@ -21,8 +20,6 @@ import {
 
 export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, onAbilityClick, onItemClick, onLocationClick, onEggMoveClick, initialForm, initialVersion, onStateChange, searchLists, onUnifiedNavigate, searchLoading, initialQuery }) {
   // UI state
-  const [hoveredType, setHoveredType] = useState(null)
-  const [pinnedType, setPinnedType] = useState(null)
   const [versionInfo, setVersionInfo] = useState(null)
 
   // Refs for scroll navigation
@@ -298,34 +295,6 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   const generationTypes = getGenerationTypes()
   const generationStats = getGenerationStats()
 
-  // Use the version-appropriate type chart (Gen 1 / Gen 2–5 / Gen 6+)
-  const typeEffectiveness = getTypeEffectiveness(selectedVersion)
-
-  const getCombinedTypeMatchups = () => {
-    const types = generationTypes?.map(t => t.type.name) || []
-    if (types.length === 0) return null
-
-    const result = { immune: [], veryResistant: [], resists: [], weak: [], veryWeak: [] }
-
-    for (const attackType of Object.keys(typeEffectiveness)) {
-      let multiplier = 1
-      for (const defType of types) {
-        const matchup = typeEffectiveness[defType]
-        if (!matchup) continue
-        if (matchup.immune?.includes(attackType)) { multiplier = 0; break }
-        if (matchup.weak?.includes(attackType)) multiplier *= 2
-        if (matchup.resists?.includes(attackType)) multiplier *= 0.5
-      }
-      if (multiplier === 0) result.immune.push(attackType)
-      else if (multiplier <= 0.25) result.veryResistant.push(attackType)
-      else if (multiplier < 1) result.resists.push(attackType)
-      else if (multiplier >= 4) result.veryWeak.push(attackType)
-      else if (multiplier >= 2) result.weak.push(attackType)
-    }
-
-    return result
-  }
-
   if (!pokemon) {
     return <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted playsInline className="loading-pokeball" /></div>
   }
@@ -487,67 +456,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
             </div>
             <div className="info-row">
               <span className="label">Type:</span>
-              <div className="types-inline">
-                {generationTypes?.map(type => (
-                  <span
-                    key={type.type.name}
-                    className="type-badge-small"
-                    style={{
-                      backgroundColor: getTypeColor(type.type.name),
-                      color: getTypeTextColor(type.type.name),
-                      padding: '4px 8px',
-                      borderRadius: '3px',
-                      textTransform: 'capitalize',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                      cursor: 'help',
-                      display: 'inline-block',
-                      marginRight: '8px'
-                    }}
-                    onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHoveredType(type.type.name) }}
-                    onPointerLeave={(e) => { if (e.pointerType === 'mouse') setHoveredType(null) }}
-                    onTouchEnd={(e) => {
-                      e.preventDefault()
-                      setPinnedType(prev => prev === type.type.name ? null : type.type.name)
-                    }}
-                  >
-                    {type.type.name}
-                  </span>
-                ))}
-                {getCombinedTypeMatchups() && (hoveredType || pinnedType) && (
-                  <div
-                    className={`type-matchup-tooltip${pinnedType ? ' is-pinned' : ''}`}
-                    onPointerLeave={(e) => { if (e.pointerType === 'mouse') setHoveredType(null) }}
-                    onTouchEnd={(e) => { e.preventDefault(); setPinnedType(null) }}
-                  >
-                    <span className="matchup-lock-icon" title={pinnedType ? 'Tap to dismiss' : ''}>
-                      {pinnedType ? '🔒' : '🔓'}
-                    </span>
-                    {[
-                      { label: 'Very Weak to', types: getCombinedTypeMatchups().veryWeak },
-                      { label: 'Weak to', types: getCombinedTypeMatchups().weak },
-                      { label: 'Resists', types: getCombinedTypeMatchups().resists },
-                      { label: 'Very Resistant to', types: getCombinedTypeMatchups().veryResistant },
-                      { label: 'Immune to', types: getCombinedTypeMatchups().immune },
-                    ].map(({ label, types: matchupTypes }) => (
-                      <div key={label} className="matchup-section">
-                        <div className="matchup-label">{label}:</div>
-                        <div className="matchup-types">
-                          {matchupTypes.length > 0 ? (
-                            matchupTypes.map(t => (
-                              <span key={t} className="matchup-type-chip" style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t) }}>
-                                {t}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="matchup-none">None</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <TypeMatchupDisplay types={generationTypes} selectedVersion={selectedVersion} />
             </div>
             <div className="info-row">
               <span className="label">Height:</span>
