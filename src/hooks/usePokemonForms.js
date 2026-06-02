@@ -1,39 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { versionGeneration } from '../utils/versionInfo'
+import { versionGeneration, versionGroupToVersions } from '../utils/versionInfo'
 import { fetchPokemonCached } from '../utils/pokeCache'
-
-// Map version groups to individual version names for API-based availability checks
-const versionGroupToVersions = {
-  'red-blue': ['red', 'blue'],
-  'yellow': ['yellow'],
-  'gold-silver': ['gold', 'silver'],
-  'crystal': ['crystal'],
-  'ruby-sapphire': ['ruby', 'sapphire'],
-  'emerald': ['emerald'],
-  'firered-leafgreen': ['firered', 'leafgreen'],
-  'colosseum': ['colosseum'],
-  'xd': ['xd'],
-  'diamond-pearl': ['diamond', 'pearl'],
-  'platinum': ['platinum'],
-  'heartgold-soulsilver': ['heartgold', 'soulsilver'],
-  'black-white': ['black', 'white'],
-  'black-2-white-2': ['black-2', 'white-2'],
-  'x-y': ['x', 'y'],
-  'omega-ruby-alpha-sapphire': ['omega-ruby', 'alpha-sapphire'],
-  'sun-moon': ['sun', 'moon'],
-  'ultra-sun-ultra-moon': ['ultra-sun', 'ultra-moon'],
-  'lets-go-pikachu-lets-go-eevee': ['lets-go-pikachu', 'lets-go-eevee'],
-  'sword-shield': ['sword', 'shield'],
-  'brilliant-diamond-shining-pearl': ['brilliant-diamond', 'shining-pearl'],
-  'legends-arceus': ['legends-arceus'],
-  'scarlet-violet': ['scarlet', 'violet'],
-  'the-teal-mask': ['scarlet', 'violet'],
-  'the-indigo-disk': ['scarlet', 'violet'],
-  'legends-za': ['legends-za'],
-  'mega-dimension': ['legends-za'],
-  'the-isle-of-armor': ['sword', 'shield'],
-  'the-crown-tundra': ['sword', 'shield'],
-}
 
 /**
  * Module-level cache: form name → Set of available version names.
