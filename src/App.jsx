@@ -693,7 +693,11 @@ function App() {
           )}
           
           {error && <div className="error">{error}</div>}
-          {loading && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted playsInline className="loading-pokeball" /></div>}
+          {/* Full-page spinner only on the FIRST load (no card yet). On a
+              re-search/evolution click, keep the current card in place and let
+              it update — avoids the spinner inserting and shoving layout. The
+              search box shows its own loading state meanwhile. */}
+          {loading && !pokemon && <div className="loading"><video src="/simple_pokeball.webm" autoPlay loop muted playsInline className="loading-pokeball" /></div>}
           {pokemon && <PokemonCard pokemon={pokemon} onEvolutionClick={fetchPokemon} onMoveClick={navigateToMove} onAbilityClick={navigateToAbility} onItemClick={navigateToItem} onLocationClick={navigateToLocation} onEggMoveClick={navigateToEggMoves} initialForm={requestedForm} initialVersion={initialVersion} onStateChange={handleStateChange} searchLists={searchLists} onUnifiedNavigate={handleUnifiedNavigate} searchLoading={loading} initialQuery={searchQuery} />}
         </>
       )}
