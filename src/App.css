@@ -345,6 +345,13 @@
   opacity: 1;
 }
 
+/* Let the whole ability ribbon (not just the name) reveal its tooltip on
+   hover/tap — a much larger, less fiddly target, especially on mobile. */
+.ability-item:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
 .move-table {
   width: 100%;
   border-collapse: collapse;

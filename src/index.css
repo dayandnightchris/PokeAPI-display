@@ -544,6 +544,7 @@ body {
   background: var(--content-bg);
   border-radius: 3px;
   border-left: 2px solid var(--primary-color);
+  cursor: help;
 }
 
 .hidden-badge,
