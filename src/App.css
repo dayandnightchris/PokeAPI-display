@@ -345,11 +345,14 @@
   opacity: 1;
 }
 
-/* Let the whole ability ribbon (not just the name) reveal its tooltip on
-   hover/tap — a much larger, less fiddly target, especially on mobile. */
-.ability-item:hover .tooltip-text {
-  visibility: visible;
-  opacity: 1;
+/* On touch devices only, let the whole ability ribbon (not just the name)
+   reveal its tooltip on tap — a much larger, less fiddly target. Desktop
+   keeps the precise text-only hover via .tooltip-trigger above. */
+@media (hover: none) {
+  .ability-item:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+  }
 }
 
 .move-table {
