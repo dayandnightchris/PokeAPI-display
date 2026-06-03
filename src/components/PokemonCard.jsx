@@ -11,6 +11,7 @@ import BreedingInfoBox from './BreedingInfoBox'
 import AbilitiesBox from './AbilitiesBox'
 import BaseStatsBox from './BaseStatsBox'
 import LocationBox from './LocationBox'
+import DualSprite from './DualSprite'
 import {
   usePokemonSpecies,
   useAbilityDescriptions,
@@ -353,24 +354,42 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
               const shinySrc = isGen1 ? null : (versionAnimShiny || versionShinySprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_shiny || displayPokemon?.sprites?.front_shiny)
               const femaleSrc = hasFemaleSprites ? (versionAnimFemale || versionFemaleSprite || displayPokemon?.sprites?.front_female || null) : null
 
-              // Build available modes
+              // Build available modes. Each variant (shiny / female) is followed
+              // by a side-by-side "normal + variant" step in the cycle.
               const modes = [{ key: 'normal', src: normalSrc, label: '' }]
-              if (shinySrc) modes.push({ key: 'shiny', src: shinySrc, label: '✨ Shiny' })
-              if (femaleSrc) modes.push({ key: 'female', src: femaleSrc, label: 'Female' })
+              if (shinySrc) {
+                modes.push({ key: 'shiny', src: shinySrc, label: '✨ Shiny' })
+                modes.push({ key: 'both-shiny', dual: 'shiny', label: '✨ Normal + Shiny' })
+              }
+              if (femaleSrc) {
+                modes.push({ key: 'female', src: femaleSrc, label: 'Female' })
+                modes.push({ key: 'both-female', dual: 'female', label: 'Male + Female' })
+              }
 
               const safeMode = spriteMode % modes.length
               const current = modes[safeMode]
               const canCycle = modes.length > 1
               const nextLabel = modes[(safeMode + 1) % modes.length]?.key
+              const cycle = () => canCycle && setSpriteMode(prev => prev + 1)
 
               return (
                 <>
-                  {current.src && (
+                  {current.dual ? (
+                    <DualSprite
+                      normalSrc={normalSrc}
+                      secondSrc={current.dual === 'shiny' ? shinySrc : femaleSrc}
+                      secondLabel={current.dual === 'shiny' ? 'Shiny' : 'Female'}
+                      alt={displayPokemon.name}
+                      onClick={cycle}
+                      clickable={canCycle}
+                      title={canCycle ? `Click for ${nextLabel}` : ''}
+                    />
+                  ) : current.src && (
                     <img
                       src={current.src}
                       alt={`${displayPokemon.name}${current.label ? ` (${current.label})` : ''}`}
                       className="pokemon-main-image"
-                      onClick={() => canCycle && setSpriteMode(prev => prev + 1)}
+                      onClick={cycle}
                       style={{ cursor: canCycle ? 'pointer' : 'default' }}
                       title={canCycle ? `Click for ${nextLabel}` : ''}
                     />
