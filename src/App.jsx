@@ -645,7 +645,6 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>BlisyDex</h1>
-        <p>A better way to view Pokémon information</p>
         <button
           className="theme-toggle"
           onClick={toggleTheme}
