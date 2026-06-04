@@ -202,6 +202,20 @@ function App() {
           if (Number(id) >= 810) delete idMap[id]
         }
 
+        // Collapse gendered variety names to the base species in autocomplete
+        // (pyroar-male/-female → pyroar, meowstic-male/-female → meowstic). The
+        // gender is reached via the form selector / female toggle once opened.
+        // Runs last so Gen 8+ gendered forms have already been filtered out.
+        // Note: Nidoran ("nidoran-f"/"nidoran-m") uses different suffixes and is
+        // intentionally NOT collapsed — those are genuinely separate species.
+        for (const name of names) {
+          const m = name.match(/^(.+)-(male|female)$/)
+          if (m) {
+            names.delete(name)
+            names.add(m[1])
+          }
+        }
+
         setPokemonIdMap(idMap)
         setPokemonList(Array.from(names).sort())
       } catch (err) {

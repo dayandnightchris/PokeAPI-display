@@ -207,6 +207,13 @@ export function usePokemonForms({ species, pokemon, selectedVersion, initialForm
       .map(f => f.name)
       .filter(Boolean)
 
+    // Real gender varieties (meowstic-female, indeedee-female, …) appear in
+    // species.varieties. A "-female"/"-male" entry that's ONLY in pokemon.forms
+    // (e.g. pyroar-female) is a cosmetic gender difference with no own /pokemon/
+    // entry — it's already covered by the female sprite toggle, so hide it.
+    const varietySet = new Set(varietyForms)
+    const hasVarieties = (species?.varieties?.length || 0) > 0
+
     const formList = Array.from(new Set([...varietyForms, ...pokemonForms]))
       .filter(name => {
         const lower = name.toLowerCase()
@@ -214,6 +221,8 @@ export function usePokemonForms({ species, pokemon, selectedVersion, initialForm
         if (lower.startsWith('pikachu-') && lower.endsWith('-cap')) return false
         // Hide Alcremie cosmetic variants (63 cream/swirl+sweet combos)
         if (lower.startsWith('alcremie-') && lower !== 'alcremie-gmax') return false
+        // Hide cosmetic gender forms not backed by a real variety (pyroar-female)
+        if (hasVarieties && (lower.endsWith('-female') || lower.endsWith('-male')) && !varietySet.has(name)) return false
         return true
       })
       .sort()

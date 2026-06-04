@@ -352,7 +352,18 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
               // Use API animated sprites (Gen 5 BW) when available, prefer over static
               const normalSrc = versionAnimSprite || versionSprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_default || displayPokemon?.sprites?.front_default
               const shinySrc = isGen1 ? null : (versionAnimShiny || versionShinySprite || displayPokemon?.sprites?.other?.['official-artwork']?.front_shiny || displayPokemon?.sprites?.front_shiny)
-              const femaleSrc = hasFemaleSprites ? (versionAnimFemale || versionFemaleSprite || displayPokemon?.sprites?.front_female || null) : null
+              // A genuine female form (e.g. Meowstic) exists as its own variety
+              // and is reached via the form selector; in that case the default
+              // form's front_female sprite is spurious, so don't offer a female
+              // toggle here.
+              const hasFemaleVariety = (species?.varieties || []).some(v => v.pokemon?.name?.endsWith('-female'))
+              // In an animated (Gen 5) context with no animated female sprite,
+              // reuse the normal animated sprite instead of dropping to a static
+              // female image — e.g. Eevee has no animated female (its female is
+              // visually identical to the normal sprite).
+              const femaleSrc = (hasFemaleSprites && !hasFemaleVariety)
+                ? (versionAnimFemale || versionAnimSprite || versionFemaleSprite || displayPokemon?.sprites?.front_female || null)
+                : null
 
               // Build available modes. Each variant (shiny / female) is followed
               // by a side-by-side "normal + variant" step in the cycle.
