@@ -317,6 +317,20 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   const displayedEntries = selectedVersion ? versionEntries : versionEntries.slice(0, 3)
   const nationalDexNumber = species?.pokedex_numbers?.find(entry => entry.pokedex?.name === 'national')?.entry_number
 
+  // Regional dex number(s) for the selected version's pokédex(es), if the
+  // species appears in them. Some games have several regional dexes (Kalos).
+  // Skip any whose number matches the National # (redundant — e.g. the Gen 1
+  // Kanto dex is identical to the national dex).
+  const regionalDex = (() => {
+    if (!versionInfo?.pokedexes?.length || !species?.pokedex_numbers) return []
+    const vgDexes = new Set(versionInfo.pokedexes)
+    return species.pokedex_numbers
+      .filter(e => e.pokedex?.name && e.pokedex.name !== 'national'
+        && vgDexes.has(e.pokedex.name) && e.entry_number !== nationalDexNumber)
+      .map(e => ({ name: e.pokedex.name, number: e.entry_number }))
+  })()
+  const formatPokedexName = (name) => titleCase(name.replace(/^(updated|original|extended)-/, ''))
+
   return (
     <div className="pokemon-card-container" ref={cardTopRef}>
       {/* Search + Version Selector Row */}
@@ -448,9 +462,17 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
               <span className="value">{titleCase(displayPokemon.name) || 'Unknown'}</span>
             </div>
             <div className="info-row">
-              <span className="label">#</span>
+              <span className="label">National #:</span>
               <span className="value">{nationalDexNumber || 'Unknown'}</span>
             </div>
+            {regionalDex.length > 0 && (
+              <div className="info-row">
+                <span className="label">Regional #:</span>
+                <span className="value">
+                  {regionalDex.map(r => `${r.number} (${formatPokedexName(r.name)})`).join(', ')}
+                </span>
+              </div>
+            )}
             <div className="info-row">
               <span className="label">Type:</span>
               <TypeMatchupDisplay types={generationTypes} selectedVersion={selectedVersion} />

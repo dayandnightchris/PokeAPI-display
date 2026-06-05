@@ -300,15 +300,18 @@ export async function getVersionInfo(versionName) {
     const versionGroupUrl = versionData?.version_group?.url || null
 
     let generationName = null
+    let pokedexes = []
     if (versionGroupUrl) {
       const groupRes = await fetch(versionGroupUrl)
       if (groupRes.ok) {
         const groupData = await groupRes.json()
         generationName = groupData?.generation?.name || null
+        // Regional pokédexes for this version group (e.g. ['original-johto']).
+        pokedexes = (groupData?.pokedexes || []).map(p => p.name)
       }
     }
 
-    const info = { versionGroup: versionGroupName, generation: generationName }
+    const info = { versionGroup: versionGroupName, generation: generationName, pokedexes }
     versionInfoCache.set(key, info)
     return info
   } catch (err) {
