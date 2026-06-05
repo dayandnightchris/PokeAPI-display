@@ -66,16 +66,16 @@ function CollapsibleInfoBox({ title, children, className = '', style, contentCla
 }
 
 const formatMoveLabel = (value) => {
-  if (!value) return 'N/A'
+  if (!value) return '—'
   if (value === 'unknown') return '???'
   return titleCase(value)
 }
 
 const getMoveEffectEntry = (details) => {
-  if (!details) return 'N/A'
+  if (!details) return '—'
   const entry = (details.effect_entries || []).find(e => e.language?.name === 'en')
-  if (!entry) return 'N/A'
-  const baseText = entry.short_effect || entry.effect || 'N/A'
+  if (!entry) return '—'
+  const baseText = entry.short_effect || entry.effect || '—'
   if (details.effect_chance == null) return baseText
   return baseText.replaceAll('$effect_chance', details.effect_chance)
 }
@@ -201,9 +201,9 @@ export default function MoveTable({ title, moves, showLevel, showTmNumber, showM
   const renderCell = (move, key) => {
     switch (key) {
       case 'level':
-        return move.level ?? 'N/A'
+        return move.level ?? '—'
       case 'tmNumber':
-        return move.tmLabel || (move.tmNumber ? String(move.tmNumber).padStart(2, '0') : 'N/A')
+        return move.tmLabel || (move.tmNumber ? String(move.tmNumber).padStart(2, '0') : '—')
       case 'name':
         const nameEl = onMoveClick
           ? <button type="button" className="move-name-link" onClick={() => onMoveClick(move.name)}>{formatMoveLabel(move.name)}</button>
@@ -213,7 +213,7 @@ export default function MoveTable({ title, moves, showLevel, showTmNumber, showM
           : nameEl
       case 'type': {
         const typeName = move.details?.type?.name
-        if (!typeName) return 'N/A'
+        if (!typeName) return '—'
         const bg = getTypeColor(typeName)
         const fg = getTypeTextColor(typeName)
         return (
@@ -240,20 +240,20 @@ export default function MoveTable({ title, moves, showLevel, showTmNumber, showM
         return getMoveEffectEntry(move.details)
       case 'category': {
         const cat = getMoveCategoryForGen(move, generationNum)
-        if (!cat) return 'N/A'
+        if (!cat) return '—'
         return <span className="move-category-badge" data-category={cat}>{cat}</span>
       }
       case 'power':
-        return move.details?.power ?? 'N/A'
+        return move.details?.power ?? '—'
       case 'pp':
-        return move.details?.pp ?? 'N/A'
+        return move.details?.pp ?? '—'
       case 'accuracy':
-        return move.details?.accuracy ?? 'N/A'
+        return move.details?.accuracy ?? '—'
       case 'priority':
-        return move.details?.priority ?? 'N/A'
+        return move.details?.priority ?? '—'
       case 'sourceGames': {
         const src = move.sourceGames
-        if (!src) return 'N/A'
+        if (!src) return '—'
         if (typeof src !== 'string') return src
         const parts = src.split(', ')
         if (parts.length <= 3) return src
@@ -264,7 +264,7 @@ export default function MoveTable({ title, moves, showLevel, showTmNumber, showM
         )
       }
       case 'learnMethod':
-        return methodDisplayNames[move.learnMethod] || formatMoveLabel(move.learnMethod) || 'N/A'
+        return methodDisplayNames[move.learnMethod] || formatMoveLabel(move.learnMethod) || '—'
       case 'parents':
         return (
           <button
@@ -278,7 +278,7 @@ export default function MoveTable({ title, moves, showLevel, showTmNumber, showM
       case 'introduced':
         return formatMoveLabel(move.details?.generation?.name)
       default:
-        return 'N/A'
+        return '—'
     }
   }
 
