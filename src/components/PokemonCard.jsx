@@ -368,14 +368,15 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
               // form's front_female sprite is spurious, so don't offer a female
               // toggle here.
               const hasFemaleVariety = (species?.varieties || []).some(v => v.pokemon?.name?.endsWith('-female'))
+              // Some species carry a front_female sprite in the API that no game
+              // actually uses (erroneous/identical). Omit those explicitly.
+              const NO_FEMALE_SPRITE = new Set(['eevee'])
+              const baseName = displayPokemon?.name?.split('-')[0]
               // Only offer a female view when the Pokémon actually HAS a distinct
               // female sprite. front_female is the canonical indicator — it's null
               // for Pokémon without gender differences (e.g. Charmander), so they
               // don't get a spurious female mode.
-              const hasFemaleSprite = !!displayPokemon?.sprites?.front_female
-              // For such Pokémon in an animated (Gen 5) context with no animated
-              // female sprite, reuse the normal animated sprite instead of dropping
-              // to a static image — e.g. Eevee, whose female looks identical.
+              const hasFemaleSprite = !!displayPokemon?.sprites?.front_female && !NO_FEMALE_SPRITE.has(baseName)
               const femaleSrc = (hasFemaleSprites && !hasFemaleVariety && hasFemaleSprite)
                 ? (versionAnimFemale || versionAnimSprite || versionFemaleSprite || displayPokemon.sprites.front_female)
                 : null
