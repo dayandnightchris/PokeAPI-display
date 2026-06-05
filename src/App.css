@@ -708,6 +708,15 @@
   color: white;
 }
 
+/* Compact category pill inside the move tables (PokemonCard) — the default
+   sizing above is tuned for the larger MovePage detail header. */
+.move-table .move-category-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: inherit;
+  white-space: nowrap;
+}
+
 .move-detail-stats {
   display: flex;
   gap: 16px;

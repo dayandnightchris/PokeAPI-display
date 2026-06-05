@@ -238,8 +238,11 @@ export default function MoveTable({ title, moves, showLevel, showTmNumber, showM
       }
       case 'effect':
         return getMoveEffectEntry(move.details)
-      case 'category':
-        return formatMoveLabel(getMoveCategoryForGen(move, generationNum))
+      case 'category': {
+        const cat = getMoveCategoryForGen(move, generationNum)
+        if (!cat) return 'N/A'
+        return <span className="move-category-badge" data-category={cat}>{cat}</span>
+      }
       case 'power':
         return move.details?.power ?? 'N/A'
       case 'pp':
