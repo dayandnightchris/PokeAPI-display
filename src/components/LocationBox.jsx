@@ -1,5 +1,51 @@
+import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { versionDisplayNames, versionGeneration, generationVersions } from '../utils/versionInfo'
 import { titleCase, formatLocationName } from '../utils/format'
+
+// A hover/tap tooltip rendered into a body-level portal so it escapes the
+// Location box's overflow clipping (the encounter table needs to scroll, which
+// would otherwise crop or scroll this tooltip). Positioned with `fixed` from
+// the trigger's bounding rect.
+function PortalTooltip({ label, className, children }) {
+  const [coords, setCoords] = useState(null)
+  const triggerRef = useRef(null)
+
+  const open = () => {
+    const r = triggerRef.current?.getBoundingClientRect()
+    if (r) setCoords({ top: r.bottom + 6, left: r.left + r.width / 2 })
+  }
+  const close = () => setCoords(null)
+
+  // A fixed-positioned tooltip would detach from the trigger on scroll/resize.
+  useEffect(() => {
+    if (!coords) return
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', close)
+    return () => {
+      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('resize', close)
+    }
+  }, [coords])
+
+  return (
+    <span
+      ref={triggerRef}
+      className="tooltip-trigger"
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse') open() }}
+      onPointerLeave={(e) => { if (e.pointerType === 'mouse') close() }}
+      onClick={() => (coords ? close() : open())}
+    >
+      {label}
+      {coords && createPortal(
+        <span className={`portal-tooltip ${className || ''}`} style={{ top: coords.top, left: coords.left }}>
+          {children}
+        </span>,
+        document.body
+      )}
+    </span>
+  )
+}
 
 export default function LocationBox({
   selectedVersion,
@@ -10,9 +56,33 @@ export default function LocationBox({
   species,
   canEvolveFrom,
   canEvolveFromChain,
+  evolveSteps,
   canTradeAndEvolveFrom,
   evoFamilyVersions,
 }) {
+  // "Catch X and evolve" — with the evolution method(s) shown on hover over
+  // "evolve" (reusing the evolution-line details), e.g. "Jolteon: Use thunder stone".
+  const renderCatchAndEvolve = () => {
+    const catchText = canEvolveFromChain.length > 1
+      ? canEvolveFromChain.map(titleCase).join(' or ')
+      : titleCase(canEvolveFrom)
+    const hasSteps = evolveSteps && evolveSteps.length > 0
+    return (
+      <p style={{ margin: '0' }}>
+        Catch {catchText} and{' '}
+        {hasSteps ? (
+          <PortalTooltip label="evolve" className="evolve-method-tooltip">
+            {evolveSteps.map((s, i) => (
+              <span key={i} className="evolve-method-row">
+                <strong>{titleCase(s.to)}</strong>: {s.method}
+              </span>
+            ))}
+          </PortalTooltip>
+        ) : 'evolve'}.
+      </p>
+    )
+  }
+
   return (
           <div className="info-box location-box">
             <div className="box-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -196,11 +266,7 @@ export default function LocationBox({
                   // --- No wild encounters for this version: priority fallback ---
                   // Priority 1: Can it evolve from a pre-evolution available in this game?
                   if (canEvolveFrom) {
-                    const fmt = titleCase
-                    const catchText = canEvolveFromChain.length > 1
-                      ? canEvolveFromChain.map(fmt).join(' or ')
-                      : fmt(canEvolveFrom)
-                    return <p style={{ margin: '0' }}>Catch {catchText} and evolve.</p>
+                    return renderCatchAndEvolve()
                   }
 
                   // Priority 1b: Breeding (available in all games except RBY, Colosseum, XD, Legends Arceus, Legends Z-A)
@@ -259,11 +325,7 @@ export default function LocationBox({
                 (() => {
                   // No encounter data at all from the API — same priority fallback
                   if (canEvolveFrom) {
-                    const fmt = titleCase
-                    const catchText = canEvolveFromChain.length > 1
-                      ? canEvolveFromChain.map(fmt).join(' or ')
-                      : fmt(canEvolveFrom)
-                    return <p style={{ margin: '0' }}>Catch {catchText} and evolve.</p>
+                    return renderCatchAndEvolve()
                   }
 
                   // Priority 1b: Breeding — even though this Pokémon has no encounters,

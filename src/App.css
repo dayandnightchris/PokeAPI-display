@@ -355,6 +355,33 @@
   }
 }
 
+/* Body-portal tooltip (escapes overflow-clipping containers) — used for the
+   "Catch X and evolve" evolution-method hint in the Location box. */
+.portal-tooltip {
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: 2000;
+  width: max-content;
+  max-width: 240px;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-color);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: left;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
+.evolve-method-row {
+  display: block;
+}
+
+.evolve-method-row + .evolve-method-row {
+  margin-top: 2px;
+}
+
 /* Weight → Low Kick / Grass Knot base-power tooltip */
 .weight-bp-tooltip {
   width: 220px;

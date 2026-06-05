@@ -47,7 +47,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   const abilityDescriptionsBase = useAbilityDescriptions(formPokemon || pokemon)
   const [extraAbilityDescs, setExtraAbilityDescs] = useState({})
   const evolutions = useEvolutionChain({ species, selectedVersion, selectedForm })
-  const { canEvolveFrom, canEvolveFromChain, canTradeAndEvolveFrom, evoFamilyVersions } = usePreEvolutionCheck({ species, selectedVersion })
+  const { canEvolveFrom, canEvolveFromChain, evolveSteps, canTradeAndEvolveFrom, evoFamilyVersions } = usePreEvolutionCheck({ species, selectedVersion })
   // For forms with empty moves (e.g. PLZA megas), fall back to base pokemon's moves
   const movesSource = (formPokemon && formPokemon.moves?.length > 0) ? formPokemon : pokemon
   const { moves, loading: movesLoading } = useGroupedMoves(movesSource, selectedVersion, species)
@@ -565,6 +565,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
             species={species}
             canEvolveFrom={canEvolveFrom}
             canEvolveFromChain={canEvolveFromChain}
+            evolveSteps={evolveSteps}
             canTradeAndEvolveFrom={canTradeAndEvolveFrom}
             evoFamilyVersions={evoFamilyVersions}
           />

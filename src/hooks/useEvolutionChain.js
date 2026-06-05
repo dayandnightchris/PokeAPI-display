@@ -70,7 +70,7 @@ function formatEvolutionDetail(detail) {
   return trigger.replace(/-/g, ' ')
 }
 
-function formatEvolutionDetails(details) {
+export function formatEvolutionDetails(details) {
   if (!Array.isArray(details) || details.length === 0) return 'Unknown'
   const seen = new Set()
   const unique = details.map(formatEvolutionDetail).filter(t => !seen.has(t) && seen.add(t))
