@@ -709,12 +709,16 @@
 }
 
 /* Compact category pill inside the move tables (PokemonCard) — the default
-   sizing above is tuned for the larger MovePage detail header. */
+   sizing above is tuned for the larger MovePage detail header. Fixed width +
+   centered text so all three pills are uniform, matching the type pill. */
 .move-table .move-category-badge {
   display: inline-block;
-  padding: 1px 6px;
+  width: 62px;
+  padding: 1px 0;
   font-size: inherit;
+  text-align: center;
   white-space: nowrap;
+  overflow: hidden;
 }
 
 .move-detail-stats {
