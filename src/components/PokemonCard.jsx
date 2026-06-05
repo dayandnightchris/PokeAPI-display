@@ -22,6 +22,17 @@ import {
   usePreEvolutionCheck
 } from '../hooks'
 
+// Weight-based base power for Low Kick / Grass Knot. maxKg is the exclusive
+// upper bound of each bracket (a Pokémon weighing exactly 10 kg → 40 BP).
+const WEIGHT_BP_BRACKETS = [
+  { maxKg: 10,       bp: 20,  kg: 'Under 10 kg',  lbs: 'Under 22 lbs' },
+  { maxKg: 25,       bp: 40,  kg: '10 – 25 kg',   lbs: '22 – 55 lbs' },
+  { maxKg: 50,       bp: 60,  kg: '25 – 50 kg',   lbs: '55 – 110 lbs' },
+  { maxKg: 100,      bp: 80,  kg: '50 – 100 kg',  lbs: '110 – 220 lbs' },
+  { maxKg: 200,      bp: 100, kg: '100 – 200 kg', lbs: '220 – 440 lbs' },
+  { maxKg: Infinity, bp: 120, kg: 'Over 200 kg',  lbs: 'Over 440 lbs' },
+]
+
 export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, onAbilityClick, onItemClick, onLocationClick, onEggMoveClick, initialForm, initialVersion, onStateChange, searchLists, onUnifiedNavigate, searchLoading, initialQuery }) {
   // UI state
   const [versionInfo, setVersionInfo] = useState(null)
@@ -449,7 +460,39 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
             </div>
             <div className="info-row">
               <span className="label">Weight:</span>
-              <span className="value">{formatWeight(displayPokemon.weight)}</span>
+              {/* Weight-based base power only applies from Gen 3 (Low Kick became
+                  weight-based then); Grass Knot was added in Gen 4. Omit entirely
+                  in Gens 1-2. Unknown gen (still loading) shows the modern form. */}
+              {displayPokemon.weight && (!selectedGenerationRank || selectedGenerationRank >= 3) ? (() => {
+                const kg = displayPokemon.weight / 10
+                const activeIdx = WEIGHT_BP_BRACKETS.findIndex(b => kg < b.maxKg)
+                const bp = WEIGHT_BP_BRACKETS[activeIdx]?.bp ?? 120
+                const title = (!selectedGenerationRank || selectedGenerationRank >= 4)
+                  ? 'Low Kick / Grass Knot'
+                  : 'Low Kick'
+                return (
+                  <span className="value tooltip-trigger">
+                    {formatWeight(displayPokemon.weight)}
+                    <span className="tooltip-text weight-bp-tooltip">
+                      <span className="weight-bp-title">{title}</span>
+                      <span className="weight-bp-current">This Pokémon: <strong>{bp} BP</strong></span>
+                      <span className="weight-bp-rows">
+                        {WEIGHT_BP_BRACKETS.map((b, i) => (
+                          <span key={b.bp} className={`weight-bp-row${i === activeIdx ? ' active' : ''}`}>
+                            <span className="weight-bp-range">
+                              <span>{b.kg}</span>
+                              <span className="weight-bp-lbs">{b.lbs}</span>
+                            </span>
+                            <span className="weight-bp-power">{b.bp}</span>
+                          </span>
+                        ))}
+                      </span>
+                    </span>
+                  </span>
+                )
+              })() : (
+                <span className="value">{formatWeight(displayPokemon.weight)}</span>
+              )}
             </div>
           </div>
         </div>

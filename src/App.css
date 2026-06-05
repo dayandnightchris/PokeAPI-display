@@ -355,6 +355,62 @@
   }
 }
 
+/* Weight → Low Kick / Grass Knot base-power tooltip */
+.weight-bp-tooltip {
+  width: 220px;
+  margin-left: -110px;
+  text-align: left;
+  padding: 8px 10px;
+}
+
+.weight-bp-title {
+  display: block;
+  font-weight: bold;
+  font-size: 11px;
+}
+
+.weight-bp-current {
+  display: block;
+  font-size: 11px;
+  margin: 1px 0 6px;
+}
+
+.weight-bp-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.weight-bp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 10.5px;
+}
+
+.weight-bp-row.active {
+  background: rgba(255, 0, 0, 0.18);
+  font-weight: bold;
+}
+
+.weight-bp-range {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.weight-bp-lbs {
+  font-size: 9px;
+  opacity: 0.7;
+}
+
+.weight-bp-power {
+  font-weight: bold;
+  margin-left: 8px;
+}
+
 .move-table {
   width: 100%;
   border-collapse: collapse;
