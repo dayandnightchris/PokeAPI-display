@@ -4,7 +4,7 @@ import VersionSelector from './VersionSelector'
 import UnifiedSearch from './UnifiedSearch'
 import { renderEvolutionForest } from './EvolutionTree'
 import { getVersionInfo, generationOrder, versionGeneration } from '../utils/versionInfo'
-import { titleCase } from '../utils/format'
+import { titleCase, formatHeight, formatWeight } from '../utils/format'
 import MoveTable from './MoveTable'
 import TypeMatchupDisplay from './TypeMatchupDisplay'
 import BreedingInfoBox from './BreedingInfoBox'
@@ -445,11 +445,11 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
             </div>
             <div className="info-row">
               <span className="label">Height:</span>
-              <span className="value">{displayPokemon.height ? (displayPokemon.height / 10).toFixed(1) + ' m' : 'N/A'}</span>
+              <span className="value">{formatHeight(displayPokemon.height)}</span>
             </div>
             <div className="info-row">
               <span className="label">Weight:</span>
-              <span className="value">{displayPokemon.weight ? (displayPokemon.weight / 10).toFixed(1) + ' kg' : 'N/A'}</span>
+              <span className="value">{formatWeight(displayPokemon.weight)}</span>
             </div>
           </div>
         </div>
