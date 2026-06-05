@@ -77,7 +77,13 @@ const getMoveEffectEntry = (details) => {
   if (!entry) return '—'
   const baseText = entry.short_effect || entry.effect || '—'
   if (details.effect_chance == null) return baseText
-  return baseText.replaceAll('$effect_chance', details.effect_chance)
+  // Some effect texts carry a $effect_chance placeholder; fill it in.
+  if (baseText.includes('$effect_chance')) {
+    return baseText.replaceAll('$effect_chance', details.effect_chance)
+  }
+  // Most short_effects just say "a chance" with no number — append the % after
+  // the first occurrence of "chance", e.g. "Has a chance (10%) to burn…".
+  return baseText.replace(/\bchance\b/i, `chance (${details.effect_chance}%)`)
 }
 
 // In Gens 1-3 move category was determined by type, not per-move

@@ -808,6 +808,12 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
                 <span className="move-stat-label">Priority</span>
                 <span className="move-stat-value">{moveData.priority != null ? (moveData.priority > 0 ? `+${moveData.priority}` : moveData.priority) : '—'}</span>
               </div>
+              {moveStats.effectChance != null && (
+                <div className="move-stat-item">
+                  <span className="move-stat-label">Effect Chance</span>
+                  <span className="move-stat-value">{moveStats.effectChance}%</span>
+                </div>
+              )}
             </div>
 
             {description && (
