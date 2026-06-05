@@ -79,13 +79,17 @@ export default function UnifiedSearch({ lists, onNavigate, activeTab, placeholde
     // Collect matches per category
     const perCategory = {}
 
-    // Helper: collect matches for a generic name list
+    // Helper: collect matches for a generic name list.
+    // Rank by score (prefix matches beat substring matches) BEFORE applying the
+    // limit, so e.g. "ty" surfaces Typhlosion/Tyranitar rather than letting
+    // alphabetically-earlier substring matches (Delcatty, Aerodactyl) fill the cap.
     const collectMatches = (list, category, limit) => {
       if (!list?.length) return []
       return list
         .filter(name => name.includes(q) || name.replace(/-/g, '').includes(qNoSep))
-        .slice(0, limit)
         .map(name => ({ name, category, score: score(name) }))
+        .sort((a, b) => a.score - b.score || a.name.localeCompare(b.name))
+        .slice(0, limit)
     }
 
     // Build matches per category, giving the active tab a larger cap
