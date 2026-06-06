@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { versionGeneration, generationVersions, versionDisplayNames } from '../utils/versionInfo'
+import { versionGeneration, generationVersions, versionDisplayNames, versionHasDayNight } from '../utils/versionInfo'
 import { formatEvolutionDetails } from './useEvolutionChain'
 
 /**
@@ -129,7 +129,7 @@ function findChainPath(node, targetName, path = []) {
 
 // Build the evolution steps needed to get from a catchable pre-evo to the
 // target, e.g. [{ to: 'jolteon', method: 'Use thunder stone' }].
-function buildEvolveSteps(chainRoot, fromName, targetName) {
+function buildEvolveSteps(chainRoot, fromName, targetName, hasDayNight) {
   const fullPath = findChainPath(chainRoot, targetName)
   if (!fullPath) return []
   const startIdx = fullPath.findIndex(n => n.species.name === fromName)
@@ -138,7 +138,7 @@ function buildEvolveSteps(chainRoot, fromName, targetName) {
   for (let i = startIdx + 1; i < fullPath.length; i++) {
     steps.push({
       to: fullPath[i].species.name,
-      method: formatEvolutionDetails(fullPath[i].evolution_details),
+      method: formatEvolutionDetails(fullPath[i].evolution_details, hasDayNight),
     })
   }
   return steps
@@ -229,7 +229,7 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
           if (active) {
             setCanEvolveFrom(ordered[0])
             setCanEvolveFromChain(ordered)
-            setEvolveSteps(buildEvolveSteps(chainData.chain, ordered[0], species.name))
+            setEvolveSteps(buildEvolveSteps(chainData.chain, ordered[0], species.name, versionHasDayNight(selectedVersion)))
             setCanTradeAndEvolveFrom(null)
             setLoading(false)
           }

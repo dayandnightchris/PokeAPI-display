@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { fetchPokemonCached } from '../utils/pokeCache'
-import { versionGroupToVersions } from '../utils/versionInfo'
+import { versionGroupToVersions, versionHasDayNight } from '../utils/versionInfo'
 
 const speciesCache = new Map()
 
@@ -18,7 +18,7 @@ async function fetchSpeciesByName(speciesName) {
   }
 }
 
-function formatEvolutionDetail(detail) {
+function formatEvolutionDetail(detail, hasDayNight = true) {
   if (!detail?.trigger?.name) return 'Unknown'
 
   const parts = []
@@ -27,7 +27,7 @@ function formatEvolutionDetail(detail) {
   if (trigger === 'level-up') {
     parts.push('Level up')
     if (detail.min_level) parts.push(`L${detail.min_level}`)
-    if (detail.time_of_day) parts.push(`(${detail.time_of_day})`)
+    if (detail.time_of_day && hasDayNight) parts.push(`(${detail.time_of_day})`)
     if (detail.held_item?.name) parts.push(`holding ${detail.held_item.name.replace(/-/g, ' ')}`)
     if (detail.known_move?.name) parts.push(`knowing ${detail.known_move.name.replace(/-/g, ' ')}`)
     if (detail.known_move_type?.name) parts.push(`knowing a ${detail.known_move_type.name} move`)
@@ -53,7 +53,7 @@ function formatEvolutionDetail(detail) {
   if (trigger === 'use-item') {
     parts.push('Use')
     if (detail.item?.name) parts.push(detail.item.name.replace(/-/g, ' '))
-    if (detail.time_of_day) parts.push(`(${detail.time_of_day})`)
+    if (detail.time_of_day && hasDayNight) parts.push(`(${detail.time_of_day})`)
     return parts.join(' ')
   }
 
@@ -70,10 +70,10 @@ function formatEvolutionDetail(detail) {
   return trigger.replace(/-/g, ' ')
 }
 
-export function formatEvolutionDetails(details) {
+export function formatEvolutionDetails(details, hasDayNight = true) {
   if (!Array.isArray(details) || details.length === 0) return 'Unknown'
   const seen = new Set()
-  const unique = details.map(formatEvolutionDetail).filter(t => !seen.has(t) && seen.add(t))
+  const unique = details.map(d => formatEvolutionDetail(d, hasDayNight)).filter(t => !seen.has(t) && seen.add(t))
   return unique.join(' OR ')
 }
 
@@ -243,6 +243,9 @@ export function useEvolutionChain({ species, selectedVersion, selectedForm }) {
     if (!species?.evolution_chain?.url) return
     let active = true
 
+    // Hide time-of-day evolution qualifiers in versions without a day/night cycle.
+    const hasDayNight = versionHasDayNight(selectedVersion)
+
     // Detect which regional line we're currently viewing (if any)
     const activeRegion = getRegionSuffix(selectedForm)
 
@@ -342,7 +345,7 @@ export function useEvolutionChain({ species, selectedVersion, selectedForm }) {
             const detailsToUse = regionalDetails.length > 0 ? regionalDetails : evo.evolution_details
             for (const child of childRoots) {
               childEdges.push({
-                triggerText: formatEvolutionDetails(detailsToUse),
+                triggerText: formatEvolutionDetails(detailsToUse, hasDayNight),
                 node: child
               })
             }
@@ -367,7 +370,7 @@ export function useEvolutionChain({ species, selectedVersion, selectedForm }) {
               const childRoots = await buildNodes(evo)
               for (const child of childRoots) {
                 childEdges.push({
-                  triggerText: formatEvolutionDetails(evo.evolution_details),
+                  triggerText: formatEvolutionDetails(evo.evolution_details, hasDayNight),
                   node: child
                 })
               }
@@ -381,7 +384,7 @@ export function useEvolutionChain({ species, selectedVersion, selectedForm }) {
             if (regionalAvailable) {
               const detailsToUse = regionalDetails.length > 0 ? regionalDetails : evo.evolution_details
               childEdges.push({
-                triggerText: formatEvolutionDetails(detailsToUse),
+                triggerText: formatEvolutionDetails(detailsToUse, hasDayNight),
                 node: { name: regionalEvoName, url: evo.species.url, children: [] }
               })
             }
@@ -392,7 +395,7 @@ export function useEvolutionChain({ species, selectedVersion, selectedForm }) {
             const baseDetailsToUse = baseDetails.length > 0 ? baseDetails : evo.evolution_details
             for (const child of baseChildRoots) {
               childEdges.push({
-                triggerText: formatEvolutionDetails(baseDetailsToUse),
+                triggerText: formatEvolutionDetails(baseDetailsToUse, hasDayNight),
                 node: child
               })
             }
@@ -406,7 +409,7 @@ export function useEvolutionChain({ species, selectedVersion, selectedForm }) {
               const childRoots = await buildNodes(evo)
               for (const child of childRoots) {
                 childEdges.push({
-                  triggerText: formatEvolutionDetails(evo.evolution_details),
+                  triggerText: formatEvolutionDetails(evo.evolution_details, hasDayNight),
                   node: child
                 })
               }
@@ -445,7 +448,7 @@ export function useEvolutionChain({ species, selectedVersion, selectedForm }) {
             const childRoots = await buildNodes(evo)
             for (const child of childRoots) {
               childEdges.push({
-                triggerText: formatEvolutionDetails(detailsToShow),
+                triggerText: formatEvolutionDetails(detailsToShow, hasDayNight),
                 node: child
               })
             }
@@ -463,7 +466,7 @@ export function useEvolutionChain({ species, selectedVersion, selectedForm }) {
                     const { regionalDetails: regDets } = splitEvolutionDetails(evo.evolution_details, false)
                     const triggerDets = regDets.length > 0 ? regDets : evo.evolution_details
                     childEdges.push({
-                      triggerText: formatEvolutionDetails(triggerDets),
+                      triggerText: formatEvolutionDetails(triggerDets, hasDayNight),
                       node: { name: regionalEvoName, url: evo.species.url, children: [] }
                     })
                   }

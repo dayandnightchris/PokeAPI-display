@@ -283,6 +283,14 @@ export function getTransferSourceVersionGroups(selectedVersion, versionGroup) {
   return null
 }
 
+// Time-of-day (day/night) evolution requires a day/night cycle, which exists
+// from Gen 2 onward EXCEPT FireRed/LeafGreen, Colosseum, and XD (and not Gen 1).
+const NO_DAY_NIGHT_VERSIONS = new Set(['red', 'blue', 'yellow', 'firered', 'leafgreen', 'colosseum', 'xd'])
+export function versionHasDayNight(version) {
+  if (!version) return true
+  return !NO_DAY_NIGHT_VERSIONS.has(version)
+}
+
 export async function getVersionInfo(versionName) {
   if (!versionName) return null
 
