@@ -9,6 +9,7 @@ import ItemPage from './components/ItemPage'
 import LocationPage from './components/LocationPage'
 import { defaultVersionGroups } from './utils/versionInfo'
 import EggMoveTab from './components/EggMoveTab'
+import PokemonListLanding from './components/PokemonListLanding'
 
 /**
  * Read URL path parameters on load.
@@ -421,6 +422,17 @@ function App() {
     window.scrollTo(0, 0)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Return to the Pokémon-tab landing page (the browsable list).
+  const goToLanding = useCallback(() => {
+    setPokemon(null)
+    setError(null)
+    setSearchQuery('')
+    setActiveTab('pokemon')
+    urlStateRef.current = { version: null, name: null }
+    updateUrl('pokemon', urlStateRef.current, true)
+    window.scrollTo(0, 0)
+  }, [])
+
   // Unified search navigation — routes to the correct tab based on category
   const handleUnifiedNavigate = useCallback((category, name) => {
     switch (category) {
@@ -644,7 +656,7 @@ function App() {
     <ErrorBoundary>
     <div className="app">
       <header className="app-header">
-        <h1>BlisyDex</h1>
+        <h1 className="app-title" onClick={goToLanding} title="Back to home page">BlisyDex</h1>
         <button
           className="theme-toggle"
           onClick={toggleTheme}
@@ -703,6 +715,10 @@ function App() {
                 <UnifiedSearch lists={searchLists} onNavigate={handleUnifiedNavigate} activeTab="pokemon" loading={loading} initialQuery={searchQuery} />
               </div>
             </div>
+          )}
+
+          {!pokemon && !loading && (
+            <PokemonListLanding onPokemonClick={navigateToPokemon} />
           )}
           
           {error && <div className="error">{error}</div>}
