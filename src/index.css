@@ -268,16 +268,39 @@ body {
   transition: background 0.12s;
 }
 
+/* Distinct hover in both themes (the shared --table-row-hover matches the page
+   background in light mode, making the hover invisible there). */
 .pokedex-row:hover {
+  background: #e9edf6;
+}
+
+[data-theme="dark"] .pokedex-row:hover {
   background: var(--table-row-hover);
 }
 
-.pokedex-col-sprite { width: 40px; }
+/* Sortable column-header buttons */
+.pokedex-table th button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pokedex-table th button:hover {
+  color: var(--primary-color);
+}
+
+.pokedex-col-sprite { width: 50px; }
 .pokedex-col-name { width: 130px; white-space: nowrap; }
 .pokedex-col-stat { width: 42px; text-align: center; }
 
 .pokedex-sprite {
-  width: 40px;
+  width: 48px;
   height: 40px;
   image-rendering: pixelated;
   object-fit: contain;
@@ -312,6 +335,16 @@ body {
   font-size: 12px;
   line-height: 1.3;
   color: var(--text-color);
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pokedex-ability:hover {
+  text-decoration: underline;
+  color: var(--primary-color);
 }
 
 .pokedex-ability.hidden {

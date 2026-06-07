@@ -718,7 +718,7 @@ function App() {
           )}
 
           {!pokemon && !loading && (
-            <PokemonListLanding onPokemonClick={navigateToPokemon} />
+            <PokemonListLanding onPokemonClick={navigateToPokemon} onAbilityClick={navigateToAbility} />
           )}
           
           {error && <div className="error">{error}</div>}

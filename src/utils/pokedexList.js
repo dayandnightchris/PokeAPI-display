@@ -22,9 +22,9 @@ export const ALL_TYPES = [
   'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy',
 ]
 
-// Sprite icon URL straight from the id — no extra fetch needed.
+// Gen 8 box icon URL straight from the id — no extra fetch needed.
 export const spriteUrlForId = (id) =>
-  `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`
+  `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-viii/icons/${id}.png`
 
 const QUERY = `{
   pokemon_v2_pokemon(where: {id: {_lte: 809}}, order_by: {name: asc}) {

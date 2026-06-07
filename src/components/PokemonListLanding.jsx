@@ -25,12 +25,28 @@ function TypePill({ type, onClick, dimmed }) {
   )
 }
 
-export default function PokemonListLanding({ onPokemonClick }) {
+export default function PokemonListLanding({ onPokemonClick, onAbilityClick }) {
   const [list, setList] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedTypes, setSelectedTypes] = useState(() => new Set())
   const [selectedRegion, setSelectedRegion] = useState(null) // null = All
+  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'asc' })
+
+  const NUMERIC_KEYS = new Set(['id', ...STAT_COLUMNS.map(([k]) => k)])
+
+  const handleSort = (key) => {
+    setSortConfig(prev => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+      }
+      // New column: stats/numeric default to desc (highest first); name to asc.
+      return { key, direction: NUMERIC_KEYS.has(key) && key !== 'id' ? 'desc' : 'asc' }
+    })
+  }
+
+  const sortIndicator = (key) =>
+    sortConfig.key === key ? (sortConfig.direction === 'asc' ? ' ▲' : ' ▼') : ''
 
   useEffect(() => {
     let active = true
@@ -55,13 +71,23 @@ export default function PokemonListLanding({ onPokemonClick }) {
     if (!list) return []
     const region = REGIONS.find(r => r.name === selectedRegion)
     const types = [...selectedTypes]
-    return list.filter(p => {
+    const rows = list.filter(p => {
       if (region && (p.id < region.min || p.id > region.max)) return false
       // multi-select AND: Pokémon must have every selected type
       if (types.length && !types.every(t => p.types.includes(t))) return false
       return true
     })
-  }, [list, selectedTypes, selectedRegion])
+
+    const { key, direction } = sortConfig
+    const getVal = (p) => (key === 'name' ? p.name : key === 'id' ? p.id : (p.stats[key] ?? -1))
+    rows.sort((a, b) => {
+      const va = getVal(a), vb = getVal(b)
+      let r = typeof va === 'number' && typeof vb === 'number' ? va - vb : String(va).localeCompare(String(vb))
+      if (r === 0) r = a.id - b.id // stable tiebreak by dex number
+      return direction === 'asc' ? r : -r
+    })
+    return rows
+  }, [list, selectedTypes, selectedRegion, sortConfig])
 
   return (
     <div className="pokedex-landing">
@@ -116,12 +142,18 @@ export default function PokemonListLanding({ onPokemonClick }) {
           <table className="pokedex-table">
             <thead>
               <tr>
-                <th className="pokedex-col-sprite"></th>
-                <th className="pokedex-col-name">Name</th>
+                <th className="pokedex-col-sprite">
+                  <button type="button" onClick={() => handleSort('id')}>#{sortIndicator('id')}</button>
+                </th>
+                <th className="pokedex-col-name">
+                  <button type="button" onClick={() => handleSort('name')}>Name{sortIndicator('name')}</button>
+                </th>
                 <th className="pokedex-col-types">Type</th>
                 <th className="pokedex-col-abilities">Abilities</th>
                 {STAT_COLUMNS.map(([key, label]) => (
-                  <th key={key} className="pokedex-col-stat">{label}</th>
+                  <th key={key} className="pokedex-col-stat">
+                    <button type="button" onClick={() => handleSort(key)}>{label}{sortIndicator(key)}</button>
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -145,9 +177,14 @@ export default function PokemonListLanding({ onPokemonClick }) {
                   </td>
                   <td className="pokedex-col-abilities">
                     {p.abilities.map(a => (
-                      <span key={a.name} className={`pokedex-ability${a.isHidden ? ' hidden' : ''}`}>
+                      <button
+                        key={a.name}
+                        type="button"
+                        className={`pokedex-ability${a.isHidden ? ' hidden' : ''}`}
+                        onClick={(e) => { e.stopPropagation(); onAbilityClick?.(a.name) }}
+                      >
                         {titleCase(a.name)}{a.isHidden ? ' (H)' : ''}
-                      </span>
+                      </button>
                     ))}
                   </td>
                   {STAT_COLUMNS.map(([key]) => (
