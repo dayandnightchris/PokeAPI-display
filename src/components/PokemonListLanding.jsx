@@ -15,6 +15,12 @@ const STAT_COLUMNS = [
 
 const NUMERIC_KEYS = new Set(['id', ...STAT_COLUMNS.map(([k]) => k)])
 
+const PAGE_SIZE = 60
+
+// Highest National-Dex id that exists by a given generation (cumulative).
+// Used so the version dropdown limits the list to Pokémon that exist by then.
+const maxIdForGen = (gen) => (gen ? (REGIONS[gen - 1]?.max ?? Infinity) : Infinity)
+
 // Filter chip kinds, for the colored dot/label in suggestions + chips.
 const KIND_LABEL = { type: 'Type', ability: 'Ability', move: 'Move' }
 
@@ -30,7 +36,9 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
   const [query, setQuery] = useState('')
   const [activeSuggestion, setActiveSuggestion] = useState(0)
   const [addingMove, setAddingMove] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const inputRef = useRef(null)
+  const sentinelRef = useRef(null)
 
   const gen = selectedVersion ? versionGeneration[selectedVersion] : null
 
@@ -43,6 +51,9 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [])
+
+  // Reset how many rows are shown whenever the result set changes.
+  useEffect(() => { setVisibleCount(PAGE_SIZE) }, [filters, selectedRegion, sortConfig, gen])
 
   // ── Filter add/remove ──────────────────────────────────────────────
   const hasFilter = (kind, value) => filters.some(f => f.kind === kind && f.value === value)
@@ -99,7 +110,9 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
   const filtered = useMemo(() => {
     if (!list) return []
     const region = REGIONS.find(r => r.name === selectedRegion)
+    const maxId = maxIdForGen(gen)
     const rows = list.filter(p => {
+      if (p.id > maxId) return false // version dropdown: hide later-gen Pokémon
       if (region && (p.id < region.min || p.id > region.max)) return false
       const ptypes = typesForGeneration(p, gen)
       for (const f of filters) {
@@ -120,6 +133,17 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
     })
     return rows
   }, [list, filters, selectedRegion, sortConfig, gen])
+
+  // Infinite scroll: reveal the next batch when the bottom sentinel comes into
+  // view (preloading a little early via rootMargin), until everything is shown.
+  useEffect(() => {
+    if (!sentinelRef.current || filtered.length <= visibleCount) return
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) setVisibleCount(c => c + PAGE_SIZE)
+    }, { rootMargin: '300px' })
+    obs.observe(sentinelRef.current)
+    return () => obs.disconnect()
+  }, [filtered.length, visibleCount])
 
   const handleSort = (key) => {
     setSortConfig(prev => {
@@ -199,7 +223,10 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
 
       {list && !loading && (
         <div className="pokedex-table-wrapper">
-          <div className="pokedex-count">{filtered.length} Pokémon</div>
+          <div className="pokedex-count">
+            {filtered.length} Pokémon
+            {filtered.length > visibleCount ? ` (showing ${visibleCount})` : ''}
+          </div>
           <table className="pokedex-table">
             <thead>
               <tr>
@@ -219,7 +246,7 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
               </tr>
             </thead>
             <tbody>
-              {filtered.map(p => {
+              {filtered.slice(0, visibleCount).map(p => {
                 const ptypes = typesForGeneration(p, gen)
                 return (
                   <tr key={p.id} className="pokedex-row" onClick={() => onPokemonClick(p.name)}>
@@ -258,6 +285,11 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
               })}
             </tbody>
           </table>
+          {filtered.length > visibleCount && (
+            <div ref={sentinelRef} className="pokedex-sentinel">
+              Loading more… ({filtered.length - visibleCount} remaining)
+            </div>
+          )}
         </div>
       )}
     </div>

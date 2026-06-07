@@ -185,26 +185,6 @@ body {
   min-width: 52px;
 }
 
-.pokedex-type-pill {
-  border: none;
-  border-radius: 4px;
-  padding: 3px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: capitalize;
-  cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
-}
-
-.pokedex-type-pill.dimmed {
-  opacity: 0.35;
-}
-
-.pokedex-type-pill:hover {
-  transform: translateY(-1px);
-}
-
-.pokedex-filter-clear,
 .pokedex-region-btn {
   border: 1px solid var(--border-light);
   background: var(--control-bg);
@@ -351,6 +331,13 @@ body {
   font-size: 12px;
   color: var(--text-muted);
   margin: 6px 0;
+}
+
+.pokedex-sentinel {
+  text-align: center;
+  padding: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .pokedex-table-wrapper {
