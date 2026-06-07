@@ -3,7 +3,7 @@
 // REST calls), cached in localStorage + an in-memory memo so it loads once.
 
 const GRAPHQL_URL = 'https://beta.pokeapi.co/graphql/v1beta'
-const CACHE_KEY = 'pokedexList-v1'
+const CACHE_KEY = 'pokedexList-v2'
 
 // National-Dex id ranges per region (Gen 1–7; Gen 8+ is excluded elsewhere).
 export const REGIONS = [
@@ -31,6 +31,7 @@ const QUERY = `{
     id
     name
     pokemon_v2_pokemontypes { pokemon_v2_type { name } }
+    pokemon_v2_pokemontypepasts { generation_id pokemon_v2_type { name } }
     pokemon_v2_pokemonstats { base_stat pokemon_v2_stat { name } }
     pokemon_v2_pokemonabilities { is_hidden pokemon_v2_ability { name } }
   }
@@ -42,16 +43,56 @@ function normalize(raw) {
     for (const s of p.pokemon_v2_pokemonstats || []) {
       stats[s.pokemon_v2_stat?.name] = s.base_stat
     }
+    // Group past-type rows (one row per type per generation) by generation.
+    const pastByGen = {}
+    for (const pt of p.pokemon_v2_pokemontypepasts || []) {
+      const g = pt.generation_id
+      const name = pt.pokemon_v2_type?.name
+      if (g != null && name) (pastByGen[g] ||= []).push(name)
+    }
+    const pastTypes = Object.entries(pastByGen)
+      .map(([generation, types]) => ({ generation: Number(generation), types }))
+      .sort((a, b) => a.generation - b.generation)
+
     return {
       id: p.id,
       name: p.name,
       types: (p.pokemon_v2_pokemontypes || []).map(t => t.pokemon_v2_type?.name).filter(Boolean),
+      pastTypes,
       abilities: (p.pokemon_v2_pokemonabilities || [])
         .map(a => ({ name: a.pokemon_v2_ability?.name, isHidden: a.is_hidden }))
         .filter(a => a.name),
       stats,
     }
   })
+}
+
+// The types a Pokémon had in a given generation. past_types entries record the
+// LAST generation a set of types applied; pick the earliest entry still in
+// effect for `gen` (e.g. Clefairy: Normal through Gen 5, Fairy from Gen 6).
+export function typesForGeneration(p, gen) {
+  if (!gen || !p.pastTypes?.length) return p.types
+  const applicable = p.pastTypes.find(pt => pt.generation >= gen)
+  return applicable ? applicable.types : p.types
+}
+
+// Ids (≤809) of Pokémon that can learn a given move, fetched on demand + cached.
+const learnerCache = new Map()
+export async function fetchMoveLearners(moveName) {
+  if (learnerCache.has(moveName)) return learnerCache.get(moveName)
+  const query = `query($n: String!) {
+    pokemon_v2_pokemonmove(where: {pokemon_v2_move: {name: {_eq: $n}}, pokemon_id: {_lte: 809}}, distinct_on: pokemon_id) { pokemon_id }
+  }`
+  const res = await fetch(GRAPHQL_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, variables: { n: moveName } }),
+  })
+  if (!res.ok) throw new Error(`Move learners request failed (${res.status})`)
+  const json = await res.json()
+  const set = new Set((json.data?.pokemon_v2_pokemonmove || []).map(m => m.pokemon_id))
+  learnerCache.set(moveName, set)
+  return set
 }
 
 let memo = null

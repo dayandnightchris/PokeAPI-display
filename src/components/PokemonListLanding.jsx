@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react'
-import { fetchPokedexList, spriteUrlForId, REGIONS, ALL_TYPES } from '../utils/pokedexList'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { fetchPokedexList, fetchMoveLearners, typesForGeneration, spriteUrlForId, REGIONS, ALL_TYPES } from '../utils/pokedexList'
 import { getTypeColor, getTypeTextColor } from '../utils/typeColors'
 import { titleCase } from '../utils/format'
+import { versionGeneration } from '../utils/versionInfo'
 
 const STAT_COLUMNS = [
   ['hp', 'HP'],
@@ -12,41 +13,26 @@ const STAT_COLUMNS = [
   ['speed', 'Spe'],
 ]
 
-function TypePill({ type, onClick, dimmed }) {
-  return (
-    <button
-      type="button"
-      className={`pokedex-type-pill${dimmed ? ' dimmed' : ''}`}
-      style={{ backgroundColor: getTypeColor(type), color: getTypeTextColor(type) }}
-      onClick={onClick}
-    >
-      {type}
-    </button>
-  )
-}
+const NUMERIC_KEYS = new Set(['id', ...STAT_COLUMNS.map(([k]) => k)])
 
-export default function PokemonListLanding({ onPokemonClick, onAbilityClick }) {
+// Filter chip kinds, for the colored dot/label in suggestions + chips.
+const KIND_LABEL = { type: 'Type', ability: 'Ability', move: 'Move' }
+
+export default function PokemonListLanding({ onPokemonClick, onAbilityClick, selectedVersion, moveList, abilityList }) {
   const [list, setList] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [selectedTypes, setSelectedTypes] = useState(() => new Set())
   const [selectedRegion, setSelectedRegion] = useState(null) // null = All
   const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'asc' })
 
-  const NUMERIC_KEYS = new Set(['id', ...STAT_COLUMNS.map(([k]) => k)])
+  // Typed filter system (Smogon-style): each chip is { kind, value, label, ids? }
+  const [filters, setFilters] = useState([])
+  const [query, setQuery] = useState('')
+  const [activeSuggestion, setActiveSuggestion] = useState(0)
+  const [addingMove, setAddingMove] = useState(false)
+  const inputRef = useRef(null)
 
-  const handleSort = (key) => {
-    setSortConfig(prev => {
-      if (prev.key === key) {
-        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
-      }
-      // New column: stats/numeric default to desc (highest first); name to asc.
-      return { key, direction: NUMERIC_KEYS.has(key) && key !== 'id' ? 'desc' : 'asc' }
-    })
-  }
-
-  const sortIndicator = (key) =>
-    sortConfig.key === key ? (sortConfig.direction === 'asc' ? ' ▲' : ' ▼') : ''
+  const gen = selectedVersion ? versionGeneration[selectedVersion] : null
 
   useEffect(() => {
     let active = true
@@ -58,23 +44,69 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick }) {
     return () => { active = false }
   }, [])
 
-  const toggleType = (type) => {
-    setSelectedTypes(prev => {
-      const next = new Set(prev)
-      if (next.has(type)) next.delete(type)
-      else next.add(type)
-      return next
-    })
+  // ── Filter add/remove ──────────────────────────────────────────────
+  const hasFilter = (kind, value) => filters.some(f => f.kind === kind && f.value === value)
+
+  const addFilter = async (s) => {
+    if (hasFilter(s.kind, s.value)) { setQuery(''); return }
+    if (s.kind === 'move') {
+      setAddingMove(true)
+      try {
+        const ids = await fetchMoveLearners(s.value)
+        setFilters(prev => [...prev, { ...s, ids }])
+      } catch { /* ignore — move data unavailable */ }
+      finally { setAddingMove(false) }
+    } else {
+      setFilters(prev => [...prev, s])
+    }
+    setQuery('')
+    setActiveSuggestion(0)
   }
 
+  const removeFilter = (idx) => setFilters(prev => prev.filter((_, i) => i !== idx))
+
+  // ── Suggestions ────────────────────────────────────────────────────
+  const suggestions = useMemo(() => {
+    const q = query.trim().toLowerCase().replace(/\s+/g, '-')
+    if (!q) return []
+    const score = (name) => (name.startsWith(q) ? 0 : 1)
+    const collect = (names, kind) =>
+      (names || []).filter(n => n.includes(q)).map(n => ({ kind, value: n, label: titleCase(n) }))
+    const all = [
+      ...collect(ALL_TYPES, 'type'),
+      ...collect(abilityList, 'ability'),
+      ...collect(moveList, 'move'),
+    ].filter(s => !hasFilter(s.kind, s.value))
+    all.sort((a, b) => score(a.value) - score(b.value) || a.label.localeCompare(b.label))
+    return all.slice(0, 8)
+  }, [query, abilityList, moveList, filters])
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Backspace' && query === '' && filters.length) {
+      removeFilter(filters.length - 1)
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault(); setActiveSuggestion(i => Math.min(i + 1, suggestions.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault(); setActiveSuggestion(i => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter' && suggestions[activeSuggestion]) {
+      e.preventDefault(); addFilter(suggestions[activeSuggestion])
+    } else if (e.key === 'Escape') {
+      setQuery('')
+    }
+  }
+
+  // ── Filtering + sorting ────────────────────────────────────────────
   const filtered = useMemo(() => {
     if (!list) return []
     const region = REGIONS.find(r => r.name === selectedRegion)
-    const types = [...selectedTypes]
     const rows = list.filter(p => {
       if (region && (p.id < region.min || p.id > region.max)) return false
-      // multi-select AND: Pokémon must have every selected type
-      if (types.length && !types.every(t => p.types.includes(t))) return false
+      const ptypes = typesForGeneration(p, gen)
+      for (const f of filters) {
+        if (f.kind === 'type' && !ptypes.includes(f.value)) return false
+        if (f.kind === 'ability' && !p.abilities.some(a => a.name === f.value)) return false
+        if (f.kind === 'move' && !(f.ids && f.ids.has(p.id))) return false
+      }
       return true
     })
 
@@ -83,29 +115,58 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick }) {
     rows.sort((a, b) => {
       const va = getVal(a), vb = getVal(b)
       let r = typeof va === 'number' && typeof vb === 'number' ? va - vb : String(va).localeCompare(String(vb))
-      if (r === 0) r = a.id - b.id // stable tiebreak by dex number
+      if (r === 0) r = a.id - b.id
       return direction === 'asc' ? r : -r
     })
     return rows
-  }, [list, selectedTypes, selectedRegion, sortConfig])
+  }, [list, filters, selectedRegion, sortConfig, gen])
+
+  const handleSort = (key) => {
+    setSortConfig(prev => {
+      if (prev.key === key) return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+      return { key, direction: NUMERIC_KEYS.has(key) && key !== 'id' ? 'desc' : 'asc' }
+    })
+  }
+  const sortIndicator = (key) =>
+    sortConfig.key === key ? (sortConfig.direction === 'asc' ? ' ▲' : ' ▼') : ''
 
   return (
     <div className="pokedex-landing">
-      {/* Type filter */}
-      <div className="pokedex-filter-row">
-        <span className="pokedex-filter-label">Type:</span>
-        {ALL_TYPES.map(t => (
-          <TypePill
-            key={t}
-            type={t}
-            dimmed={selectedTypes.size > 0 && !selectedTypes.has(t)}
-            onClick={() => toggleType(t)}
+      {/* Typed filter input */}
+      <div className="pokedex-filter-builder">
+        <div className="pokedex-filter-input-wrap">
+          {filters.map((f, i) => (
+            <span key={`${f.kind}-${f.value}`} className="pokedex-chip" data-kind={f.kind}>
+              <span className="pokedex-chip-kind">{KIND_LABEL[f.kind]}</span>
+              {f.label}
+              <button type="button" className="pokedex-chip-x" onClick={() => removeFilter(i)} aria-label="Remove filter">×</button>
+            </span>
+          ))}
+          <input
+            ref={inputRef}
+            type="text"
+            className="pokedex-filter-input"
+            placeholder={filters.length ? '' : 'Filter by type, ability, or move…'}
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setActiveSuggestion(0) }}
+            onKeyDown={handleKeyDown}
           />
-        ))}
-        {selectedTypes.size > 0 && (
-          <button type="button" className="pokedex-filter-clear" onClick={() => setSelectedTypes(new Set())}>
-            Clear
-          </button>
+          {addingMove && <span className="pokedex-filter-loading">loading…</span>}
+        </div>
+        {suggestions.length > 0 && (
+          <ul className="pokedex-suggestions">
+            {suggestions.map((s, i) => (
+              <li
+                key={`${s.kind}-${s.value}`}
+                className={`pokedex-suggestion${i === activeSuggestion ? ' active' : ''}`}
+                onMouseDown={(e) => { e.preventDefault(); addFilter(s) }}
+                onMouseEnter={() => setActiveSuggestion(i)}
+              >
+                <span className="pokedex-suggestion-kind" data-kind={s.kind}>{KIND_LABEL[s.kind]}</span>
+                {s.label}
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
@@ -158,40 +219,43 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(p => (
-                <tr key={p.id} className="pokedex-row" onClick={() => onPokemonClick(p.name)}>
-                  <td className="pokedex-col-sprite">
-                    <img src={spriteUrlForId(p.id)} alt={p.name} loading="lazy" className="pokedex-sprite" />
-                  </td>
-                  <td className="pokedex-col-name">
-                    <span className="pokedex-name-link">{titleCase(p.name)}</span>
-                  </td>
-                  <td className="pokedex-col-types">
-                    <div className="pokedex-row-types">
-                      {p.types.map(t => (
-                        <span key={t} className="pokedex-type-tag" style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t) }}>
-                          {t}
-                        </span>
+              {filtered.map(p => {
+                const ptypes = typesForGeneration(p, gen)
+                return (
+                  <tr key={p.id} className="pokedex-row" onClick={() => onPokemonClick(p.name)}>
+                    <td className="pokedex-col-sprite">
+                      <img src={spriteUrlForId(p.id)} alt={p.name} loading="lazy" className="pokedex-sprite" />
+                    </td>
+                    <td className="pokedex-col-name">
+                      <span className="pokedex-name-link">{titleCase(p.name)}</span>
+                    </td>
+                    <td className="pokedex-col-types">
+                      <div className="pokedex-row-types">
+                        {ptypes.map(t => (
+                          <span key={t} className="pokedex-type-tag" style={{ backgroundColor: getTypeColor(t), color: getTypeTextColor(t) }}>
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="pokedex-col-abilities">
+                      {p.abilities.map(a => (
+                        <button
+                          key={a.name}
+                          type="button"
+                          className={`pokedex-ability${a.isHidden ? ' hidden' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); onAbilityClick?.(a.name) }}
+                        >
+                          {titleCase(a.name)}{a.isHidden ? ' (H)' : ''}
+                        </button>
                       ))}
-                    </div>
-                  </td>
-                  <td className="pokedex-col-abilities">
-                    {p.abilities.map(a => (
-                      <button
-                        key={a.name}
-                        type="button"
-                        className={`pokedex-ability${a.isHidden ? ' hidden' : ''}`}
-                        onClick={(e) => { e.stopPropagation(); onAbilityClick?.(a.name) }}
-                      >
-                        {titleCase(a.name)}{a.isHidden ? ' (H)' : ''}
-                      </button>
+                    </td>
+                    {STAT_COLUMNS.map(([key]) => (
+                      <td key={key} className="pokedex-col-stat">{p.stats[key] ?? '—'}</td>
                     ))}
-                  </td>
-                  {STAT_COLUMNS.map(([key]) => (
-                    <td key={key} className="pokedex-col-stat">{p.stats[key] ?? '—'}</td>
-                  ))}
-                </tr>
-              ))}
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
