@@ -406,6 +406,13 @@ body {
 .pokedex-col-name { width: 130px; white-space: nowrap; }
 .pokedex-col-stat { width: 42px; text-align: center; }
 
+.pokedex-sprite-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
 .pokedex-sprite {
   width: 48px;
   height: 40px;
@@ -414,9 +421,48 @@ body {
   display: block;
 }
 
+.pokedex-dexnum {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
 .pokedex-name-link {
   color: var(--primary-color);
   font-weight: 600;
+}
+
+/* Mobile: stats move to an inner row beneath the main row */
+.pokedex-row-main td {
+  border-bottom: none;
+  padding-bottom: 2px;
+}
+
+.pokedex-row-statrow td {
+  padding-top: 0;
+}
+
+.pokedex-mobile-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 12px;
+  color: var(--text-color);
+}
+
+.pokedex-mstat-label {
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 10px;
+}
+
+@media (max-width: 768px) {
+  .pokedex-table { font-size: 12px; }
+  .pokedex-table th,
+  .pokedex-table td { padding: 4px 5px; }
+  .pokedex-col-sprite { width: 44px; }
+  .pokedex-col-name { width: auto; white-space: normal; }
+  .pokedex-table-wrapper { overflow-x: visible; }
 }
 
 .pokedex-row-types {

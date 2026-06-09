@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, Fragment } from 'react'
 import { fetchPokedexList, fetchMoveLearners, typesForGeneration, spriteUrlForId, REGIONS, ALL_TYPES } from '../utils/pokedexList'
 import { getTypeColor, getTypeTextColor } from '../utils/typeColors'
 import { titleCase } from '../utils/format'
@@ -37,8 +37,15 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
   const [activeSuggestion, setActiveSuggestion] = useState(0)
   const [addingMove, setAddingMove] = useState(false)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768)
   const inputRef = useRef(null)
   const sentinelRef = useRef(null)
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   const gen = selectedVersion ? versionGeneration[selectedVersion] : null
 
@@ -238,7 +245,7 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
                 </th>
                 <th className="pokedex-col-types">Type</th>
                 <th className="pokedex-col-abilities">Abilities</th>
-                {STAT_COLUMNS.map(([key, label]) => (
+                {!isMobile && STAT_COLUMNS.map(([key, label]) => (
                   <th key={key} className="pokedex-col-stat">
                     <button type="button" onClick={() => handleSort(key)}>{label}{sortIndicator(key)}</button>
                   </th>
@@ -248,10 +255,13 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
             <tbody>
               {filtered.slice(0, visibleCount).map(p => {
                 const ptypes = typesForGeneration(p, gen)
-                return (
-                  <tr key={p.id} className="pokedex-row" onClick={() => onPokemonClick(p.name)}>
+                const mainCells = (
+                  <>
                     <td className="pokedex-col-sprite">
-                      <img src={spriteUrlForId(p.id)} alt={p.name} loading="lazy" className="pokedex-sprite" />
+                      <div className="pokedex-sprite-cell">
+                        <img src={spriteUrlForId(p.id)} alt={p.name} loading="lazy" className="pokedex-sprite" />
+                        <span className="pokedex-dexnum">{String(p.id).padStart(3, '0')}</span>
+                      </div>
                     </td>
                     <td className="pokedex-col-name">
                       <span className="pokedex-name-link">{titleCase(p.name)}</span>
@@ -277,6 +287,34 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
                         </button>
                       ))}
                     </td>
+                  </>
+                )
+
+                if (isMobile) {
+                  // Stats drop to an inner row so everything fits without horizontal scroll.
+                  return (
+                    <Fragment key={p.id}>
+                      <tr className="pokedex-row pokedex-row-main" onClick={() => onPokemonClick(p.name)}>
+                        {mainCells}
+                      </tr>
+                      <tr className="pokedex-row pokedex-row-statrow" onClick={() => onPokemonClick(p.name)}>
+                        <td colSpan={4}>
+                          <div className="pokedex-mobile-stats">
+                            {STAT_COLUMNS.map(([key, label]) => (
+                              <span key={key} className="pokedex-mstat">
+                                <span className="pokedex-mstat-label">{label}</span> {p.stats[key] ?? '—'}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    </Fragment>
+                  )
+                }
+
+                return (
+                  <tr key={p.id} className="pokedex-row" onClick={() => onPokemonClick(p.name)}>
+                    {mainCells}
                     {STAT_COLUMNS.map(([key]) => (
                       <td key={key} className="pokedex-col-stat">{p.stats[key] ?? '—'}</td>
                     ))}
