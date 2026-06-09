@@ -402,7 +402,7 @@ body {
   color: var(--primary-color);
 }
 
-.pokedex-col-sprite { width: 50px; }
+.pokedex-col-sprite { width: 72px; }
 .pokedex-col-name { width: 130px; white-space: nowrap; }
 .pokedex-col-stat { width: 42px; text-align: center; }
 
@@ -414,8 +414,8 @@ body {
 }
 
 .pokedex-sprite {
-  width: 48px;
-  height: 40px;
+  width: 68px;
+  height: 56px;
   image-rendering: pixelated;
   object-fit: contain;
   display: block;
@@ -460,7 +460,7 @@ body {
   .pokedex-table { font-size: 12px; }
   .pokedex-table th,
   .pokedex-table td { padding: 4px 5px; }
-  .pokedex-col-sprite { width: 44px; }
+  .pokedex-col-sprite { width: 64px; }
   .pokedex-col-name { width: auto; white-space: normal; }
   .pokedex-table-wrapper { overflow-x: visible; }
 }
