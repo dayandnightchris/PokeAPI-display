@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { versionGeneration } from '../utils/versionInfo'
 import { getTypeEffectiveness } from '../utils/typeEffectiveness'
 import { titleCase } from '../utils/format'
+import { getMoveCategoryForGen } from '../utils/moveRules'
 
-export default function StatsCalculator({ pokemon, stats: statsProp, selectedVersion, moves: movesProp }) {
+export default function StatsCalculator({ pokemon, stats: statsProp, generationTypes, selectedVersion, moves: movesProp }) {
   const [level, setLevel] = useState(50)
   const [nature, setNature] = useState('hardy')
   const [ivs, setIvs] = useState({ hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31, spc: 15 })
@@ -34,6 +35,20 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
   const isLegacy = currentGen && currentGen <= 2
   const maxIv = isLegacy ? 15 : 31
   const maxEv = isLegacy ? 255 : 252
+
+  // Clear field effects that don't exist in the selected generation so stale
+  // state can't silently skew the math after a version switch.
+  useEffect(() => {
+    if (!currentGen) return
+    if (currentGen < 7) setDmgAuroraVeil(false)
+    if (currentGen < 3) setDmgHelpingHand(false)
+    setDmgTerrain(t => (currentGen < 6 || (currentGen === 6 && t === 'psychic')) ? 'none' : t)
+    setDmgWeather(w => {
+      if (currentGen === 1) return 'none' // no weather in Gen 1
+      if (w === 'sand' && currentGen < 4) return 'none' // sand only affects damage from Gen 4
+      return w
+    })
+  }, [currentGen])
 
   // Reset IVs and EVs when switching between legacy and modern generations
   useEffect(() => {
@@ -230,7 +245,8 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
   const MODERN_TYPES = [...GEN1_TYPES, 'dark','steel','fairy']
   const availableTypes = currentGen === 1 ? GEN1_TYPES : (currentGen >= 2 && currentGen <= 5) ? GEN2_5_TYPES : MODERN_TYPES
 
-  const pokemonTypes = pokemon?.types?.map(t => t.type.name) || []
+  // Era-correct typing for STAB (e.g. Clefable was Normal through Gen 5).
+  const pokemonTypes = (generationTypes || pokemon?.types)?.map(t => t.type.name) || []
 
   const allMoves = (() => {
     if (!movesProp) return []
@@ -238,7 +254,8 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
     const list = []
     for (const cat of ['levelUp', 'tm', 'tutor', 'egg', 'special', 'transfer']) {
       for (const m of (movesProp[cat] || [])) {
-        if (!seen.has(m.name) && m.details) {
+        // Status moves have no base power — they'd only dead-end the calculator.
+        if (!seen.has(m.name) && m.details && getMoveCategoryForGen(m, currentGen) !== 'status') {
           seen.add(m.name)
           list.push(m)
         }
@@ -255,7 +272,8 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
     const move = allMoves.find(m => m.name === moveName)
     if (!move?.details) return
     const type = move.details.type?.name
-    const category = move.details.damage_class?.name
+    // Pre-Gen-4 the physical/special split is by type, not per-move.
+    const category = getMoveCategoryForGen(move, currentGen)
     const power = move.details.power
     if (type && availableTypes.includes(type)) setDmgMoveType(type)
     if (category === 'physical' || category === 'special') setDmgCategory(category)
@@ -263,10 +281,21 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
     if (type) setDmgStab(pokemonTypes.includes(type))
   }
 
-  // Auto-detect STAB when move type changes
+  // Auto-detect STAB when the move type — or the attacker's era typing — changes
+  // (generationTypes varies with the selected version, e.g. pre-Fairy Clefable).
+  const pokemonTypesKey = pokemonTypes.join(',')
   useEffect(() => {
     setDmgStab(pokemonTypes.includes(dmgMoveType))
-  }, [dmgMoveType]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [dmgMoveType, pokemonTypesKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-derive the selected move's autofill (type/category/power follow the
+  // era's rules and past values) when the version changes; clear the selection
+  // if the move isn't in the new version's learnset.
+  useEffect(() => {
+    if (!selectedMove) return
+    if (allMoves.some(m => m.name === selectedMove)) handleMoveSelect(selectedMove)
+    else setSelectedMove('')
+  }, [selectedVersion, movesProp]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const getTypeMultiplier = (chart, moveType, defType) => {
     const entry = chart[defType]
@@ -278,9 +307,11 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
   }
 
   const getAttackerStatForDmg = () => {
-    const key = isLegacy
-      ? (dmgCategory === 'physical' ? 'atk' : 'spc')
-      : (dmgCategory === 'physical' ? 'atk' : 'spa')
+    // Gen 1 has the unified 'spc' Special stat; Gen 2 already split the attack
+    // side into SpA (only defense stayed merged conceptually via stat exp).
+    const key = dmgCategory === 'physical'
+      ? 'atk'
+      : (currentGen === 1 ? 'spc' : 'spa')
     return stats.find(s => s.key === key)?.calculated || 0
   }
 
@@ -291,8 +322,15 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
     const atkStat = getAttackerStatForDmg()
     if (!atkStat) return null
 
+    // Sandstorm boosts Rock-types' SpD by 1.5× from Gen 4 on.
+    let effectiveDef = defStat
+    if (dmgWeather === 'sand' && (!currentGen || currentGen >= 4) && dmgCategory === 'special'
+        && (dmgDefType1 === 'rock' || dmgDefType2 === 'rock')) {
+      effectiveDef = Math.floor(defStat * 1.5)
+    }
+
     const effectivePower = dmgHelpingHand ? Math.floor(power * 1.5) : power
-    const base = Math.floor(Math.floor((2 * level / 5 + 2) * effectivePower * atkStat / defStat) / 50) + 2
+    const base = Math.floor(Math.floor(Math.floor(2 * level / 5 + 2) * effectivePower * atkStat / effectiveDef) / 50) + 2
 
     const chart = getTypeEffectiveness(selectedVersion)
     const mult1 = getTypeMultiplier(chart, dmgMoveType, dmgDefType1)
@@ -313,10 +351,12 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
       else if (dmgMoveType === 'fire') damage = Math.floor(damage * 0.5)
     }
 
+    // Terrain boost was 1.5× in Gens 6-7 (this app's whole terrain era);
+    // the 1.3× nerf only arrived in Gen 8.
     if (!currentGen || currentGen >= 6) {
-      if (dmgTerrain === 'electric' && dmgMoveType === 'electric') damage = Math.floor(damage * 1.3)
-      else if (dmgTerrain === 'grassy' && dmgMoveType === 'grass') damage = Math.floor(damage * 1.3)
-      else if (dmgTerrain === 'psychic' && dmgMoveType === 'psychic') damage = Math.floor(damage * 1.3)
+      if (dmgTerrain === 'electric' && dmgMoveType === 'electric') damage = Math.floor(damage * 1.5)
+      else if (dmgTerrain === 'grassy' && dmgMoveType === 'grass') damage = Math.floor(damage * 1.5)
+      else if (dmgTerrain === 'psychic' && dmgMoveType === 'psychic') damage = Math.floor(damage * 1.5)
       else if (dmgTerrain === 'misty' && dmgMoveType === 'dragon') damage = Math.floor(damage * 0.5)
     }
 
@@ -326,7 +366,10 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
       else if (dmgLightScreen && dmgCategory === 'special') damage = Math.floor(damage * 0.5)
     }
 
-    return { min: Math.floor(damage * 0.85), max: damage, effectiveness, atkStat }
+    // A connecting hit always deals at least 1 damage.
+    const min = effectiveness > 0 ? Math.max(1, Math.floor(damage * 0.85)) : 0
+    const max = effectiveness > 0 ? Math.max(1, damage) : 0
+    return { min, max, effectiveness, atkStat }
   }
 
   const effectivenessLabel = (mult) => {
@@ -576,7 +619,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
                     {allMoves.map(m => {
                       const type = m.details?.type?.name
                       const power = m.details?.power
-                      const cat = m.details?.damage_class?.name
+                      const cat = getMoveCategoryForGen(m, currentGen)
                       const label = `${formatMoveName(m.name)}${type ? ` (${type.charAt(0).toUpperCase() + type.slice(1)}` : ''}${power ? `, ${power}` : ''}${cat && cat !== 'status' ? `, ${cat.charAt(0).toUpperCase() + cat.slice(1)}` : ''}${type ? ')' : ''}`
                       return <option key={m.name} value={m.name}>{label}</option>
                     })}
@@ -633,11 +676,12 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
           <div style={{ background: 'var(--control-bg, #fafafa)', borderRadius: '6px', padding: '0.75rem 1rem' }}>
             <div style={{ fontWeight: '600', marginBottom: '0.6rem', fontSize: '0.8rem', color: 'var(--text-secondary, #666)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Field</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {/* Weather */}
+              {/* Weather (Gen 2+; Sand only matters from Gen 4 via the Rock SpD boost) */}
+              {(!currentGen || currentGen >= 2) && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary, #666)', minWidth: '60px' }}>Weather</span>
                 <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-light, #ddd)' }}>
-                  {[['none', 'None'], ['sun', 'Sun'], ['rain', 'Rain'], ['sand', 'Sand'], ['snow', 'Snow']].map(([val, label], i) => (
+                  {[['none', 'None'], ['sun', 'Sun'], ['rain', 'Rain'], ...((!currentGen || currentGen >= 4) ? [['sand', 'Sand']] : [])].map(([val, label], i) => (
                     <button
                       key={val}
                       type="button"
@@ -658,12 +702,13 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
                   ))}
                 </div>
               </div>
-              {/* Terrain (Gen 6+) */}
+              )}
+              {/* Terrain (Gen 6+; Psychic Terrain only exists from Gen 7) */}
               {(!currentGen || currentGen >= 6) && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary, #666)', minWidth: '60px' }}>Terrain</span>
                   <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-light, #ddd)' }}>
-                    {[['none', 'None'], ['electric', 'Electric'], ['grassy', 'Grassy'], ['misty', 'Misty'], ['psychic', 'Psychic']].map(([val, label], i) => (
+                    {[['none', 'None'], ['electric', 'Electric'], ['grassy', 'Grassy'], ['misty', 'Misty'], ...((!currentGen || currentGen >= 7) ? [['psychic', 'Psychic']] : [])].map(([val, label], i) => (
                       <button
                         key={val}
                         type="button"
@@ -691,8 +736,9 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
                 {[
                   [dmgReflect, setDmgReflect, 'Reflect'],
                   [dmgLightScreen, setDmgLightScreen, 'Light Screen'],
-                  [dmgAuroraVeil, setDmgAuroraVeil, 'Aurora Veil'],
-                  [dmgHelpingHand, setDmgHelpingHand, 'Helping Hand'],
+                  // Aurora Veil is Gen 7+; Helping Hand is Gen 3+.
+                  ...((!currentGen || currentGen >= 7) ? [[dmgAuroraVeil, setDmgAuroraVeil, 'Aurora Veil']] : []),
+                  ...((!currentGen || currentGen >= 3) ? [[dmgHelpingHand, setDmgHelpingHand, 'Helping Hand']] : []),
                 ].map(([active, setter, label]) => (
                   <button
                     key={label}
@@ -738,7 +784,7 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
                 </select>
               </div>
               <div className="control-group">
-                <label>{isLegacy ? (dmgCategory === 'physical' ? 'Def Stat' : 'Spc Stat') : (dmgCategory === 'physical' ? 'Def Stat' : 'SpD Stat')}</label>
+                <label>{dmgCategory === 'physical' ? 'Def Stat' : (currentGen === 1 ? 'Spc Stat' : 'SpD Stat')}</label>
                 <input
                   type="number"
                   min="1"
@@ -775,9 +821,9 @@ export default function StatsCalculator({ pokemon, stats: statsProp, selectedVer
           {/* Output */}
           {(() => {
             const result = calcDamageRange()
-            const atkStatLabel = isLegacy
-              ? (dmgCategory === 'physical' ? 'Atk' : 'Spc')
-              : (dmgCategory === 'physical' ? 'Atk' : 'SpA')
+            const atkStatLabel = dmgCategory === 'physical'
+              ? 'Atk'
+              : (currentGen === 1 ? 'Spc' : 'SpA')
             if (!result) {
               return (
                 <div style={{ color: 'var(--text-muted, #888)', fontStyle: 'italic', padding: '0.5rem 0' }}>

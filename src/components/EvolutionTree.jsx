@@ -1,14 +1,34 @@
-export function renderEvolutionForest(nodes, currentPokemonName, onEvolutionClick) {
+function treeContainsName(nodes, name) {
+  const stack = [...nodes]
+  while (stack.length) {
+    const n = stack.pop()
+    if (!n) continue
+    if (n.name === name) return true
+    for (const edge of (n.children || [])) { if (edge) stack.push(edge.node) }
+  }
+  return false
+}
+
+export function renderEvolutionForest(nodes, currentPokemonName, onEvolutionClick, currentSpeciesName) {
   if (!nodes?.length) return null
+  // Chain nodes carry species names, but the current Pokémon may be a form
+  // (aegislash-shield, raichu-alola). Prefer an exact form-name match (regional
+  // evo nodes use form names, e.g. raichu-alola); fall back to the species name
+  // only when no node matches the form — otherwise Alolan Raichu would light up
+  // both the raichu-alola node and the Kantonian raichu node.
+  const matchName = (currentSpeciesName && !treeContainsName(nodes, currentPokemonName))
+    ? currentSpeciesName
+    : currentPokemonName
+
   if (nodes.length === 1) {
-    return renderEvolutionNode(nodes[0], currentPokemonName, onEvolutionClick)
+    return renderEvolutionNode(nodes[0], matchName, onEvolutionClick)
   }
 
   return (
     <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center' }}>
       {nodes.map((node) => (
         <div key={node.name} style={{ display: 'flex', justifyContent: 'center' }}>
-          {renderEvolutionNode(node, currentPokemonName, onEvolutionClick)}
+          {renderEvolutionNode(node, matchName, onEvolutionClick)}
         </div>
       ))}
     </div>

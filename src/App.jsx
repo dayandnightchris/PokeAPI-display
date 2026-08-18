@@ -75,7 +75,13 @@ const LUNATONE_SPRITE = 'https://raw.githubusercontent.com/PokeAPI/sprites/maste
 function App() {
   const urlParams = getUrlParams()
   const [activeTab, setActiveTab] = useState(urlParams.tab || 'pokemon')
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
+  const [theme, setTheme] = useState(() => {
+    try {
+      const stored = localStorage.getItem('theme')
+      if (stored === 'light' || stored === 'dark') return stored
+    } catch { /* storage unavailable */ }
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  })
   const [pokemon, setPokemon] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -89,14 +95,19 @@ function App() {
   const [initialVersion, setInitialVersion] = useState(urlParams.version || 'moon')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Apply theme to document
+  // Apply theme to document. Only an explicit toggle is persisted — the
+  // OS-derived default stays unsaved so the app keeps following the OS
+  // preference until the user chooses a theme themselves.
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-    try { localStorage.setItem('theme', theme) } catch { /* storage full or unavailable */ }
   }, [theme])
 
   const toggleTheme = useCallback(() => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light')
+    setTheme(prev => {
+      const next = prev === 'light' ? 'dark' : 'light'
+      try { localStorage.setItem('theme', next) } catch { /* storage full or unavailable */ }
+      return next
+    })
   }, [])
 
   // Cross-tab navigation state

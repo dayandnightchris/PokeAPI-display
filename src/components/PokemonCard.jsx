@@ -598,7 +598,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
           <div className="box-title">Evolution Line</div>
           <div className="box-content evolution-box-content" style={{ display: 'flex', justifyContent: 'center' }}>
             {evolutions.length > 0 ? (
-              renderEvolutionForest(evolutions, selectedForm || pokemon.name, onEvolutionClick)
+              renderEvolutionForest(evolutions, selectedForm || pokemon.name, onEvolutionClick, species?.name)
             ) : (
               <p style={{ margin: 0, color: 'var(--text-muted, #888)', fontSize: '12px' }}>No evolution available.</p>
             )}
@@ -670,7 +670,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
       <div className="info-box full-width" style={{ marginTop: '10px' }} ref={statsCalcRef}>
         <div className="box-title">Stats Calculator</div>
         <div className="box-content">
-          <StatsCalculator pokemon={displayPokemon} stats={generationStats} selectedVersion={selectedVersion} moves={moves} />
+          <StatsCalculator pokemon={displayPokemon} stats={generationStats} generationTypes={getGenerationTypes()} selectedVersion={selectedVersion} moves={moves} />
         </div>
       </div>
 

@@ -218,6 +218,33 @@ export const versionColors = {
 
 // Determine which version groups can provide transfer-only moves for the selected version.
 // Returns a Set of version group names, or null if no transfers are possible.
+// The version group a version belongs to, derived from the canonical
+// versionGroupToVersions map.
+export function versionGroupForVersion(version) {
+  for (const [vg, versions] of Object.entries(versionGroupToVersions)) {
+    if (versions.includes(version)) return vg
+  }
+  return null
+}
+
+// In-generation trade isolation. LGPE can only trade within LGPE (Pokémon GO
+// transfers aside), and the Gen 8+ side games are similarly closed off from
+// their generation siblings. Everything else trades freely within its gen.
+const TRADE_ISLANDS = {
+  'lets-go-pikachu': 'lgpe', 'lets-go-eevee': 'lgpe',
+  'brilliant-diamond': 'bdsp', 'shining-pearl': 'bdsp',
+  'legends-arceus': 'pla',
+  'legends-za': 'za',
+}
+
+export function canTradeBetween(versionA, versionB) {
+  if (!versionA || !versionB) return false
+  const genA = versionGeneration[versionA]
+  const genB = versionGeneration[versionB]
+  if (!genA || !genB || genA !== genB) return false
+  return (TRADE_ISLANDS[versionA] ?? `gen-${genA}`) === (TRADE_ISLANDS[versionB] ?? `gen-${genB}`)
+}
+
 export function getTransferSourceVersionGroups(selectedVersion, versionGroup) {
   if (!selectedVersion || !versionGroup) return null
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, Fragment } from 'react'
-import { fetchPokedexList, fetchMoveLearners, typesForGeneration, spriteUrlForId, REGIONS, ALL_TYPES } from '../utils/pokedexList'
+import { fetchPokedexList, fetchMoveLearners, typesForGeneration, statsForGeneration, abilitiesForGeneration, spriteUrlForId, REGIONS, ALL_TYPES } from '../utils/pokedexList'
 import { getTypeColor, getTypeTextColor } from '../utils/typeColors'
 import { titleCase } from '../utils/format'
 import { versionGeneration } from '../utils/versionInfo'
@@ -13,7 +13,16 @@ const STAT_COLUMNS = [
   ['speed', 'Spe'],
 ]
 
-const NUMERIC_KEYS = new Set(['id', ...STAT_COLUMNS.map(([k]) => k)])
+// Gen 1 has a single Special stat in place of SpA/SpD.
+const GEN1_STAT_COLUMNS = [
+  ['hp', 'HP'],
+  ['attack', 'Atk'],
+  ['defense', 'Def'],
+  ['special', 'Spc'],
+  ['speed', 'Spe'],
+]
+
+const NUMERIC_KEYS = new Set(['id', 'special', ...STAT_COLUMNS.map(([k]) => k)])
 
 const PAGE_SIZE = 60
 
@@ -48,6 +57,10 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
   }, [])
 
   const gen = selectedVersion ? versionGeneration[selectedVersion] : null
+  const statCols = gen === 1 ? GEN1_STAT_COLUMNS : STAT_COLUMNS
+  // Abilities don't exist in Gens 1-2, and LGPE removed the mechanic entirely.
+  const isLgpe = selectedVersion === 'lets-go-pikachu' || selectedVersion === 'lets-go-eevee'
+  const showAbilities = (!gen || gen >= 3) && !isLgpe
 
   useEffect(() => {
     let active = true
@@ -61,6 +74,23 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
 
   // Reset how many rows are shown whenever the result set changes.
   useEffect(() => { setVisibleCount(PAGE_SIZE) }, [filters, selectedRegion, sortConfig, gen])
+
+  // Keep the sort valid when the generation swaps the stat columns (Gen 1's
+  // Special replaces SpA/SpD and vice versa).
+  useEffect(() => {
+    setSortConfig(prev => {
+      if (prev.key === 'id' || prev.key === 'name') return prev
+      const cols = gen === 1 ? GEN1_STAT_COLUMNS : STAT_COLUMNS
+      return cols.some(([k]) => k === prev.key) ? prev : { key: 'id', direction: 'asc' }
+    })
+  }, [gen])
+
+  // Ability filter chips can never match in versions without abilities —
+  // drop them instead of silently showing an empty table.
+  useEffect(() => {
+    if (showAbilities) return
+    setFilters(prev => prev.some(f => f.kind === 'ability') ? prev.filter(f => f.kind !== 'ability') : prev)
+  }, [showAbilities])
 
   // ── Filter add/remove ──────────────────────────────────────────────
   const hasFilter = (kind, value) => filters.some(f => f.kind === kind && f.value === value)
@@ -92,12 +122,13 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
       (names || []).filter(n => n.includes(q)).map(n => ({ kind, value: n, label: titleCase(n) }))
     const all = [
       ...collect(ALL_TYPES, 'type'),
-      ...collect(abilityList, 'ability'),
+      // No ability suggestions for versions where abilities don't exist.
+      ...(showAbilities ? collect(abilityList, 'ability') : []),
       ...collect(moveList, 'move'),
     ].filter(s => !hasFilter(s.kind, s.value))
     all.sort((a, b) => score(a.value) - score(b.value) || a.label.localeCompare(b.label))
     return all.slice(0, 8)
-  }, [query, abilityList, moveList, filters])
+  }, [query, abilityList, moveList, filters, showAbilities])
 
   const handleKeyDown = (e) => {
     if (e.key === 'Backspace' && query === '' && filters.length) {
@@ -113,25 +144,33 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
     }
   }
 
+  // Version-aware view of every row: types, stats, and abilities as they were
+  // in the selected version's generation. Derived once per gen change.
+  const genList = useMemo(() => list?.map(p => ({
+    ...p,
+    genTypes: typesForGeneration(p, gen),
+    genStats: statsForGeneration(p, gen),
+    genAbilities: abilitiesForGeneration(p, gen),
+  })) ?? null, [list, gen])
+
   // ── Filtering + sorting ────────────────────────────────────────────
   const filtered = useMemo(() => {
-    if (!list) return []
+    if (!genList) return []
     const region = REGIONS.find(r => r.name === selectedRegion)
     const maxId = maxIdForGen(gen)
-    const rows = list.filter(p => {
+    const rows = genList.filter(p => {
       if (p.id > maxId) return false // version dropdown: hide later-gen Pokémon
       if (region && (p.id < region.min || p.id > region.max)) return false
-      const ptypes = typesForGeneration(p, gen)
       for (const f of filters) {
-        if (f.kind === 'type' && !ptypes.includes(f.value)) return false
-        if (f.kind === 'ability' && !p.abilities.some(a => a.name === f.value)) return false
+        if (f.kind === 'type' && !p.genTypes.includes(f.value)) return false
+        if (f.kind === 'ability' && !p.genAbilities.some(a => a.name === f.value)) return false
         if (f.kind === 'move' && !(f.ids && f.ids.has(p.id))) return false
       }
       return true
     })
 
     const { key, direction } = sortConfig
-    const getVal = (p) => (key === 'name' ? p.name : key === 'id' ? p.id : (p.stats[key] ?? -1))
+    const getVal = (p) => (key === 'name' ? p.name : key === 'id' ? p.id : (p.genStats[key] ?? -1))
     rows.sort((a, b) => {
       const va = getVal(a), vb = getVal(b)
       let r = typeof va === 'number' && typeof vb === 'number' ? va - vb : String(va).localeCompare(String(vb))
@@ -139,7 +178,7 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
       return direction === 'asc' ? r : -r
     })
     return rows
-  }, [list, filters, selectedRegion, sortConfig, gen])
+  }, [genList, filters, selectedRegion, sortConfig, gen])
 
   // Infinite scroll: reveal the next batch when the bottom sentinel comes into
   // view (preloading a little early via rootMargin), until everything is shown.
@@ -244,8 +283,8 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
                   <button type="button" onClick={() => handleSort('name')}>Name{sortIndicator('name')}</button>
                 </th>
                 <th className="pokedex-col-types">Type</th>
-                <th className="pokedex-col-abilities">Abilities</th>
-                {!isMobile && STAT_COLUMNS.map(([key, label]) => (
+                {showAbilities && <th className="pokedex-col-abilities">Abilities</th>}
+                {!isMobile && statCols.map(([key, label]) => (
                   <th key={key} className="pokedex-col-stat">
                     <button type="button" onClick={() => handleSort(key)}>{label}{sortIndicator(key)}</button>
                   </th>
@@ -254,7 +293,7 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
             </thead>
             <tbody>
               {filtered.slice(0, visibleCount).map(p => {
-                const ptypes = typesForGeneration(p, gen)
+                const ptypes = p.genTypes
                 const mainCells = (
                   <>
                     <td className="pokedex-col-sprite">
@@ -275,18 +314,20 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
                         ))}
                       </div>
                     </td>
-                    <td className="pokedex-col-abilities">
-                      {p.abilities.map(a => (
-                        <button
-                          key={a.name}
-                          type="button"
-                          className={`pokedex-ability${a.isHidden ? ' hidden' : ''}`}
-                          onClick={(e) => { e.stopPropagation(); onAbilityClick?.(a.name) }}
-                        >
-                          {titleCase(a.name)}{a.isHidden ? ' (H)' : ''}
-                        </button>
-                      ))}
-                    </td>
+                    {showAbilities && (
+                      <td className="pokedex-col-abilities">
+                        {p.genAbilities.map(a => (
+                          <button
+                            key={a.name}
+                            type="button"
+                            className={`pokedex-ability${a.isHidden ? ' hidden' : ''}`}
+                            onClick={(e) => { e.stopPropagation(); onAbilityClick?.(a.name) }}
+                          >
+                            {titleCase(a.name)}{a.isHidden ? ' (H)' : ''}
+                          </button>
+                        ))}
+                      </td>
+                    )}
                   </>
                 )
 
@@ -298,11 +339,11 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
                         {mainCells}
                       </tr>
                       <tr className="pokedex-row pokedex-row-statrow" onClick={() => onPokemonClick(p.name)}>
-                        <td colSpan={4}>
+                        <td colSpan={showAbilities ? 4 : 3}>
                           <div className="pokedex-mobile-stats">
-                            {STAT_COLUMNS.map(([key, label]) => (
+                            {statCols.map(([key, label]) => (
                               <span key={key} className="pokedex-mstat">
-                                <span className="pokedex-mstat-label">{label}</span> {p.stats[key] ?? '—'}
+                                <span className="pokedex-mstat-label">{label}</span> {p.genStats[key] ?? '—'}
                               </span>
                             ))}
                           </div>
@@ -315,8 +356,8 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
                 return (
                   <tr key={p.id} className="pokedex-row" onClick={() => onPokemonClick(p.name)}>
                     {mainCells}
-                    {STAT_COLUMNS.map(([key]) => (
-                      <td key={key} className="pokedex-col-stat">{p.stats[key] ?? '—'}</td>
+                    {statCols.map(([key]) => (
+                      <td key={key} className="pokedex-col-stat">{p.genStats[key] ?? '—'}</td>
                     ))}
                   </tr>
                 )

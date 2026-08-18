@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { versionDisplayNames, versionGeneration, generationVersions } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, generationVersions, canTradeBetween, versionGroupForVersion, getTransferSourceVersionGroups } from '../utils/versionInfo'
 import { titleCase, formatLocationName } from '../utils/format'
 
 // A hover/tap tooltip rendered into a body-level portal so it escapes the
@@ -269,9 +269,9 @@ export default function LocationBox({
                     return renderCatchAndEvolve()
                   }
 
-                  // Priority 1b: Breeding (available in all games except RBY, Colosseum, XD, Legends Arceus, Legends Z-A)
+                  // Priority 1b: Breeding (available in all games except RBY, Colosseum, XD, LGPE, Legends Arceus, Legends Z-A)
                   // Only suggest breeding if some member of the evo family has encounters in this version
-                  const NO_BREEDING_VERSIONS = new Set(['red', 'blue', 'yellow', 'colosseum', 'xd', 'legends-arceus', 'legends-za'])
+                  const NO_BREEDING_VERSIONS = new Set(['red', 'blue', 'yellow', 'colosseum', 'xd', 'lets-go-pikachu', 'lets-go-eevee', 'legends-arceus', 'legends-za'])
                   const breedingAvailable = !NO_BREEDING_VERSIONS.has(selectedVersion)
                   const hasEvoFamilyInVersion = evoFamilyVersions.includes(selectedVersion)
                   const isBreedable = !species?.egg_groups?.every(g => g.name === 'no-eggs') || species?.is_baby
@@ -281,8 +281,9 @@ export default function LocationBox({
                   }
 
                   // Priority 1c: Trade for a bred Pokémon — evo family exists in other same-gen games
+                  // (that can actually trade with this one — LGPE is isolated)
                   if (breedingAvailable && isBreedable && evoFamilyVersions.length > 0) {
-                    const tradeBreedVersions = evoFamilyVersions.filter(v => v !== selectedVersion)
+                    const tradeBreedVersions = evoFamilyVersions.filter(v => v !== selectedVersion && canTradeBetween(selectedVersion, v))
                     if (tradeBreedVersions.length > 0) {
                       const tradeNames = tradeBreedVersions.map(v => versionDisplayNames[v] || v).join(', ')
                       return <p style={{ margin: '0' }}>Trade from {tradeNames}.</p>
@@ -303,7 +304,7 @@ export default function LocationBox({
                       })
                     })
                     const otherGenVersions = genVersions.filter(
-                      v => v !== selectedVersion && versionsWithEncounters.has(v)
+                      v => v !== selectedVersion && versionsWithEncounters.has(v) && canTradeBetween(selectedVersion, v)
                     )
                     if (otherGenVersions.length > 0) {
                       const tradeNames = otherGenVersions.map(v => versionDisplayNames[v] || v).join(', ')
@@ -313,13 +314,22 @@ export default function LocationBox({
 
                   // Priority 2b: Can a pre-evolution be traded from another game and then evolved?
                   if (canTradeAndEvolveFrom) {
-                    const tradeNames = canTradeAndEvolveFrom.tradeVersions.map(v => versionDisplayNames[v] || v).join(', ')
-                    const preEvoName = titleCase(canTradeAndEvolveFrom.preEvo)
-                    return <p style={{ margin: '0' }}>Trade from {tradeNames} and/or evolve from {preEvoName}.</p>
+                    const tradableFrom = canTradeAndEvolveFrom.tradeVersions.filter(v => canTradeBetween(selectedVersion, v))
+                    if (tradableFrom.length > 0) {
+                      const tradeNames = tradableFrom.map(v => versionDisplayNames[v] || v).join(', ')
+                      const preEvoName = titleCase(canTradeAndEvolveFrom.preEvo)
+                      return <p style={{ margin: '0' }}>Trade from {tradeNames} and/or evolve from {preEvoName}.</p>
+                    }
                   }
 
-                  // Priority 3: Transfer
-                  return <p style={{ margin: '0' }}>Transfer only.</p>
+                  // Priority 3: Transfer — only if this version can actually receive transfers
+                  // (Gen 3 cannot; LGPE only receives from Pokémon GO — Meltan's sole source).
+                  const vgForTransfer = versionGroupForVersion(selectedVersion)
+                  if (vgForTransfer === 'lets-go-pikachu-lets-go-eevee') {
+                    return <p style={{ margin: '0' }}>Transfer from Pokémon GO.</p>
+                  }
+                  const transferSources = getTransferSourceVersionGroups(selectedVersion, vgForTransfer)
+                  return <p style={{ margin: '0' }}>{transferSources ? 'Transfer only.' : 'Not obtainable in this version.'}</p>
                 })()
               ) : allEncounters.length === 0 && selectedVersion ? (
                 (() => {
@@ -330,7 +340,7 @@ export default function LocationBox({
 
                   // Priority 1b: Breeding — even though this Pokémon has no encounters,
                   // an evo-family member might exist in this version (e.g. Magby via Magmar in LeafGreen)
-                  const NO_BREEDING_VERSIONS2 = new Set(['red', 'blue', 'yellow', 'colosseum', 'xd', 'legends-arceus', 'legends-za'])
+                  const NO_BREEDING_VERSIONS2 = new Set(['red', 'blue', 'yellow', 'colosseum', 'xd', 'lets-go-pikachu', 'lets-go-eevee', 'legends-arceus', 'legends-za'])
                   const breedingAvailable2 = !NO_BREEDING_VERSIONS2.has(selectedVersion)
                   const hasEvoFamilyInVersion2 = evoFamilyVersions.includes(selectedVersion)
                   const isBreedable2 = !species?.egg_groups?.every(g => g.name === 'no-eggs') || species?.is_baby
@@ -340,8 +350,9 @@ export default function LocationBox({
                   }
 
                   // Priority 1c: Trade for a bred Pokémon — evo family exists in other same-gen games
+                  // (that can actually trade with this one — LGPE is isolated)
                   if (breedingAvailable2 && isBreedable2 && evoFamilyVersions.length > 0) {
-                    const tradeBreedVersions = evoFamilyVersions.filter(v => v !== selectedVersion)
+                    const tradeBreedVersions = evoFamilyVersions.filter(v => v !== selectedVersion && canTradeBetween(selectedVersion, v))
                     if (tradeBreedVersions.length > 0) {
                       const tradeNames = tradeBreedVersions.map(v => versionDisplayNames[v] || v).join(', ')
                       return <p style={{ margin: '0' }}>Trade from {tradeNames}.</p>
@@ -350,13 +361,23 @@ export default function LocationBox({
 
                   // Check if a pre-evo can be traded from another same-gen game and evolved
                   if (canTradeAndEvolveFrom) {
-                    const tradeNames = canTradeAndEvolveFrom.tradeVersions.map(v => versionDisplayNames[v] || v).join(', ')
-                    const preEvoName = titleCase(canTradeAndEvolveFrom.preEvo)
-                    return <p style={{ margin: '0' }}>Trade from {tradeNames} and/or evolve from {preEvoName}.</p>
+                    const tradableFrom = canTradeAndEvolveFrom.tradeVersions.filter(v => canTradeBetween(selectedVersion, v))
+                    if (tradableFrom.length > 0) {
+                      const tradeNames = tradableFrom.map(v => versionDisplayNames[v] || v).join(', ')
+                      const preEvoName = titleCase(canTradeAndEvolveFrom.preEvo)
+                      return <p style={{ margin: '0' }}>Trade from {tradeNames} and/or evolve from {preEvoName}.</p>
+                    }
                   }
 
-                  // No wild encounters exist in any version — transfer is the only option
-                  return <p style={{ margin: '0' }}>Transfer only.</p>
+                  // No wild encounters exist in any version — transfer only if this
+                  // version can actually receive transfers (Gen 3 cannot; LGPE only
+                  // receives from Pokémon GO — Meltan's sole source).
+                  const vgForTransfer2 = versionGroupForVersion(selectedVersion)
+                  if (vgForTransfer2 === 'lets-go-pikachu-lets-go-eevee') {
+                    return <p style={{ margin: '0' }}>Transfer from Pokémon GO.</p>
+                  }
+                  const transferSources2 = getTransferSourceVersionGroups(selectedVersion, vgForTransfer2)
+                  return <p style={{ margin: '0' }}>{transferSources2 ? 'Transfer only.' : 'Not obtainable in this version.'}</p>
                 })()
               ) : allEncounters.length === 0 ? (
                 <p style={{ margin: '0' }}>No location data available.</p>

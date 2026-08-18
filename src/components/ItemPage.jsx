@@ -369,6 +369,31 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
     return itemData.category.name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
   }
 
+  // Price for the selected version. The API replaced the flat `cost` field
+  // with per-version-group `prices` rows (Aug 2026); an empty array means the
+  // price is unknown, not free. Prefer the selected version's group, else the
+  // newest row so the badge still shows something for unselected/odd versions.
+  const getPriceInfo = () => {
+    const prices = itemData?.prices
+    if (!prices?.length) {
+      // Transitional: item payloads cached before the API dropped `cost`
+      // (7-day IndexedDB TTL) still carry the old field — show the modern
+      // price rather than nothing until the cache turns over.
+      if (itemData?.cost > 0) {
+        return { buy: itemData.cost, sell: 0, formatPrice: (amount) => `₽${amount.toLocaleString()}` }
+      }
+      return null
+    }
+    const vg = selectedVersion ? versionToVg[selectedVersion] : null
+    const entry = (vg && prices.find(p => p.version_group?.name === vg)) || prices[prices.length - 1]
+    const buy = entry?.purchase_price || 0
+    const sell = entry?.sell_price || 0
+    if (!buy && !sell) return null
+    const formatPrice = (amount) =>
+      entry.currency?.name === 'battle-point' ? `${amount.toLocaleString()} BP` : `₽${amount.toLocaleString()}`
+    return { buy, sell, formatPrice }
+  }
+
   // Get Pokémon that hold this item in the selected version
   const getHolders = () => {
     if (!itemData?.held_by_pokemon || !selectedVersion) return []
@@ -403,6 +428,7 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
   const description = getDescription()
   const effect = getEffect()
   const category = getCategoryDisplay()
+  const priceInfo = getPriceInfo()
   const holders = getHolders()
 
   // Get the item's intro generation
@@ -520,9 +546,14 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
                     {category}
                   </span>
                 )}
-                {itemData.cost > 0 && (
-                  <span className="item-cost-badge">
-                    ₽{itemData.cost.toLocaleString()}
+                {priceInfo && (
+                  <span
+                    className="item-cost-badge"
+                    title={priceInfo.sell ? `Sells for ${priceInfo.formatPrice(priceInfo.sell)}` : undefined}
+                  >
+                    {priceInfo.buy
+                      ? priceInfo.formatPrice(priceInfo.buy)
+                      : `Sell: ${priceInfo.formatPrice(priceInfo.sell)}`}
                   </span>
                 )}
                 {itemData.fling_power != null && itemData.fling_power > 0 && (

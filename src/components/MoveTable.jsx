@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { getTypeColor, getTypeTextColor } from '../utils/typeColors'
 import { titleCase } from '../utils/format'
+import { getMoveCategoryForGen } from '../utils/moveRules'
 
 function CollapsibleInfoBox({ title, children, className = '', style, contentClassName = '', contentStyle, headerExtra, initialExpanded = false }) {
   const [collapsed, setCollapsed] = useState(false)
@@ -84,23 +85,6 @@ const getMoveEffectEntry = (details) => {
   // Most short_effects just say "a chance" with no number — append the % after
   // the first occurrence of "chance", e.g. "Has a chance (10%) to burn…".
   return baseText.replace(/\bchance\b/i, `chance (${details.effect_chance}%)`)
-}
-
-// In Gens 1-3 move category was determined by type, not per-move
-const physicalTypes = new Set(['normal', 'fighting', 'flying', 'poison', 'ground', 'rock', 'bug', 'ghost', 'steel'])
-const specialTypes = new Set(['fire', 'water', 'grass', 'electric', 'psychic', 'ice', 'dragon', 'dark'])
-
-function getMoveCategoryForGen(move, generationNum) {
-  // Gens 1-3: category is based on type, not the move's own damage_class
-  if (generationNum && generationNum <= 3) {
-    const typeName = move.details?.type?.name
-    if (!typeName) return move.details?.damage_class?.name || null
-    // Status moves remain status regardless of generation
-    if (move.details?.damage_class?.name === 'status') return 'status'
-    if (physicalTypes.has(typeName)) return 'physical'
-    if (specialTypes.has(typeName)) return 'special'
-  }
-  return move.details?.damage_class?.name || null
 }
 
 export default function MoveTable({ title, moves, showLevel, showTmNumber, showMethod, loading, onMoveClick, onEggMoveParentsClick, onNavigateToEggTab, compact, generationNum }) {
