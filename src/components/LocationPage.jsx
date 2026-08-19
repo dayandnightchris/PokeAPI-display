@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import UnifiedSearch from './UnifiedSearch'
 import { versionDisplayNames, versionGeneration, versionAbbreviations, generationVersions, versionColors, defaultVersionGroups } from '../utils/versionInfo'
 import { fetchLocationCached, fetchLocationAreaCached } from '../utils/pokeCache'
 import { titleCase, formatLocationName } from '../utils/format'
+import { formatEncounterCondition } from '../utils/encounterConditions'
 
 function formatName(name) {
   return titleCase(name)
@@ -11,14 +12,6 @@ function formatName(name) {
 }
 
 export default function LocationPage({ initialLocation, initialVersion, onStateChange, onPokemonClick, searchLists, onUnifiedNavigate }) {
-  const [locationList, setLocationList] = useState([])
-  const [searchInput, setSearchInput] = useState(initialLocation ? formatLocationName(initialLocation) : '')
-  const [suggestions, setSuggestions] = useState([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [activeSuggestion, setActiveSuggestion] = useState(0)
-  const containerRef = useRef(null)
-  const userIsTypingRef = useRef(false)
-
   const [locationData, setLocationData] = useState(null)
   const [encounters, setEncounters] = useState([])
   const [locationLoading, setLocationLoading] = useState(false)
@@ -39,51 +32,6 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
     hasLoadedFromUrl.current = true
     searchLocation(initialLocation)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Fetch location names list for autocomplete
-  useEffect(() => {
-    const fetchLocationList = async () => {
-      try {
-        const first = await fetch('https://pokeapi.co/api/v2/location/').then(r => r.json())
-        const all = await fetch(`https://pokeapi.co/api/v2/location/?limit=${first.count}`).then(r => r.json())
-        setLocationList(all.results.map(l => l.name).sort())
-      } catch (err) {
-        console.error('Failed to fetch location list:', err)
-      }
-    }
-    fetchLocationList()
-  }, [])
-
-  // Autocomplete logic
-  useEffect(() => {
-    if (!searchInput.trim() || !userIsTypingRef.current) {
-      if (!searchInput.trim()) {
-        setSuggestions([])
-        setShowSuggestions(false)
-      }
-      return
-    }
-    const q = searchInput.toLowerCase().replace(/[-\s]/g, '')
-    const filtered = locationList.filter(n => n.replace(/-/g, '').includes(q)).slice(0, 8)
-    setSuggestions(filtered)
-    setShowSuggestions(filtered.length > 0)
-    setActiveSuggestion(0)
-  }, [searchInput, locationList])
-
-  // Close suggestions on outside click
-  useEffect(() => {
-    const handler = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setShowSuggestions(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    document.addEventListener('touchstart', handler)
-    return () => {
-      document.removeEventListener('mousedown', handler)
-      document.removeEventListener('touchstart', handler)
-    }
-  }, [])
 
   // Compute available versions from encounter data
   useEffect(() => {
@@ -147,13 +95,17 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
     }
   }, [selectedVersion, locationData, onStateChange])
 
+  // Guards against out-of-order async completions: only the latest search may
+  // write state (rapid sub-area clicks during a slow parent load interleave).
+  const searchSeqRef = useRef(0)
+
   const searchLocation = async (name) => {
     const query = String(name).trim().toLowerCase().replace(/\s+/g, '-')
     if (!query) return
 
-    userIsTypingRef.current = false
-    setSearchInput(formatLocationName(query))
-    setShowSuggestions(false)
+    const seq = ++searchSeqRef.current
+    const isCurrent = () => seq === searchSeqRef.current
+
     setLocationLoading(true)
     setLocationError(null)
     setLocationData(null)
@@ -162,6 +114,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
     try {
       // Try as sub-area (location-area) first
       const areaData = await fetchLocationAreaCached(query)
+      if (!isCurrent()) return
       if (areaData && areaData.pokemon_encounters) {
         setLocationData({
           name: areaData.name,
@@ -181,6 +134,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
 
       // Fallback: try as parent location
       const data = await fetchLocationCached(query)
+      if (!isCurrent()) return
       if (!data) throw new Error('Location not found')
       setLocationData(data)
 
@@ -190,6 +144,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
       const areaResults = await Promise.all(
         areas.map(area => fetchLocationAreaCached(area.url))
       )
+      if (!isCurrent()) return
       areaResults.forEach((areaData, i) => {
         if (!areaData?.pokemon_encounters) return
         const areaName = areas[i].name
@@ -209,6 +164,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
       if (allEncounters.length === 0 && areas.length === 0 && query.includes('--')) {
         const areaName = query.replace(/--/g, '-')
         const fallbackArea = await fetchLocationAreaCached(areaName)
+        if (!isCurrent()) return
         if (fallbackArea && fallbackArea.pokemon_encounters?.length > 0) {
           setLocationData({
             name: fallbackArea.name,
@@ -227,54 +183,29 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
 
       setEncounters(allEncounters)
     } catch (err) {
-      setLocationError(err.message || 'Failed to fetch location')
+      if (isCurrent()) setLocationError(err.message || 'Failed to fetch location')
     } finally {
-      setLocationLoading(false)
+      if (isCurrent()) setLocationLoading(false)
     }
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (searchInput.trim()) searchLocation(searchInput)
-  }
-
-  const handleSuggestionClick = (name) => {
-    searchLocation(name)
-  }
-
-  const handleKeyDown = (e) => {
-    if (!showSuggestions) return
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault()
-        setActiveSuggestion(prev => (prev + 1) % suggestions.length)
-        break
-      case 'ArrowUp':
-        e.preventDefault()
-        setActiveSuggestion(prev => (prev - 1 + suggestions.length) % suggestions.length)
-        break
-      case 'Enter':
-        e.preventDefault()
-        if (suggestions[activeSuggestion]) {
-          handleSuggestionClick(suggestions[activeSuggestion])
-        } else {
-          handleSubmit(e)
-        }
-        break
-      case 'Escape':
-        setShowSuggestions(false)
-        break
-      default:
-        break
-    }
-  }
-
-  // Build grouped encounter data for the selected version
-  const getEncounterGroups = () => {
+  // Build grouped encounter data for the selected version. Entries are keyed
+  // by sub-area + method + levels + conditions, so slot rates only ever sum
+  // within one area's encounter table — summing the same combo across a
+  // multi-floor location produced impossible >100% rates.
+  const encounterGroups = useMemo(() => {
     if (!selectedVersion || encounters.length === 0) return []
 
     const selectedGen = versionGeneration[selectedVersion] || 0
     const sameGenVersions = new Set(generationVersions[selectedGen] || [])
+    const entryKey = (e) => `${e.area}|${e.method}|${e.minLevel}|${e.maxLevel}|${e.conditions.join(',')}`
+    const detailToCandidate = (detail, area) => ({
+      area: area || '',
+      method: detail.method?.name || 'unknown',
+      minLevel: detail.min_level || 0,
+      maxLevel: detail.max_level || 0,
+      conditions: (detail.condition_values || []).map(cv => cv.name).sort(),
+    })
 
     // Group by pokemon — include ALL entries from same-gen versions
     const byPokemon = {}
@@ -288,31 +219,21 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
         if (!byPokemon[pokeName]) byPokemon[pokeName] = { pokemon: pokeName, entries: [], versions: new Set() }
 
         vd.encounter_details.forEach(detail => {
-          const method = detail.method?.name || 'unknown'
+          const candidate = detailToCandidate(detail, enc.area)
           const chance = detail.chance || 0
-          const minLvl = detail.min_level || 0
-          const maxLvl = detail.max_level || 0
-          const conditions = (detail.condition_values || []).map(cv => cv.name).sort()
-
-          // Merge duplicate method+level+conditions entries
-          const existing = byPokemon[pokeName].entries.find(
-            e => e.method === method && e.minLevel === minLvl && e.maxLevel === maxLvl && JSON.stringify(e.conditions) === JSON.stringify(conditions)
-          )
+          const existing = byPokemon[pokeName].entries.find(e => entryKey(e) === entryKey(candidate))
           if (existing) {
-            // Sum rate for the selected version; ignore other versions' rates
+            // Sum slot rates for the selected version only
             if (vName === selectedVersion) {
-              if (!existing._hasSelectedRate) {
-                existing.rate = chance
-                existing._hasSelectedRate = true
-              } else {
-                existing.rate += chance
-              }
+              existing.rate = (existing.rate ?? 0) + chance
             }
           } else {
             byPokemon[pokeName].entries.push({
-              method, minLevel: minLvl, maxLevel: maxLvl,
-              rate: chance, conditions, versions: new Set(),
-              _hasSelectedRate: vName === selectedVersion
+              ...candidate,
+              // A sibling version's rate would be misleading here — keep null
+              // and render it as "—" until the selected version supplies one.
+              rate: vName === selectedVersion ? chance : null,
+              versions: new Set(),
             })
           }
         })
@@ -322,7 +243,6 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
     })
 
     // Determine per-pokemon whether it appears in the selected version at all
-    // (use the versions Set already accumulated during entry-building)
     Object.values(byPokemon).forEach(group => {
       if (!group.versions.has(selectedVersion)) {
         group.notInSelectedVersion = true
@@ -330,7 +250,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
     })
 
     // Track which same-gen versions each entry appears in
-    // Match by method + level + conditions (not rate, since rates differ across versions)
+    // (match by area + method + levels + conditions; rates differ per version)
     encounters.forEach(enc => {
       const pokeName = enc.pokemon.name
       if (!byPokemon[pokeName]) return
@@ -338,38 +258,52 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
         const vName = vd.version?.name
         if (!vName || !sameGenVersions.has(vName) || !versionDisplayNames[vName] || !vd.encounter_details?.length) return
 
-        // Collect the method+level+conditions combos this version has
         const combos = new Set()
         vd.encounter_details.forEach(detail => {
-          const method = detail.method?.name || 'unknown'
-          const minLvl = detail.min_level || 0
-          const maxLvl = detail.max_level || 0
-          const conditions = (detail.condition_values || []).map(cv => cv.name).sort()
-          combos.add(`${method}|${minLvl}|${maxLvl}|${JSON.stringify(conditions)}`)
+          combos.add(entryKey(detailToCandidate(detail, enc.area)))
         })
 
-        // Tag this version on entries whose combo matches
         byPokemon[pokeName].entries.forEach(entry => {
-          const key = `${entry.method}|${entry.minLevel}|${entry.maxLevel}|${JSON.stringify(entry.conditions)}`
-          if (combos.has(key)) {
+          if (combos.has(entryKey(entry))) {
             entry.versions.add(vName)
           }
         })
       })
     })
 
-    // Mark entries that don't appear in the selected version
+    // Mark entries that don't appear in the selected version, and order the
+    // expanded view by floor, then method, then level.
     Object.values(byPokemon).forEach(group => {
       group.entries.forEach(entry => {
         entry.notInSelectedVersion = !entry.versions.has(selectedVersion)
-        delete entry._hasSelectedRate
       })
+      group.entries.sort((a, b) =>
+        a.area.localeCompare(b.area) || a.method.localeCompare(b.method) || a.minLevel - b.minLevel)
     })
 
     return Object.values(byPokemon)
-  }
+  }, [encounters, selectedVersion])
 
-  const encounterGroups = getEncounterGroups()
+  // Whether the *rendered* entries span multiple sub-areas (drives the Area
+  // column) — derived from the same-generation groups, not all encounters, so
+  // an area populated only in another generation doesn't force the column.
+  const multiArea = useMemo(() => {
+    const areas = new Set()
+    encounterGroups.forEach(g => g.entries.forEach(e => { if (e.area) areas.add(e.area) }))
+    return areas.size > 1
+  }, [encounterGroups])
+
+  // "mt-coronet-1f-route-207" under location "mt-coronet" → "1f Route 207".
+  const shortAreaName = (area) => {
+    if (!area) return '—'
+    const base = locationData?.name
+    if (base && area === base) return 'Main area'
+    if (base && area.startsWith(base + '-')) {
+      const rest = area.slice(base.length + 1)
+      return rest === 'area' ? 'Main area' : formatLocationName(rest)
+    }
+    return formatLocationName(area)
+  }
 
   // When navigating to a new area while fully expanded, auto-expand the new area's collapsible groups
   useEffect(() => {
@@ -404,8 +338,12 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
         result = (a.entries[0]?.method || '').localeCompare(b.entries[0]?.method || '')
         break
       case 'rate': {
-        const maxRateA = Math.max(...a.entries.map(e => e.rate))
-        const maxRateB = Math.max(...b.entries.map(e => e.rate))
+        // Groups without any selected-version rate sort last in BOTH directions.
+        const maxRateA = Math.max(...a.entries.map(e => e.rate ?? -1))
+        const maxRateB = Math.max(...b.entries.map(e => e.rate ?? -1))
+        const aRated = maxRateA >= 0
+        const bRated = maxRateB >= 0
+        if (aRated !== bRated) return aRated ? -1 : 1
         result = maxRateA - maxRateB
         break
       }
@@ -547,6 +485,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                       <tr>
                         <th><button type="button" onClick={() => handleSort('method')}>Method{getSortIndicator('method')}</button></th>
                         <th><button type="button" onClick={() => handleSort('pokemon')}>Pokémon{getSortIndicator('pokemon')}</button></th>
+                        {multiArea && <th>Area</th>}
                         <th>Levels</th>
                         <th>Condition(s)</th>
                         <th><button type="button" onClick={() => handleSort('rate')}>Rate{getSortIndicator('rate')}</button></th>
@@ -602,23 +541,49 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                                   : formatName(group.pokemon)
                                 }
                               </td>
+                              {multiArea && <td className="location-area-cell">{shortAreaName(entry.area)}</td>}
                               <td className="location-level-cell">{levelDisplay}</td>
                               <td className="location-conditions-cell">
                                 {entry.conditions && entry.conditions.length > 0 ? (
                                   <span style={{ fontSize: '11px', color: '#888', fontStyle: 'italic' }}>
-                                    {entry.conditions.map(c => formatName(c)).join(', ')}
+                                    {entry.conditions.map(c => formatEncounterCondition(c)).join(', ')}
                                   </span>
                                 ) : (
                                   <span style={{ color: '#bbb', fontSize: '11px' }}>—</span>
                                 )}
                               </td>
-                              <td className="location-rate-cell">{entry.rate}%</td>
+                              <td className="location-rate-cell">{entry.rate != null ? `${entry.rate}%` : '—'}</td>
                               <td className="location-versions-cell">{renderVersionTags(group.versions, !!group.notInSelectedVersion)}</td>
                             </tr>
                           )
                         }
 
-                        // Collapsible pokemon row
+                        // Collapsible pokemon row — summarize instead of dashes.
+                        // All four summaries use the SAME entry set (selected-version
+                        // entries, whole-gen only when the group is entirely greyed)
+                        // so one row never mixes selected-version and whole-gen data.
+                        const inVersionEntries = group.entries.filter(e => !e.notInSelectedVersion)
+                        const summarySource = inVersionEntries.length ? inVersionEntries : group.entries
+                        const methods = [...new Set(summarySource.map(e => e.method))]
+                        const methodSummary = methods.length === 1
+                          ? formatName(methods[0])
+                          : `${methods.length} methods`
+                        const groupAreas = [...new Set(summarySource.map(e => e.area))]
+                        const areaSummary = groupAreas.length === 1
+                          ? shortAreaName(groupAreas[0])
+                          : `${groupAreas.length} areas`
+                        const minLvl = Math.min(...summarySource.map(e => e.minLevel || Infinity))
+                        const maxLvl = Math.max(...summarySource.map(e => e.maxLevel || 0))
+                        const levelSummary = Number.isFinite(minLvl) && maxLvl > 0
+                          ? (minLvl === maxLvl ? `Lv. ${minLvl}` : `Lv. ${minLvl}–${maxLvl}`)
+                          : '—'
+                        const ratedEntries = summarySource.filter(e => e.rate != null)
+                        const maxRate = ratedEntries.length ? Math.max(...ratedEntries.map(e => e.rate)) : null
+                        const distinctRates = new Set(ratedEntries.map(e => e.rate))
+                        const rateSummary = maxRate != null
+                          ? (distinctRates.size > 1 ? `≤ ${maxRate}%` : `${maxRate}%`)
+                          : '—'
+
                         const rows = []
                         rows.push(
                           <tr
@@ -627,7 +592,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                             onClick={() => togglePokemon(group.pokemon)}
                           >
                             <td className="location-method-cell" style={{ color: 'var(--text-muted)' }}>
-                              {group.entries.length} method{group.entries.length !== 1 ? 's' : ''}
+                              {methodSummary}
                             </td>
                             <td className="location-pokemon-cell">
                               <span className="location-toggle">{isExpanded ? '▾' : '▸'}</span>
@@ -636,9 +601,10 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                                 : formatName(group.pokemon)
                               }
                             </td>
-                            <td className="location-level-cell" style={{ color: 'var(--text-muted)' }}>—</td>
+                            {multiArea && <td className="location-area-cell" style={{ color: 'var(--text-muted)' }}>{areaSummary}</td>}
+                            <td className="location-level-cell" style={{ color: 'var(--text-muted)' }}>{levelSummary}</td>
                             <td className="location-conditions-cell" style={{ color: 'var(--text-muted)' }}>—</td>
-                            <td className="location-rate-cell" style={{ color: 'var(--text-muted)' }}>—</td>
+                            <td className="location-rate-cell" style={{ color: 'var(--text-muted)' }}>{rateSummary}</td>
                             <td className="location-versions-cell">{renderVersionTags(group.versions, !!group.notInSelectedVersion)}</td>
                           </tr>
                         )
@@ -652,17 +618,18 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
                               <tr key={`${group.pokemon}-${idx}`} className={`location-detail-row${(entry.notInSelectedVersion || group.notInSelectedVersion) ? ' location-unavailable-row' : ''}`}>
                                 <td className="location-method-cell">{formatName(entry.method)}</td>
                                 <td className="location-pokemon-cell"></td>
+                                {multiArea && <td className="location-area-cell">{shortAreaName(entry.area)}</td>}
                                 <td className="location-level-cell">{levelDisplay}</td>
                                 <td className="location-conditions-cell">
                                   {entry.conditions && entry.conditions.length > 0 ? (
                                     <span style={{ fontSize: '11px', color: '#888', fontStyle: 'italic' }}>
-                                    {entry.conditions.map(c => formatName(c)).join(', ')}
+                                    {entry.conditions.map(c => formatEncounterCondition(c)).join(', ')}
                                     </span>
                                   ) : (
                                     <span style={{ color: '#bbb', fontSize: '11px' }}>—</span>
                                   )}
                                 </td>
-                                <td className="location-rate-cell">{entry.rate}%</td>
+                                <td className="location-rate-cell">{entry.rate != null ? `${entry.rate}%` : '—'}</td>
                                 <td className="location-versions-cell">
                                   {renderVersionTags(entry.versions || new Set(), !!(entry.notInSelectedVersion || group.notInSelectedVersion))}
                                 </td>

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { versionDisplayNames, versionGeneration, generationVersions, canTradeBetween, versionGroupForVersion, getTransferSourceVersionGroups } from '../utils/versionInfo'
 import { titleCase, formatLocationName } from '../utils/format'
+import { formatEncounterCondition } from '../utils/encounterConditions'
 
 // A hover/tap tooltip rendered into a body-level portal so it escapes the
 // Location box's overflow clipping (the encounter table needs to scroll, which
@@ -193,7 +194,7 @@ export default function LocationBox({
                                     {methodDisplay}
                                     {entry.conditions.length > 0 && (
                                       <div style={{ fontSize: '11px', color: '#888', fontStyle: 'italic' }}>
-                                        {entry.conditions.map(titleCase).join(', ')}
+                                        {entry.conditions.map(formatEncounterCondition).join(', ')}
                                       </div>
                                     )}
                                   </td>
@@ -242,7 +243,7 @@ export default function LocationBox({
                                     <td style={{ padding: '4px 8px 4px 24px' }}>
                                       {entry.conditions.length > 0 && (
                                         <span style={{ fontSize: '11px', color: '#888', fontStyle: 'italic' }}>
-                                          {entry.conditions.map(titleCase).join(', ')}
+                                          {entry.conditions.map(formatEncounterCondition).join(', ')}
                                         </span>
                                       )}
                                     </td>

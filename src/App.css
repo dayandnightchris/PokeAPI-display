@@ -1532,6 +1532,11 @@
   text-transform: capitalize;
 }
 
+/* Condition labels are pre-humanized ("Emerald in GBA slot") — don't re-capitalize */
+.location-encounters-table td.location-conditions-cell {
+  text-transform: none;
+}
+
 .location-encounters-table tbody tr:hover {
   background: var(--table-row-hover);
 }
