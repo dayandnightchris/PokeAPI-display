@@ -10,7 +10,7 @@ const CACHE_KEY = 'pokedexList-v4'
 const STALE_CACHE_KEYS = ['pokedexList-v2', 'pokedexList-v3']
 
 // Highest National-Dex id the app covers (Galar; Hisui/Paldea excluded).
-const MAX_DEX_ID = 898
+export const MAX_DEX_ID = 898
 
 // National-Dex id ranges per region (Gens 1–8; Gen 9+ is excluded elsewhere).
 export const REGIONS = [

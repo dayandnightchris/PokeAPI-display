@@ -1366,6 +1366,47 @@
   margin-bottom: 0;
 }
 
+/* National-Dex prev/next traversal buttons on the Pokémon page */
+.dex-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-light, #ccc);
+  border-radius: 6px;
+  background: var(--control-bg, #fafafa);
+  color: var(--text-color, #333);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.dex-nav-btn:hover {
+  background: var(--table-row-hover, #eee);
+  border-color: var(--text-muted, #999);
+}
+
+.dex-nav-icon {
+  width: 28px;
+  height: 28px;
+  image-rendering: pixelated;
+}
+
+.dex-nav-arrow {
+  color: var(--text-muted, #888);
+  font-size: 11px;
+}
+
+@media (max-width: 768px) {
+  /* Stacked layout: keep the two dex buttons side by side instead */
+  .dex-nav-btn {
+    align-self: center;
+    margin: 4px 0;
+  }
+}
+
 .page-version-inline {
   display: flex;
   align-items: center;

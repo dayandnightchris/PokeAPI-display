@@ -4,6 +4,7 @@ import VersionSelector from './VersionSelector'
 import UnifiedSearch from './UnifiedSearch'
 import { renderEvolutionForest } from './EvolutionTree'
 import { getVersionInfo, generationOrder, versionGeneration, normalizeVersionName } from '../utils/versionInfo'
+import { spriteUrlForId, MAX_DEX_ID } from '../utils/pokedexList'
 import { titleCase, formatHeight, formatWeight } from '../utils/format'
 import MoveTable from './MoveTable'
 import TypeMatchupDisplay from './TypeMatchupDisplay'
@@ -331,10 +332,31 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   })()
   const formatPokedexName = (name) => titleCase(name.replace(/^(updated|original|extended)-/, ''))
 
+  // National-Dex traversal: previous/next species by dex number (wraps at the
+  // ends). Works from form pages too, since nationalDexNumber is species-level.
+  const dexIdMap = searchLists?.pokemonIdMap || {}
+  const prevDexId = nationalDexNumber > 1 ? nationalDexNumber - 1 : MAX_DEX_ID
+  const nextDexId = nationalDexNumber < MAX_DEX_ID ? nationalDexNumber + 1 : 1
+  const prevDexName = nationalDexNumber ? dexIdMap[prevDexId] : null
+  const nextDexName = nationalDexNumber ? dexIdMap[nextDexId] : null
+
   return (
     <div className="pokemon-card-container" ref={cardTopRef}>
       {/* Search + Version Selector Row */}
       <div className="page-search-row">
+        {prevDexName && (
+          <button
+            type="button"
+            className="dex-nav-btn"
+            onClick={() => onEvolutionClick?.(prevDexName)}
+            title={`#${String(prevDexId).padStart(3, '0')} ${titleCase(prevDexName)}`}
+            aria-label={`Previous Pokémon: ${titleCase(prevDexName)}`}
+          >
+            <span className="dex-nav-arrow">◀</span>
+            <img src={spriteUrlForId(prevDexId)} alt="" className="dex-nav-icon" loading="lazy" />
+            <span>#{String(prevDexId).padStart(3, '0')}</span>
+          </button>
+        )}
         <VersionSelector
           pokemon={displayPokemon}
           selectedVersion={selectedVersion}
@@ -346,6 +368,19 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
         <div className="page-search-inline">
           <UnifiedSearch lists={searchLists} onNavigate={onUnifiedNavigate} activeTab="pokemon" loading={searchLoading} initialQuery={initialQuery} />
         </div>
+        {nextDexName && (
+          <button
+            type="button"
+            className="dex-nav-btn"
+            onClick={() => onEvolutionClick?.(nextDexName)}
+            title={`#${String(nextDexId).padStart(3, '0')} ${titleCase(nextDexName)}`}
+            aria-label={`Next Pokémon: ${titleCase(nextDexName)}`}
+          >
+            <span>#{String(nextDexId).padStart(3, '0')}</span>
+            <img src={spriteUrlForId(nextDexId)} alt="" className="dex-nav-icon" loading="lazy" />
+            <span className="dex-nav-arrow">▶</span>
+          </button>
+        )}
       </div>
 
       {/* Form Selector */}
