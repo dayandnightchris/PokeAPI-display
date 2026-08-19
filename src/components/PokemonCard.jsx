@@ -349,12 +349,15 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
             type="button"
             className="dex-nav-btn"
             onClick={() => onEvolutionClick?.(prevDexName)}
-            title={`#${String(prevDexId).padStart(3, '0')} ${titleCase(prevDexName)}`}
+            title={`#${prevDexId} ${titleCase(prevDexName)}`}
             aria-label={`Previous Pokémon: ${titleCase(prevDexName)}`}
           >
             <span className="dex-nav-arrow">◀</span>
-            <img src={spriteUrlForId(prevDexId)} alt="" className="dex-nav-icon" loading="lazy" />
-            <span>#{String(prevDexId).padStart(3, '0')}</span>
+            <img src={spriteUrlForId(prevDexId)} alt="" className="dex-nav-icon" />
+            <span className="dex-nav-label">
+              <span className="dex-nav-num">#{prevDexId}</span>
+              <span className="dex-nav-name">{titleCase(prevDexName)}</span>
+            </span>
           </button>
         )}
         <VersionSelector
@@ -371,13 +374,16 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
         {nextDexName && (
           <button
             type="button"
-            className="dex-nav-btn"
+            className="dex-nav-btn dex-nav-btn--next"
             onClick={() => onEvolutionClick?.(nextDexName)}
-            title={`#${String(nextDexId).padStart(3, '0')} ${titleCase(nextDexName)}`}
+            title={`#${nextDexId} ${titleCase(nextDexName)}`}
             aria-label={`Next Pokémon: ${titleCase(nextDexName)}`}
           >
-            <span>#{String(nextDexId).padStart(3, '0')}</span>
-            <img src={spriteUrlForId(nextDexId)} alt="" className="dex-nav-icon" loading="lazy" />
+            <span className="dex-nav-label">
+              <span className="dex-nav-num">#{nextDexId}</span>
+              <span className="dex-nav-name">{titleCase(nextDexName)}</span>
+            </span>
+            <img src={spriteUrlForId(nextDexId)} alt="" className="dex-nav-icon" />
             <span className="dex-nav-arrow">▶</span>
           </button>
         )}

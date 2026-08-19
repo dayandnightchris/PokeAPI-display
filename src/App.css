@@ -1389,14 +1389,39 @@
 }
 
 .dex-nav-icon {
-  width: 28px;
-  height: 28px;
+  /* Box icons are 68x56 with generous transparent padding */
+  width: 44px;
+  height: 36px;
+  object-fit: contain;
   image-rendering: pixelated;
+  margin: -8px -2px;
 }
 
 .dex-nav-arrow {
   color: var(--text-muted, #888);
   font-size: 11px;
+}
+
+.dex-nav-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+}
+
+.dex-nav-btn--next .dex-nav-label {
+  align-items: flex-end;
+}
+
+.dex-nav-num {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted, #888);
+}
+
+.dex-nav-name {
+  font-size: 13px;
+  font-weight: 700;
 }
 
 @media (max-width: 768px) {
