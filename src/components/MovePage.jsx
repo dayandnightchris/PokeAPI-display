@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import UnifiedSearch from './UnifiedSearch'
-import { versionDisplayNames, versionGeneration, versionGroupDisplayNames, generationVersionGroups, generationOrder, versionGroupOrder, getTransferSourceVersionGroups, defaultVersionGroups } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, versionGroupDisplayNames, generationVersionGroups, generationOrder, versionGroupOrder, getTransferSourceVersionGroups, defaultVersionGroups, isSupportedVersion } from '../utils/versionInfo'
 import { fetchPokemonCached, fetchMoveCached, fetchSpeciesCached, preloadPokemonCache } from '../utils/pokeCache'
 import gen1TradebackMoves from '../utils/tradebackMoves'
 import { typeColors, getTypeTextColor } from '../utils/typeColors'
@@ -248,7 +248,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
     const fetchMoveList = async () => {
       try {
         const genPromises = []
-        for (let g = 1; g <= 7; g++) {
+        for (let g = 1; g <= 8; g++) {
           genPromises.push(fetch(`https://pokeapi.co/api/v2/generation/${g}/`).then(r => r.json()))
         }
         const genData = await Promise.all(genPromises)
@@ -257,7 +257,11 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
           for (const move of (gen.moves || [])) {
             // Filter out non-main-series moves (IDs >= 10001)
             const idMatch = move.url?.match(/\/(\d+)\/?$/)
-            if (idMatch && Number(idMatch[1]) >= 10001) continue
+            const idNum = idMatch ? Number(idMatch[1]) : 0
+            if (idNum >= 10001) continue
+            // generation/8 also lists the PLA-only moves (ids 827-850) —
+            // not learnable in SWSH, so excluded
+            if (idNum >= 827 && idNum <= 850) continue
             names.add(move.name)
           }
         }
@@ -376,7 +380,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
 
     // Build grouped/sorted version options (same pattern as VersionSelector)
     const uniqueVersions = Array.from(versionSet)
-      .filter(v => versionDisplayNames[v] && (versionGeneration[v] || 0) < 8)
+      .filter(v => isSupportedVersion(v))
       .sort((a, b) => {
         const genA = versionGeneration[a] || 0
         const genB = versionGeneration[b] || 0

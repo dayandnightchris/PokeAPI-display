@@ -185,33 +185,36 @@ function App() {
           if (name.startsWith('alcremie-') && name !== 'alcremie-gmax') names.delete(name)
         }
 
-        // Build id-to-name map and identify Gen 8+ pokemon (id >= 810)
+        // Build id-to-name map and identify unsupported pokemon (id >= 899:
+        // Hisui/Paldea and beyond — Galar 810-898 is supported)
         const idMap = {}
-        const gen8PlusNames = new Set()
+        const unsupportedNames = new Set()
         all.results.forEach(p => {
           const id = p.url.match(/\/pokemon\/(\d+)\//)?.[1]
           if (id) {
             const numId = Number(id)
             idMap[id] = p.name
-            if (numId >= 810) gen8PlusNames.add(p.name)
+            if (numId >= 899) unsupportedNames.add(p.name)
           }
         })
 
-        // Filter out Gen 8+ pokemon and their forms from autocomplete
+        // Filter out unsupported pokemon and their forms from autocomplete
         for (const name of names) {
-          if (gen8PlusNames.has(name)) {
+          if (unsupportedNames.has(name)) {
             names.delete(name)
             continue
           }
-          // Forms: check if the base species name (before the first hyphen suffix) is Gen 8+
-          // e.g. "urshifu-rapid-strike" → base "urshifu"
-          const baseName = [...gen8PlusNames].find(g8 => name.startsWith(g8 + '-'))
+          // Forms: check if the base species name (before the first hyphen suffix) is unsupported
+          // e.g. "basculegion-female" → base "basculegion"
+          const baseName = [...unsupportedNames].find(u => name.startsWith(u + '-'))
           if (baseName) names.delete(name)
         }
 
-        // Also filter Gen 8+ from the id map
+        // Also filter unsupported ids from the id map (this includes all
+        // 10000+ form ids, same as before — forms are reached via the form
+        // selector, not id lookup)
         for (const id of Object.keys(idMap)) {
-          if (Number(id) >= 810) delete idMap[id]
+          if (Number(id) >= 899) delete idMap[id]
         }
 
         // Collapse gendered variety names to the base species in autocomplete
@@ -242,7 +245,7 @@ function App() {
     const fetchMoves = async () => {
       try {
         const genPromises = []
-        for (let g = 1; g <= 7; g++) {
+        for (let g = 1; g <= 8; g++) {
           genPromises.push(fetch(`https://pokeapi.co/api/v2/generation/${g}/`).then(r => r.json()))
         }
         const genData = await Promise.all(genPromises)
@@ -250,7 +253,11 @@ function App() {
         for (const gen of genData) {
           for (const move of (gen.moves || [])) {
             const idMatch = move.url?.match(/\/(\d+)\/?$/)
-            if (idMatch && Number(idMatch[1]) >= 10001) continue
+            const idNum = idMatch ? Number(idMatch[1]) : 0
+            if (idNum >= 10001) continue
+            // generation/8 also lists the PLA-only moves (ids 827-850,
+            // dire-claw..take-heart) — not learnable in SWSH, so excluded
+            if (idNum >= 827 && idNum <= 850) continue
             names.add(move.name)
           }
         }
@@ -267,7 +274,7 @@ function App() {
     const fetchAbilities = async () => {
       try {
         const genPromises = []
-        for (let g = 3; g <= 7; g++) {
+        for (let g = 3; g <= 8; g++) {
           genPromises.push(fetch(`https://pokeapi.co/api/v2/generation/${g}/`).then(r => r.json()))
         }
         const genData = await Promise.all(genPromises)

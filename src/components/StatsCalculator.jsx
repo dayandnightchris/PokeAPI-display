@@ -351,12 +351,12 @@ export default function StatsCalculator({ pokemon, stats: statsProp, generationT
       else if (dmgMoveType === 'fire') damage = Math.floor(damage * 0.5)
     }
 
-    // Terrain boost was 1.5× in Gens 6-7 (this app's whole terrain era);
-    // the 1.3× nerf only arrived in Gen 8.
+    // Terrain boost was 1.5× in Gens 6-7; Gen 8 nerfed it to 1.3×.
     if (!currentGen || currentGen >= 6) {
-      if (dmgTerrain === 'electric' && dmgMoveType === 'electric') damage = Math.floor(damage * 1.5)
-      else if (dmgTerrain === 'grassy' && dmgMoveType === 'grass') damage = Math.floor(damage * 1.5)
-      else if (dmgTerrain === 'psychic' && dmgMoveType === 'psychic') damage = Math.floor(damage * 1.5)
+      const terrainBoost = currentGen && currentGen >= 8 ? 1.3 : 1.5
+      if (dmgTerrain === 'electric' && dmgMoveType === 'electric') damage = Math.floor(damage * terrainBoost)
+      else if (dmgTerrain === 'grassy' && dmgMoveType === 'grass') damage = Math.floor(damage * terrainBoost)
+      else if (dmgTerrain === 'psychic' && dmgMoveType === 'psychic') damage = Math.floor(damage * terrainBoost)
       else if (dmgTerrain === 'misty' && dmgMoveType === 'dragon') damage = Math.floor(damage * 0.5)
     }
 

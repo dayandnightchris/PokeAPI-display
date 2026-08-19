@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import UnifiedSearch from './UnifiedSearch'
-import { versionDisplayNames, versionGeneration, generationVersionGroups, generationOrder, generationVersions, defaultVersionGroups } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, generationVersionGroups, generationOrder, generationVersions, defaultVersionGroups, isSupportedVersion } from '../utils/versionInfo'
 import { fetchAbilityCached, fetchPokemonCached } from '../utils/pokeCache'
 
 function formatAbilityName(name) {
@@ -137,7 +137,7 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
     const fetchAbilityList = async () => {
       try {
         const genPromises = []
-        for (let g = 3; g <= 7; g++) {
+        for (let g = 3; g <= 8; g++) {
           genPromises.push(fetch(`https://pokeapi.co/api/v2/generation/${g}/`).then(r => r.json()))
         }
         const genData = await Promise.all(genPromises)
@@ -207,7 +207,7 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
 
     // Build grouped/sorted version options
     const uniqueVersions = Array.from(versionSet)
-      .filter(v => versionDisplayNames[v] && (versionGeneration[v] || 0) < 8)
+      .filter(v => isSupportedVersion(v))
       .sort((a, b) => {
         const genA = versionGeneration[a] || 0
         const genB = versionGeneration[b] || 0

@@ -23,7 +23,11 @@ export const generationVersions = {
   5: ['black', 'white', 'black-2', 'white-2'],
   6: ['x', 'y', 'omega-ruby', 'alpha-sapphire'],
   7: ['sun', 'moon', 'ultra-sun', 'ultra-moon', 'lets-go-pikachu', 'lets-go-eevee'],
-  8: ['sword', 'shield', 'brilliant-diamond', 'shining-pearl', 'legends-arceus'],
+  // Gen 8 support is SWSH-only for now: BDSP/PLA are omitted from this
+  // roster, which is what isSupportedVersion gates on — they keep their
+  // versionDisplayNames/versionAbbreviations entries for future enablement,
+  // but stay out of same-gen sibling logic, dropdowns, and trade suggestions.
+  8: ['sword', 'shield'],
   9: ['scarlet', 'violet', 'legends-za'],
 }
 
@@ -95,7 +99,7 @@ export const versionGroupDisplayNames = {
   'sun-moon': 'S/M', 'ultra-sun-ultra-moon': 'US/UM',
   'lets-go-pikachu-lets-go-eevee': 'LGPE',
   'sword-shield': 'Sw/Sh', 'the-isle-of-armor': 'IoA', 'the-crown-tundra': 'CT',
-  'brilliant-diamond-and-shining-pearl': 'BD/SP', 'legends-arceus': 'LA',
+  'brilliant-diamond-and-shining-pearl': 'BD/SP', 'brilliant-diamond-shining-pearl': 'BD/SP', 'legends-arceus': 'LA',
   'scarlet-violet': 'S/V', 'the-teal-mask': 'TM', 'the-indigo-disk': 'ID',
   'legends-za': 'LZ-A',
   'mega-dimension': 'MD',
@@ -110,7 +114,7 @@ export const generationVersionGroups = {
   5: ['black-white', 'black-2-white-2'],
   6: ['x-y', 'omega-ruby-alpha-sapphire'],
   7: ['sun-moon', 'ultra-sun-ultra-moon', 'lets-go-pikachu-lets-go-eevee'],
-  8: ['sword-shield', 'the-isle-of-armor', 'the-crown-tundra', 'brilliant-diamond-and-shining-pearl', 'legends-arceus'],
+  8: ['sword-shield', 'the-isle-of-armor', 'the-crown-tundra'],
   9: ['scarlet-violet', 'the-teal-mask', 'the-indigo-disk', 'legends-za', 'mega-dimension'],
 }
 
@@ -140,6 +144,7 @@ export const versionGroupToVersions = {
   'the-isle-of-armor': ['sword', 'shield'],
   'the-crown-tundra': ['sword', 'shield'],
   'brilliant-diamond-and-shining-pearl': ['brilliant-diamond', 'shining-pearl'],
+  'brilliant-diamond-shining-pearl': ['brilliant-diamond', 'shining-pearl'], // API name since Jan 2026
   'legends-arceus': ['legends-arceus'],
   'scarlet-violet': ['scarlet', 'violet'],
   'the-teal-mask': ['scarlet', 'violet'],
@@ -158,7 +163,7 @@ export const versionGroupOrder = {
   'x-y': 13, 'omega-ruby-alpha-sapphire': 14,
   'sun-moon': 15, 'ultra-sun-ultra-moon': 16, 'lets-go-pikachu-lets-go-eevee': 17,
   'sword-shield': 18, 'the-isle-of-armor': 19, 'the-crown-tundra': 20,
-  'brilliant-diamond-and-shining-pearl': 21, 'legends-arceus': 22,
+  'brilliant-diamond-and-shining-pearl': 21, 'brilliant-diamond-shining-pearl': 21, 'legends-arceus': 22,
   'scarlet-violet': 23, 'the-teal-mask': 24, 'the-indigo-disk': 25,
   'legends-za': 26, 'mega-dimension': 27,
 }
@@ -218,6 +223,43 @@ export const versionColors = {
 
 // Determine which version groups can provide transfer-only moves for the selected version.
 // Returns a Set of version group names, or null if no transfers are possible.
+// Highest generation the app supports end-to-end. Gen 8 = SWSH only.
+export const MAX_SUPPORTED_GEN = 8
+
+// A version the app can actually offer in selectors: it belongs to a
+// supported generation's version list. generationVersions is the canonical
+// per-gen roster (Gen 8 lists only sword/shield — BDSP/PLA are unsupported
+// even though display names exist for them).
+export function isSupportedVersion(version) {
+  const gen = versionGeneration[version]
+  if (!gen || gen > MAX_SUPPORTED_GEN) return false
+  return (generationVersions[gen] || []).includes(version)
+}
+
+// The July 2026 API change split the DLC "versions" per base game
+// (the-isle-of-armor-sword etc.). For every player-facing purpose they ARE
+// the base game — encounter data read from the API should normalize through
+// this before touching version logic or display.
+export const VERSION_ALIASES = {
+  'the-isle-of-armor-sword': 'sword',
+  'the-isle-of-armor-shield': 'shield',
+  'the-crown-tundra-sword': 'sword',
+  'the-crown-tundra-shield': 'shield',
+}
+
+export function normalizeVersionName(version) {
+  return VERSION_ALIASES[version] || version
+}
+
+// Normalize the version names inside an encounter's version_details array
+// (returns the input untouched when nothing needs aliasing).
+export function normalizeVersionDetails(versionDetails) {
+  if (!versionDetails?.some(vd => VERSION_ALIASES[vd.version?.name])) return versionDetails
+  return versionDetails.map(vd => VERSION_ALIASES[vd.version?.name]
+    ? { ...vd, version: { ...vd.version, name: VERSION_ALIASES[vd.version.name] } }
+    : vd)
+}
+
 // The version group a version belongs to, derived from the canonical
 // versionGroupToVersions map.
 export function versionGroupForVersion(version) {
@@ -257,7 +299,7 @@ export function getTransferSourceVersionGroups(selectedVersion, versionGroup) {
   // LGPE, BDSP, PLA, Gen 9+: no transfers
   const noTransferVersionGroups = new Set([
     'lets-go-pikachu-lets-go-eevee',
-    'brilliant-diamond-and-shining-pearl',
+    'brilliant-diamond-shining-pearl', // renamed in the API Jan 2026
     'legends-arceus',
     'scarlet-violet', 'the-teal-mask', 'the-indigo-disk',
     'legends-za', 'mega-dimension',
@@ -400,10 +442,10 @@ export function getEggGroupDisplayName(apiName, generationNum) {
 
 /**
  * Static version groups for use as a fallback dropdown before entity-specific
- * versions are loaded.  Gen 1-7 only (matching VersionSelector's < 8 filter).
+ * versions are loaded.  Capped at MAX_SUPPORTED_GEN (matching the selectors).
  */
 export const defaultVersionGroups = Object.entries(generationVersions)
-  .filter(([gen]) => Number(gen) < 8)
+  .filter(([gen]) => Number(gen) <= MAX_SUPPORTED_GEN)
   .map(([gen, versions]) => versions.map(v => ({
     name: v,
     display: versionDisplayNames[v] || v,

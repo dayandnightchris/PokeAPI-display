@@ -3,7 +3,7 @@ import StatsCalculator from './StatsCalculator'
 import VersionSelector from './VersionSelector'
 import UnifiedSearch from './UnifiedSearch'
 import { renderEvolutionForest } from './EvolutionTree'
-import { getVersionInfo, generationOrder, versionGeneration } from '../utils/versionInfo'
+import { getVersionInfo, generationOrder, versionGeneration, normalizeVersionName } from '../utils/versionInfo'
 import { titleCase, formatHeight, formatWeight } from '../utils/format'
 import MoveTable from './MoveTable'
 import TypeMatchupDisplay from './TypeMatchupDisplay'
@@ -540,7 +540,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
                 const items = displayPokemon.held_items
                   .map(hi => {
                     const vd = selectedVersion
-                      ? hi.version_details?.find(v => v.version?.name === selectedVersion)
+                      ? hi.version_details?.find(v => normalizeVersionName(v.version?.name) === selectedVersion)
                       : hi.version_details?.[0]
                     if (!vd) return null
                     return { name: hi.item.name, displayName: titleCase(hi.item.name), rarity: vd.rarity }

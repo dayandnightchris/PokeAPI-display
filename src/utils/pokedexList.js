@@ -5,11 +5,14 @@
 // re-render for any selected generation without refetching.
 
 const GRAPHQL_URL = 'https://graphql.pokeapi.co/v1beta2'
-const CACHE_KEY = 'pokedexList-v3'
-// Pre-v1beta2 cache entries have the old shape — drop them on load.
-const STALE_CACHE_KEYS = ['pokedexList-v2']
+const CACHE_KEY = 'pokedexList-v4'
+// Older cache entries (pre-v1beta2 shape, pre-Galar coverage) — drop on load.
+const STALE_CACHE_KEYS = ['pokedexList-v2', 'pokedexList-v3']
 
-// National-Dex id ranges per region (Gen 1–7; Gen 8+ is excluded elsewhere).
+// Highest National-Dex id the app covers (Galar; Hisui/Paldea excluded).
+const MAX_DEX_ID = 898
+
+// National-Dex id ranges per region (Gens 1–8; Gen 9+ is excluded elsewhere).
 export const REGIONS = [
   { name: 'Kanto', min: 1, max: 151 },
   { name: 'Johto', min: 152, max: 251 },
@@ -18,6 +21,7 @@ export const REGIONS = [
   { name: 'Unova', min: 494, max: 649 },
   { name: 'Kalos', min: 650, max: 721 },
   { name: 'Alola', min: 722, max: 809 },
+  { name: 'Galar', min: 810, max: 898 },
 ]
 
 export const ALL_TYPES = [
@@ -31,7 +35,7 @@ export const spriteUrlForId = (id) =>
   `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-viii/icons/${id}.png`
 
 const QUERY = `{
-  pokemon(where: {id: {_lte: 809}}, order_by: {name: asc}) {
+  pokemon(where: {id: {_lte: ${MAX_DEX_ID}}}, order_by: {name: asc}) {
     id
     name
     pokemontypes { type { name } }
@@ -144,12 +148,12 @@ export function abilitiesForGeneration(p, gen) {
   return abilities
 }
 
-// Ids (≤809) of Pokémon that can learn a given move, fetched on demand + cached.
+// Ids (≤ MAX_DEX_ID) of Pokémon that can learn a given move, fetched on demand + cached.
 const learnerCache = new Map()
 export async function fetchMoveLearners(moveName) {
   if (learnerCache.has(moveName)) return learnerCache.get(moveName)
   const query = `query($n: String!) {
-    pokemonmove(where: {move: {name: {_eq: $n}}, pokemon_id: {_lte: 809}}, distinct_on: pokemon_id) { pokemon_id }
+    pokemonmove(where: {move: {name: {_eq: $n}}, pokemon_id: {_lte: ${MAX_DEX_ID}}}, distinct_on: pokemon_id) { pokemon_id }
   }`
   const res = await fetch(GRAPHQL_URL, {
     method: 'POST',

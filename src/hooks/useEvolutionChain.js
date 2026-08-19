@@ -67,6 +67,13 @@ function formatEvolutionDetail(detail, hasDayNight = true) {
   if (trigger === 'shed') return 'Shed'
   if (trigger === 'other') return 'Special'
 
+  // Gen 8 triggers
+  if (trigger === 'spin') return 'Spin holding a Sweet'
+  if (trigger === 'three-critical-hits') return 'Land 3 critical hits in one battle'
+  if (trigger === 'take-damage') return 'Take 49+ damage and travel under the stone bridge in Dusty Bowl'
+  if (trigger === 'tower-of-darkness') return 'Train in the Tower of Darkness'
+  if (trigger === 'tower-of-waters') return 'Train in the Tower of Waters'
+
   return trigger.replace(/-/g, ' ')
 }
 

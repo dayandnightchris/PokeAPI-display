@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { versionGeneration, versionGroupToVersions } from '../utils/versionInfo'
+import { versionGeneration, versionGroupToVersions, isSupportedVersion, normalizeVersionDetails } from '../utils/versionInfo'
 
 // Pokedex names that map to specific game versions.
 // Used to detect game availability when the API hasn't populated moves/game_indices yet.
@@ -97,11 +97,15 @@ export function usePokemonSpecies(pokemon, initialVersion) {
       })
       .catch(err => console.error('Failed to fetch species:', err))
 
-    // Fetch location areas with version info
+    // Fetch location areas with version info (DLC version names like
+    // the-isle-of-armor-sword normalize to their base game)
     fetch(`https://pokeapi.co/api/v2/pokemon/${pokemon.id}/encounters`)
       .then(res => res.json())
       .then(data => {
-        if (active) setAllEncounters(data)
+        if (active) setAllEncounters((Array.isArray(data) ? data : []).map(enc => ({
+          ...enc,
+          version_details: normalizeVersionDetails(enc.version_details),
+        })))
       })
       .catch(err => {
         console.error('Failed to fetch location areas:', err)
@@ -127,9 +131,9 @@ export function usePokemonSpecies(pokemon, initialVersion) {
             return initialVersion
           }
           if (prev && available.has(prev)) return prev
-          // Pick the latest available gen (capped at 7, since gen 8+ is hidden in the selector)
+          // Pick the latest available supported gen (matches the selector)
           const all = Array.from(available)
-          const capped = all.filter(v => versionGeneration[v] && versionGeneration[v] < 8)
+          const capped = all.filter(v => isSupportedVersion(v))
           if (capped.length > 0) {
             return capped.reduce((best, v) =>
               (versionGeneration[v] || 0) > (versionGeneration[best] || 0) ? v : best

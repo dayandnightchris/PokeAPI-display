@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import UnifiedSearch from './UnifiedSearch'
-import { versionDisplayNames, versionGeneration, generationOrder, generationVersions, defaultVersionGroups } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, generationOrder, generationVersions, defaultVersionGroups, isSupportedVersion, normalizeVersionName } from '../utils/versionInfo'
 import { fetchItemCached, fetchMachineCached } from '../utils/pokeCache'
 
 function formatItemName(name) {
@@ -11,11 +11,6 @@ function formatPokemonName(name) {
   return name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
-// Map version names used by PokeAPI held_by_pokemon to our version names
-// (The API uses individual version names like "ruby", "sapphire", etc.)
-function normalizeVersionName(apiVersion) {
-  return apiVersion // The API version names match our versionGeneration keys
-}
 
 // Map individual version name → version group name
 const versionToVg = {
@@ -38,6 +33,16 @@ const versionToVg = {
   'legends-arceus': 'legends-arceus',
   'scarlet': 'scarlet-violet', 'violet': 'scarlet-violet',
   'legends-za': 'legends-za',
+}
+
+// All version groups a version's item data can live under. Items introduced
+// in the SWSH DLC carry flavor text/prices/machines under the DLC groups.
+const vgCandidatesForVersion = (version) => {
+  if (version === 'sword' || version === 'shield') {
+    return ['sword-shield', 'the-isle-of-armor', 'the-crown-tundra']
+  }
+  const vg = versionToVg[version]
+  return vg ? [vg] : []
 }
 
 export default function ItemPage({ initialItem, initialVersion, onStateChange, onPokemonClick, onMoveClick, searchLists, onUnifiedNavigate }) {
@@ -153,10 +158,11 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
       if (versions) versions.forEach(v => versionSet.add(v))
     })
 
-    // Also collect from held_by_pokemon version_details
+    // Also collect from held_by_pokemon version_details (DLC version names
+    // normalize to their base game so Sw/Sh appear for DLC-only holders)
     itemData.held_by_pokemon?.forEach(entry => {
       entry.version_details?.forEach(vd => {
-        const vName = vd.version?.name
+        const vName = normalizeVersionName(vd.version?.name)
         if (vName) versionSet.add(vName)
       })
     })
@@ -175,7 +181,7 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
 
     // Build grouped/sorted version options (filter out gen 8/9)
     const uniqueVersions = Array.from(versionSet)
-      .filter(v => versionDisplayNames[v] && (versionGeneration[v] || 0) < 8)
+      .filter(v => isSupportedVersion(v))
       .sort((a, b) => {
         const genA = versionGeneration[a] || 0
         const genB = versionGeneration[b] || 0
@@ -296,17 +302,11 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
     }
 
     let active = true
-    const vg = versionToVg[selectedVersion]
+    const candidates = vgCandidatesForVersion(selectedVersion)
     const genNum = versionGeneration[selectedVersion]
-    const sameGenVgs = new Set()
-    if (genNum) {
-      for (const [gen, vgs] of Object.entries(generationVersions)) {
-        // generationVersions uses gen numbers as keys; match via versionToVg values
-      }
-    }
 
-    // Prefer exact version group match, then any from the same gen
-    const machineEntry = itemData.machines.find(m => m.version_group?.name === vg)
+    // Prefer exact version group match (incl. DLC groups), then any from the same gen
+    const machineEntry = itemData.machines.find(m => candidates.includes(m.version_group?.name))
       || itemData.machines.find(m => {
         const mVg = m.version_group?.name
         if (!mVg) return false
@@ -341,8 +341,7 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
     if (!itemData || !selectedVersion) return null
     const gen = versionGeneration[selectedVersion]
 
-    const vg = versionToVg[selectedVersion]
-    if (vg) {
+    for (const vg of vgCandidatesForVersion(selectedVersion)) {
       const entry = itemData.flavor_text_entries?.find(
         fte => fte.language?.name === 'en' && fte.version_group?.name === vg
       )
@@ -384,8 +383,9 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
       }
       return null
     }
-    const vg = selectedVersion ? versionToVg[selectedVersion] : null
-    const entry = (vg && prices.find(p => p.version_group?.name === vg)) || prices[prices.length - 1]
+    const candidates = selectedVersion ? vgCandidatesForVersion(selectedVersion) : []
+    const entry = candidates.map(vg => prices.find(p => p.version_group?.name === vg)).find(Boolean)
+      || prices[prices.length - 1]
     const buy = entry?.purchase_price || 0
     const sell = entry?.sell_price || 0
     if (!buy && !sell) return null
@@ -403,9 +403,10 @@ export default function ItemPage({ initialItem, initialVersion, onStateChange, o
         const pokemonName = entry.pokemon?.name
         if (!pokemonName) return null
 
-        // Find the version detail matching the selected version
+        // Find the version detail matching the selected version (DLC version
+        // names normalize to their base game)
         const versionDetail = entry.version_details?.find(
-          vd => vd.version?.name === selectedVersion
+          vd => normalizeVersionName(vd.version?.name) === selectedVersion
         )
         if (!versionDetail) return null
 

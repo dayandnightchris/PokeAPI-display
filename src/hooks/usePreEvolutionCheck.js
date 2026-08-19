@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { versionGeneration, generationVersions, versionDisplayNames, versionHasDayNight } from '../utils/versionInfo'
+import { versionGeneration, generationVersions, versionDisplayNames, versionHasDayNight, normalizeVersionDetails } from '../utils/versionInfo'
 import { formatEvolutionDetails } from './useEvolutionChain'
 
 /**
@@ -40,6 +40,13 @@ async function resolveDefaultPokemon(speciesName) {
   }
 }
 
+// DLC version names (the-isle-of-armor-sword etc.) normalize to the base game
+// so version matching works for pre-evos that only spawn in DLC areas.
+const normalizeEncounters = (data) => (Array.isArray(data) ? data : []).map(enc => ({
+  ...enc,
+  version_details: normalizeVersionDetails(enc.version_details),
+}))
+
 async function fetchEncounters(pokemonName) {
   const key = pokemonName.toLowerCase()
   if (encounterCache.has(key)) return encounterCache.get(key)
@@ -47,7 +54,7 @@ async function fetchEncounters(pokemonName) {
   try {
     const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${key}/encounters`)
     if (res.ok) {
-      const data = await res.json()
+      const data = normalizeEncounters(await res.json())
       encounterCache.set(key, data)
       return data
     }
@@ -63,7 +70,7 @@ async function fetchEncounters(pokemonName) {
       }
       const retryRes = await fetch(`https://pokeapi.co/api/v2/pokemon/${resolved}/encounters`)
       if (retryRes.ok) {
-        const data = await retryRes.json()
+        const data = normalizeEncounters(await retryRes.json())
         encounterCache.set(key, data)
         encounterCache.set(resolved, data)
         return data

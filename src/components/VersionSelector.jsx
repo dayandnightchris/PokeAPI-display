@@ -1,68 +1,9 @@
 import { useState, useEffect } from 'react'
-import { versionGroupToVersions } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, versionGroupToVersions, isSupportedVersion } from '../utils/versionInfo'
 
 export default function VersionSelector({ pokemon, selectedVersion, onVersionChange, allEncounters, pokedexVersions, formVersionFilter }) {
   const [versions, setVersions] = useState([])
   const [loading, setLoading] = useState(false)
-
-  // Map individual version names to display names
-  const versionDisplayNames = {
-    'red': 'Red',
-    'blue': 'Blue',
-    'yellow': 'Yellow',
-    'gold': 'Gold',
-    'silver': 'Silver',
-    'crystal': 'Crystal',
-    'ruby': 'Ruby',
-    'sapphire': 'Sapphire',
-    'emerald': 'Emerald',
-    'firered': 'Fire Red',
-    'leafgreen': 'Leaf Green',
-    'colosseum': 'Colosseum',
-    'xd': 'XD',
-    'diamond': 'Diamond',
-    'pearl': 'Pearl',
-    'platinum': 'Platinum',
-    'heartgold': 'Heart Gold',
-    'soulsilver': 'Soul Silver',
-    'black': 'Black',
-    'white': 'White',
-    'black-2': 'Black 2',
-    'white-2': 'White 2',
-    'x': 'X',
-    'y': 'Y',
-    'omega-ruby': 'Omega Ruby',
-    'alpha-sapphire': 'Alpha Sapphire',
-    'sun': 'Sun',
-    'moon': 'Moon',
-    'ultra-sun': 'Ultra Sun',
-    'ultra-moon': 'Ultra Moon',
-    'lets-go-pikachu': "Let's Go Pikachu",
-    'lets-go-eevee': "Let's Go Eevee",
-    'sword': 'Sword',
-    'shield': 'Shield',
-    'brilliant-diamond': 'Brilliant Diamond',
-    'shining-pearl': 'Shining Pearl',
-    'legends-arceus': 'Legends: Arceus',
-    'scarlet': 'Scarlet',
-    'violet': 'Violet',
-    'legends-za': 'Legends: Z-A',
-  }
-
-  // Map versions to generation number for sorting
-  const versionGeneration = {
-    'red': 1, 'blue': 1, 'yellow': 1,
-    'gold': 2, 'silver': 2, 'crystal': 2,
-    'ruby': 3, 'sapphire': 3, 'emerald': 3, 'firered': 3, 'leafgreen': 3,
-    'colosseum': 3, 'xd': 3,
-    'diamond': 4, 'pearl': 4, 'platinum': 4, 'heartgold': 4, 'soulsilver': 4,
-    'black': 5, 'white': 5, 'black-2': 5, 'white-2': 5,
-    'x': 6, 'y': 6, 'omega-ruby': 6, 'alpha-sapphire': 6,
-    'sun': 7, 'moon': 7, 'ultra-sun': 7, 'ultra-moon': 7,
-    'lets-go-pikachu': 7, 'lets-go-eevee': 7,
-    'sword': 8, 'shield': 8, 'brilliant-diamond': 8, 'shining-pearl': 8, 'legends-arceus': 8,
-    'scarlet': 9, 'violet': 9, 'legends-za': 9,
-  }
 
   useEffect(() => {
     if (!pokemon) return
@@ -131,8 +72,9 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
       }
 
       const uniqueVersions = Array.from(versionSet)
-        // Only include recognized versions, and temporarily hide Gen 8+ and gen 0 (red-japan, green-japan)
-        .filter(v => versionDisplayNames[v] && (versionGeneration[v] || 0) < 8)
+        // Only supported versions (Gens 1-8 SWSH; hides BDSP/PLA/Gen 9 and
+        // unrecognized names like red-japan)
+        .filter(v => isSupportedVersion(v))
         .sort((a, b) => {
         const genA = versionGeneration[a] || 0
         const genB = versionGeneration[b] || 0

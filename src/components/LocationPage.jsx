@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import UnifiedSearch from './UnifiedSearch'
-import { versionDisplayNames, versionGeneration, versionAbbreviations, generationVersions, versionColors, defaultVersionGroups } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, versionAbbreviations, generationVersions, versionColors, defaultVersionGroups, normalizeVersionDetails, isSupportedVersion } from '../utils/versionInfo'
 import { fetchLocationCached, fetchLocationAreaCached } from '../utils/pokeCache'
 import { titleCase, formatLocationName } from '../utils/format'
 import { formatEncounterCondition } from '../utils/encounterConditions'
@@ -44,7 +44,8 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
     encounters.forEach(enc => {
       enc.version_details?.forEach(vd => {
         const vName = vd.version?.name
-        if (vName && versionDisplayNames[vName]) versionSet.add(vName)
+        // Supported versions only (BDSP/PLA have display names but aren't offered)
+        if (vName && isSupportedVersion(vName)) versionSet.add(vName)
       })
     })
 
@@ -121,10 +122,11 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
           region: areaData.location?.region || null,
           parentLocation: areaData.location?.name || null,
         })
-        // Each encounter is for this sub-area only
+        // Each encounter is for this sub-area only (DLC version names
+        // normalize to their base game, e.g. the-isle-of-armor-sword → sword)
         const allEncounters = areaData.pokemon_encounters.map(pe => ({
           pokemon: pe.pokemon,
-          version_details: pe.version_details,
+          version_details: normalizeVersionDetails(pe.version_details),
           area: areaData.name,
         }))
         setEncounters(allEncounters)
@@ -151,7 +153,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
         areaData.pokemon_encounters.forEach(pe => {
           allEncounters.push({
             pokemon: pe.pokemon,
-            version_details: pe.version_details,
+            version_details: normalizeVersionDetails(pe.version_details),
             area: areaName,
           })
         })
@@ -174,7 +176,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
           fallbackArea.pokemon_encounters.forEach(pe => {
             allEncounters.push({
               pokemon: pe.pokemon,
-              version_details: pe.version_details,
+              version_details: normalizeVersionDetails(pe.version_details),
               area: fallbackArea.name,
             })
           })

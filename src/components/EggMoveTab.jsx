@@ -4,7 +4,7 @@ import { fetchPokemonCached, fetchMoveCached, fetchSpeciesCached, preloadPokemon
 import {
   versionGeneration, generationVersionGroups, generationOrder, versionGroupOrder,
   versionGroupDisplayNames, versionDisplayNames, getTransferSourceVersionGroups,
-  getEggGroupDisplayName, defaultVersionGroups, versionGroupToVersions,
+  getEggGroupDisplayName, defaultVersionGroups, versionGroupToVersions, isSupportedVersion,
 } from '../utils/versionInfo'
 import { getTypeColor, getTypeTextColor } from '../utils/typeColors'
 import { titleCase as formatName } from '../utils/format'
@@ -123,11 +123,12 @@ export default function EggMoveTab({
     const noBreeders = new Set(['red', 'blue', 'yellow', 'colosseum', 'xd', 'lets-go-pikachu', 'lets-go-eevee', 'legends-arceus', 'legends-za'])
     noBreeders.forEach(v => versionSet.delete(v))
 
-    // Group by generation (exclude Gen 8+)
+    // Group by generation (supported versions only — Gen 8 is SWSH-only,
+    // and SWSH has breeding)
     const grouped = {}
     versionSet.forEach(v => {
       const gen = versionGeneration[v]
-      if (!gen || gen >= 8) return
+      if (!gen || !isSupportedVersion(v)) return
       if (!grouped[gen]) grouped[gen] = []
       grouped[gen].push({ name: v, display: versionDisplayNames[v] || formatName(v), gen })
     })
@@ -306,12 +307,12 @@ export default function EggMoveTab({
       // Collect all learner names
       const learnerNames = moveData.learned_by_pokemon.map(p => p.name)
 
-      // Filter out Gen 8+ pokemon (id >= 810) — quick pre-filter to avoid
-      // fetching data for hundreds of Gen 8-9 Pokemon we'll never display.
+      // Filter out unsupported pokemon (id >= 899: Hisui/Paldea+) — quick
+      // pre-filter to avoid fetching data for Pokemon we'll never display.
       // The real generation check happens in getFilteredParents.
       const filteredLearners = moveData.learned_by_pokemon.filter(p => {
         const idMatch = p.url?.match(/\/pokemon\/(\d+)\/?$/)
-        if (idMatch && Number(idMatch[1]) >= 810) return false
+        if (idMatch && Number(idMatch[1]) >= 899) return false
         return true
       })
 
@@ -449,8 +450,8 @@ export default function EggMoveTab({
             try {
               const evoPoke = await fetchPokemonCached(evoName)
               if (!evoPoke) continue
-              // Quick pre-filter: skip Gen 8+ (id >= 810) entirely to save fetches
-              if (evoPoke.id >= 810) continue
+              // Quick pre-filter: skip unsupported gens (id >= 899) entirely to save fetches
+              if (evoPoke.id >= 899) continue
               const evoSpecies = await fetchSpeciesCached(evoPoke.species?.name || evoName)
               if (!evoSpecies) continue
 
