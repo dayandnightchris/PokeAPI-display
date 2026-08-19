@@ -92,7 +92,7 @@ function App() {
   const [itemList, setItemList] = useState([])
   const [locationList, setLocationList] = useState([])
   const [requestedForm, setRequestedForm] = useState(null)
-  const [initialVersion, setInitialVersion] = useState(urlParams.version || 'moon')
+  const [initialVersion, setInitialVersion] = useState(urlParams.version || 'sword')
   const [searchQuery, setSearchQuery] = useState('')
 
   // Apply theme to document. Only an explicit toggle is persisted — the
