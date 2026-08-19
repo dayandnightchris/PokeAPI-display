@@ -35,11 +35,15 @@ const versionSpriteMap = {
   'ultra-moon':       ['generation-vii',  'ultra-sun-ultra-moon'],
   'lets-go-pikachu':  ['generation-vii',  'ultra-sun-ultra-moon'],
   'lets-go-eevee':    ['generation-vii',  'ultra-sun-ultra-moon'],
-  'sword':            ['generation-viii',  null],
-  'shield':           ['generation-viii',  null],
+  // PokeAPI has no in-game sprite sets for the Switch-era games
+  // (generation-viii holds only menu icons). Use the HOME renders instead —
+  // they're the canonical Gen 8 look, with matching shiny/female variants —
+  // rather than walking back to older generations' sprites.
+  'sword':            ['home', null],
+  'shield':           ['home', null],
   'brilliant-diamond':['generation-viii',  'brilliant-diamond-shining-pearl'],
   'shining-pearl':    ['generation-viii',  'brilliant-diamond-shining-pearl'],
-  'legends-arceus':   ['generation-viii',  null],
+  'legends-arceus':   ['home', null],
   'scarlet':          ['generation-ix',   'scarlet-violet'],
   'violet':           ['generation-ix',   'scarlet-violet'],
   'legends-za':       ['generation-ix',   null],
@@ -148,6 +152,21 @@ export function useVersionSprite(displayPokemon, selectedVersion) {
     }
 
     const [genKey, spriteKey] = mapping
+
+    // Switch-era versions use the HOME renders exclusively — no cross-gen
+    // fallback, so a SWSH page never shows a 3DS-era sprite. If HOME art is
+    // missing, everything stays null and the consumer's official-artwork
+    // fallback keeps the art style consistent across the whole carousel.
+    if (genKey === 'home') {
+      const home = displayPokemon.sprites.other?.home
+      setVersionSprite(home?.front_default || null)
+      setVersionShinySprite(home?.front_shiny || null)
+      setVersionFemaleSprite(home?.front_female || null)
+      setVersionAnimSprite(null)
+      setVersionAnimShiny(null)
+      setVersionAnimFemale(null)
+      return
+    }
 
     // Only use Gen 5 BW animated sprites when the selected version IS Gen 5
     const bwAnimated = versions['generation-v']?.['black-white']?.animated
