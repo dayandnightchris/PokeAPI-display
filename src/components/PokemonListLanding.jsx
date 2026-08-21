@@ -335,10 +335,10 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
                   // Stats drop to an inner row so everything fits without horizontal scroll.
                   return (
                     <Fragment key={p.id}>
-                      <tr className="pokedex-row pokedex-row-main" onClick={() => onPokemonClick(p.name)}>
+                      <tr className="pokedex-row pokedex-row-main" onClick={() => onPokemonClick(p.name, selectedVersion)}>
                         {mainCells}
                       </tr>
-                      <tr className="pokedex-row pokedex-row-statrow" onClick={() => onPokemonClick(p.name)}>
+                      <tr className="pokedex-row pokedex-row-statrow" onClick={() => onPokemonClick(p.name, selectedVersion)}>
                         <td colSpan={showAbilities ? 4 : 3}>
                           <div className="pokedex-mobile-stats">
                             {statCols.map(([key, label]) => (
@@ -354,7 +354,7 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
                 }
 
                 return (
-                  <tr key={p.id} className="pokedex-row" onClick={() => onPokemonClick(p.name)}>
+                  <tr key={p.id} className="pokedex-row" onClick={() => onPokemonClick(p.name, selectedVersion)}>
                     {mainCells}
                     {statCols.map(([key]) => (
                       <td key={key} className="pokedex-col-stat">{p.genStats[key] ?? '—'}</td>

@@ -446,7 +446,9 @@ function App() {
     setError(null)
     setSearchQuery('')
     setActiveTab('pokemon')
-    urlStateRef.current = { version: null, name: null }
+    // Keep the active version — nulling it desynced the ref from the landing
+    // dropdown, and the next tab switch then reset the list under it.
+    urlStateRef.current = { version: urlStateRef.current.version, name: null }
     updateUrl('pokemon', urlStateRef.current, true)
     window.scrollTo(0, 0)
   }, [])
@@ -655,7 +657,9 @@ function App() {
   const handleTabSwitch = useCallback((tabId) => {
     const currentVersion = urlStateRef.current.version
     if (tabId === 'pokemon') {
-      setInitialVersion(currentVersion)
+      // Only carry a real version over — a null ref (fresh landing) must not
+      // wipe the landing dropdown's current selection.
+      if (currentVersion) setInitialVersion(currentVersion)
     } else if (tabId === 'moves') {
       setMovePageInit(prev => ({ ...prev, version: currentVersion }))
     } else if (tabId === 'abilities') {
