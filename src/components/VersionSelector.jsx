@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { versionDisplayNames, versionGeneration, versionGroupToVersions, isSupportedVersion } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, versionGroupToVersions, isSupportedVersion, compareVersions } from '../utils/versionInfo'
 
 export default function VersionSelector({ pokemon, selectedVersion, onVersionChange, allEncounters, pokedexVersions, formVersionFilter }) {
   const [versions, setVersions] = useState([])
@@ -75,12 +75,7 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
         // Only supported versions (Gens 1-8 SWSH; hides BDSP/PLA/Gen 9 and
         // unrecognized names like red-japan)
         .filter(v => isSupportedVersion(v))
-        .sort((a, b) => {
-        const genA = versionGeneration[a] || 0
-        const genB = versionGeneration[b] || 0
-        if (genA !== genB) return genA - genB
-        return (versionDisplayNames[a] || a).localeCompare(versionDisplayNames[b] || b)
-      })
+        .sort(compareVersions)
 
       const grouped = new Map()
       uniqueVersions.forEach(version => {

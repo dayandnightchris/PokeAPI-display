@@ -47,6 +47,25 @@ export const versionGeneration = {
 }
 
 // Map version name to display name
+// Canonical dropdown ordering: generation first, then the hand-ordered
+// generationVersions roster (release order, side games last) — NOT
+// alphabetical, so e.g. Gen 4 reads Diamond, Pearl, Platinum, HG, SS.
+const versionOrderIndex = {}
+Object.values(generationVersions).forEach(versions => {
+  versions.forEach((v, i) => { versionOrderIndex[v] = i })
+})
+
+export function compareVersions(a, b) {
+  const genDiff = (versionGeneration[a] || 0) - (versionGeneration[b] || 0)
+  if (genDiff !== 0) return genDiff
+  const ia = versionOrderIndex[a]
+  const ib = versionOrderIndex[b]
+  if (ia != null && ib != null) return ia - ib
+  if (ia != null) return -1
+  if (ib != null) return 1
+  return String(a).localeCompare(String(b))
+}
+
 export const versionDisplayNames = {
   'red': 'Red', 'blue': 'Blue', 'yellow': 'Yellow',
   'gold': 'Gold', 'silver': 'Silver', 'crystal': 'Crystal',

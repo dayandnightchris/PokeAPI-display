@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import UnifiedSearch from './UnifiedSearch'
-import { versionDisplayNames, versionGeneration, versionGroupDisplayNames, generationVersionGroups, generationOrder, versionGroupOrder, getTransferSourceVersionGroups, defaultVersionGroups, isSupportedVersion } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, versionGroupDisplayNames, generationVersionGroups, generationOrder, versionGroupOrder, getTransferSourceVersionGroups, defaultVersionGroups, isSupportedVersion, compareVersions } from '../utils/versionInfo'
 import { fetchPokemonCached, fetchMoveCached, fetchSpeciesCached, preloadPokemonCache } from '../utils/pokeCache'
 import gen1TradebackMoves from '../utils/tradebackMoves'
 import { typeColors, getTypeTextColor } from '../utils/typeColors'
@@ -381,12 +381,7 @@ export default function MovePage({ initialMove, initialVersion, onStateChange, o
     // Build grouped/sorted version options (same pattern as VersionSelector)
     const uniqueVersions = Array.from(versionSet)
       .filter(v => isSupportedVersion(v))
-      .sort((a, b) => {
-        const genA = versionGeneration[a] || 0
-        const genB = versionGeneration[b] || 0
-        if (genA !== genB) return genA - genB
-        return (versionDisplayNames[a] || a).localeCompare(versionDisplayNames[b] || b)
-      })
+      .sort(compareVersions)
 
     const grouped = new Map()
     uniqueVersions.forEach(v => {

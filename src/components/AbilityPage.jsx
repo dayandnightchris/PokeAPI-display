@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import UnifiedSearch from './UnifiedSearch'
-import { versionDisplayNames, versionGeneration, generationVersionGroups, generationOrder, generationVersions, defaultVersionGroups, isSupportedVersion } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, generationVersionGroups, generationOrder, generationVersions, defaultVersionGroups, isSupportedVersion, compareVersions } from '../utils/versionInfo'
 import { fetchAbilityCached, fetchPokemonCached } from '../utils/pokeCache'
 
 function formatAbilityName(name) {
@@ -208,12 +208,7 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
     // Build grouped/sorted version options
     const uniqueVersions = Array.from(versionSet)
       .filter(v => isSupportedVersion(v))
-      .sort((a, b) => {
-        const genA = versionGeneration[a] || 0
-        const genB = versionGeneration[b] || 0
-        if (genA !== genB) return genA - genB
-        return (versionDisplayNames[a] || a).localeCompare(versionDisplayNames[b] || b)
-      })
+      .sort(compareVersions)
 
     const grouped = new Map()
     uniqueVersions.forEach(v => {

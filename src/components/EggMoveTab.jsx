@@ -5,6 +5,7 @@ import {
   versionGeneration, generationVersionGroups, generationOrder, versionGroupOrder,
   versionGroupDisplayNames, versionDisplayNames, getTransferSourceVersionGroups,
   getEggGroupDisplayName, defaultVersionGroups, versionGroupToVersions, isSupportedVersion,
+  compareVersions,
 } from '../utils/versionInfo'
 import { getTypeColor, getTypeTextColor } from '../utils/typeColors'
 import { titleCase as formatName } from '../utils/format'
@@ -137,7 +138,7 @@ export default function EggMoveTab({
     const groups = Object.keys(grouped)
       .map(Number)
       .sort((a, b) => a - b)
-      .map(gen => grouped[gen].sort((a, b) => a.display.localeCompare(b.display)))
+      .map(gen => grouped[gen].sort((a, b) => compareVersions(a.name, b.name)))
 
     setAvailableVersions(groups)
 

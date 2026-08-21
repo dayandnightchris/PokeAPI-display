@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import UnifiedSearch from './UnifiedSearch'
-import { versionDisplayNames, versionGeneration, versionAbbreviations, generationVersions, versionColors, defaultVersionGroups, normalizeVersionDetails, isSupportedVersion } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, versionAbbreviations, generationVersions, versionColors, defaultVersionGroups, normalizeVersionDetails, isSupportedVersion, compareVersions } from '../utils/versionInfo'
 import { fetchLocationCached, fetchLocationAreaCached } from '../utils/pokeCache'
 import { titleCase, formatLocationName } from '../utils/format'
 import { formatEncounterCondition } from '../utils/encounterConditions'
@@ -49,12 +49,7 @@ export default function LocationPage({ initialLocation, initialVersion, onStateC
       })
     })
 
-    const uniqueVersions = Array.from(versionSet).sort((a, b) => {
-      const genA = versionGeneration[a] || 0
-      const genB = versionGeneration[b] || 0
-      if (genA !== genB) return genA - genB
-      return (versionDisplayNames[a] || a).localeCompare(versionDisplayNames[b] || b)
-    })
+    const uniqueVersions = Array.from(versionSet).sort(compareVersions)
 
     const grouped = new Map()
     uniqueVersions.forEach(v => {
