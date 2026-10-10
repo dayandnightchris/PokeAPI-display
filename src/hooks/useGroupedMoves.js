@@ -2,37 +2,12 @@ import { useState, useEffect } from 'react'
 import { getVersionInfo, generationOrder, versionGeneration, generationVersionGroups, versionGroupDisplayNames, versionGroupOrder, getTransferSourceVersionGroups } from '../utils/versionInfo'
 import { fetchMoveCached, fetchMachineCached, fetchPokemonCached } from '../utils/pokeCache'
 import gen1TradebackMoves from '../utils/tradebackMoves'
+import { applyPastValues as applyPastValuesAtOrder } from '../utils/moveRules'
 
 // Apply past_values to move details based on the selected version group
 function applyPastValues(details, versionGroup) {
-  if (!details || !versionGroup || !details.past_values?.length) return details
-
-  const selectedOrder = versionGroupOrder[versionGroup]
-  if (selectedOrder == null) return details
-
-  // Create a shallow copy of details so we can override fields
-  const adjusted = { ...details }
-
-  // past_values entries mark when a value CHANGED — meaning the listed values
-  // were in effect BEFORE that version group. Process from newest to oldest:
-  // if our selected version group is BEFORE the entry's version group,
-  // apply those past values.
-  for (const entry of details.past_values) {
-    const entryOrder = versionGroupOrder[entry.version_group?.name]
-    if (entryOrder == null) continue
-
-    // If our selected version is before this change point, apply the old values
-    if (selectedOrder < entryOrder) {
-      if (entry.power != null) adjusted.power = entry.power
-      if (entry.pp != null) adjusted.pp = entry.pp
-      if (entry.accuracy != null) adjusted.accuracy = entry.accuracy
-      if (entry.effect_chance != null) adjusted.effect_chance = entry.effect_chance
-      if (entry.type != null) adjusted.type = entry.type
-      if (entry.effect_entries?.length) adjusted.effect_entries = entry.effect_entries
-    }
-  }
-
-  return adjusted
+  if (!details || !versionGroup) return details
+  return applyPastValuesAtOrder(details, versionGroupOrder[versionGroup])
 }
 
 export function useGroupedMoves(displayPokemon, selectedVersion, species) {

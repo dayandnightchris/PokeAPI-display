@@ -4,6 +4,7 @@ import { versionDisplayNames, versionGeneration, versionGroupDisplayNames, gener
 import { fetchPokemonCached, fetchMoveCached, fetchSpeciesCached, preloadPokemonCache } from '../utils/pokeCache'
 import gen1TradebackMoves from '../utils/tradebackMoves'
 import { typeColors, getTypeTextColor } from '../utils/typeColors'
+import { applyPastValues } from '../utils/moveRules'
 
 // Map individual version names to the version groups that cover them
 const versionToVersionGroups = {
@@ -171,44 +172,24 @@ function getBestLearnMethod(pokemonData, moveName, selectedVersionGroups, curren
 }
 
 /**
- * Get the move stats for the selected version, accounting for past_values.
- * Mirrors the applyPastValues logic in useGroupedMoves — iterate ALL entries
- * without breaking so that every applicable past change is applied.
+ * Get the move stats for the selected version, accounting for past_values
+ * (shared resolver with the Pokémon page's move tables).
  */
 function getMoveStatsForVersion(moveData, selectedVersion) {
-  let power = moveData.power
-  let pp = moveData.pp
-  let accuracy = moveData.accuracy
-  let type = moveData.type?.name
-  let effectChance = moveData.effect_chance
+  // Resolve the selected version to a version-group order number
+  const vgs = selectedVersion ? versionToVersionGroups[selectedVersion] : null
+  const selectedOrder = vgs
+    ? Math.min(...vgs.map(vg => versionGroupOrder[vg] ?? 999))
+    : null
 
-  if (moveData.past_values?.length && selectedVersion) {
-    // Resolve the selected version to a version-group order number
-    const vgs = versionToVersionGroups[selectedVersion]
-    const selectedOrder = vgs
-      ? Math.min(...vgs.map(vg => versionGroupOrder[vg] ?? 999))
-      : null
-
-    if (selectedOrder != null) {
-      // Each past_values entry marks a change point — the listed (old) values
-      // were in effect BEFORE that version group.  Apply every entry whose
-      // change point is AFTER our selected version.
-      for (const pv of moveData.past_values) {
-        const entryOrder = versionGroupOrder[pv.version_group?.name]
-        if (entryOrder == null) continue
-
-        if (selectedOrder < entryOrder) {
-          if (pv.power != null) power = pv.power
-          if (pv.pp != null) pp = pv.pp
-          if (pv.accuracy != null) accuracy = pv.accuracy
-          if (pv.type) type = pv.type.name
-          if (pv.effect_chance != null) effectChance = pv.effect_chance
-        }
-      }
-    }
+  const adjusted = applyPastValues(moveData, selectedOrder)
+  return {
+    power: adjusted.power,
+    pp: adjusted.pp,
+    accuracy: adjusted.accuracy,
+    type: adjusted.type?.name,
+    effectChance: adjusted.effect_chance,
   }
-
-  return { power, pp, accuracy, type, effectChance }
 }
 
 export default function MovePage({ initialMove, initialVersion, onStateChange, onPokemonClick, searchLists, onUnifiedNavigate }) {
