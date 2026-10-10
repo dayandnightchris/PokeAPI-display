@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, Fragment } from 'react'
 import { fetchPokedexList, fetchMoveLearners, typesForGeneration, statsForGeneration, abilitiesForGeneration, spriteUrlForId, REGIONS, ALL_TYPES } from '../utils/pokedexList'
 import { getTypeColor, getTypeTextColor } from '../utils/typeColors'
 import { titleCase } from '../utils/format'
-import { versionGeneration } from '../utils/versionInfo'
+import { versionGeneration, inLetsGoDex } from '../utils/versionInfo'
 
 const STAT_COLUMNS = [
   ['hp', 'HP'],
@@ -160,6 +160,7 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
     const maxId = maxIdForGen(gen)
     const rows = genList.filter(p => {
       if (p.id > maxId) return false // version dropdown: hide later-gen Pokémon
+      if (isLgpe && !inLetsGoDex(p.id)) return false
       if (region && (p.id < region.min || p.id > region.max)) return false
       for (const f of filters) {
         if (f.kind === 'type' && !p.genTypes.includes(f.value)) return false
@@ -178,7 +179,7 @@ export default function PokemonListLanding({ onPokemonClick, onAbilityClick, sel
       return direction === 'asc' ? r : -r
     })
     return rows
-  }, [genList, filters, selectedRegion, sortConfig, gen])
+  }, [genList, filters, selectedRegion, sortConfig, gen, isLgpe])
 
   // Infinite scroll: reveal the next batch when the bottom sentinel comes into
   // view (preloading a little early via rootMargin), until everything is shown.

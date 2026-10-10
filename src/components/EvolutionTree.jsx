@@ -1,9 +1,11 @@
-function treeContainsName(nodes, name) {
+import { NOT_POSSIBLE_HERE } from '../utils/evolutionTree'
+
+function treeSome(nodes, test) {
   const stack = [...nodes]
   while (stack.length) {
     const n = stack.pop()
     if (!n) continue
-    if (n.name === name) return true
+    if (test(n)) return true
     for (const edge of (n.children || [])) { if (edge) stack.push(edge.node) }
   }
   return false
@@ -11,14 +13,17 @@ function treeContainsName(nodes, name) {
 
 export function renderEvolutionForest(nodes, currentPokemonName, onEvolutionClick, currentSpeciesName) {
   if (!nodes?.length) return null
-  // Chain nodes carry species names, but the current Pokémon may be a form
-  // (aegislash-shield, raichu-alola). Prefer an exact form-name match (regional
-  // evo nodes use form names, e.g. raichu-alola); fall back to the species name
-  // only when no node matches the form — otherwise Alolan Raichu would light up
-  // both the raichu-alola node and the Kantonian raichu node.
-  const matchName = (currentSpeciesName && !treeContainsName(nodes, currentPokemonName))
-    ? currentSpeciesName
-    : currentPokemonName
+  // The tree marks the node for the Pokémon being viewed (node.current), which
+  // is right even when that node carries another name — Galarian Zen Mode
+  // Darmanitan sits on the darmanitan-galar-standard node. Without a marked
+  // node, match by name: the form name first (regional nodes use form names,
+  // e.g. raichu-alola), then the species name.
+  const marked = treeSome(nodes, n => n.current)
+  const matchName = marked
+    ? null
+    : (currentSpeciesName && !treeSome(nodes, n => n.name === currentPokemonName))
+      ? currentSpeciesName
+      : currentPokemonName
 
   if (nodes.length === 1) {
     return renderEvolutionNode(nodes[0], matchName, onEvolutionClick)
@@ -37,7 +42,8 @@ export function renderEvolutionForest(nodes, currentPokemonName, onEvolutionClic
 
 export function renderEvolutionNode(node, currentPokemonName, onEvolutionClick) {
   if (!node) return null
-  const isCurrent = node.name === currentPokemonName
+  // currentPokemonName is null when the tree marks its own current node
+  const isCurrent = currentPokemonName == null ? !!node.current : node.name === currentPokemonName
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '100%' }}>
@@ -105,7 +111,10 @@ export function renderEvolutionNode(node, currentPokemonName, onEvolutionClick) 
                 width: 'auto'
               }}
             >
-              {node.children.length < 6 ? (
+              {/* With many branches the method sits behind a hover icon — but
+                  "not possible" has to stay visible, or the branch reads as
+                  an ordinary evolution. */}
+              {node.children.length < 6 || edge.triggerText === NOT_POSSIBLE_HERE ? (
                 <div
                   title={edge.triggerText}
                   style={{

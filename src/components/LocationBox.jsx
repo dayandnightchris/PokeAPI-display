@@ -58,9 +58,26 @@ export default function LocationBox({
   canEvolveFrom,
   canEvolveFromChain,
   evolveSteps,
+  evolutionBlocked,
+  evolutionPending,
   canTradeAndEvolveFrom,
   evoFamilyVersions,
 }) {
+  // A pre-evolution can be caught here, but the evolution itself can't be
+  // done in this game (Magnezone in HeartGold, ordinary Raichu in Sun).
+  const renderEvolutionBlocked = () => (
+    <p style={{ margin: '0' }}>
+      Can't be evolved in this game. Trade or transfer it in.
+    </p>
+  )
+
+  // A pre-evolution can be caught here. Whether it can then be evolved here
+  // isn't known until the evolution line for this page has been built.
+  const renderEvolveFallback = () => {
+    if (evolutionPending) return null
+    return evolutionBlocked ? renderEvolutionBlocked() : renderCatchAndEvolve()
+  }
+
   // "Catch X and evolve" — with the evolution method(s) shown on hover over
   // "evolve" (reusing the evolution-line details), e.g. "Jolteon: Use thunder stone".
   const renderCatchAndEvolve = () => {
@@ -267,7 +284,7 @@ export default function LocationBox({
                   // --- No wild encounters for this version: priority fallback ---
                   // Priority 1: Can it evolve from a pre-evolution available in this game?
                   if (canEvolveFrom) {
-                    return renderCatchAndEvolve()
+                    return renderEvolveFallback()
                   }
 
                   // Priority 1b: Breeding (available in all games except RBY, Colosseum, XD, LGPE, Legends Arceus, Legends Z-A)
@@ -336,7 +353,7 @@ export default function LocationBox({
                 (() => {
                   // No encounter data at all from the API — same priority fallback
                   if (canEvolveFrom) {
-                    return renderCatchAndEvolve()
+                    return renderEvolveFallback()
                   }
 
                   // Priority 1b: Breeding — even though this Pokémon has no encounters,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useMemo } from 'react'
 
 // Maps each game version to its exact sprite key path: [generation, spriteGroupKey]
 // Sprite group keys come from PokeAPI's sprites.versions structure
@@ -27,20 +27,22 @@ const versionSpriteMap = {
   'white-2':          ['generation-v',    'black-white'],
   'x':                ['generation-vi',   'x-y'],
   'y':                ['generation-vi',   'x-y'],
-  'omega-ruby':       ['generation-vi',   'omegaruby-alphasapphire'],
-  'alpha-sapphire':   ['generation-vi',   'omegaruby-alphasapphire'],
+  // Renamed from 'omegaruby-alphasapphire' in the API (and the sprites repo
+  // folder) on 2026-10-07 to match the version-group name.
+  'omega-ruby':       ['generation-vi',   'omega-ruby-alpha-sapphire'],
+  'alpha-sapphire':   ['generation-vi',   'omega-ruby-alpha-sapphire'],
   'sun':              ['generation-vii',  'ultra-sun-ultra-moon'],
   'moon':             ['generation-vii',  'ultra-sun-ultra-moon'],
   'ultra-sun':        ['generation-vii',  'ultra-sun-ultra-moon'],
   'ultra-moon':       ['generation-vii',  'ultra-sun-ultra-moon'],
-  'lets-go-pikachu':  ['generation-vii',  'ultra-sun-ultra-moon'],
-  'lets-go-eevee':    ['generation-vii',  'ultra-sun-ultra-moon'],
-  // PokeAPI has no in-game sprite sets for the Switch-era games
-  // (generation-viii holds only menu icons). Use the HOME renders instead —
-  // they're the canonical Gen 8 look, with matching shiny/female variants —
-  // rather than walking back to older generations' sprites.
-  'sword':            ['home', null],
-  'shield':           ['home', null],
+  // Switch-era games have their own animated in-game sprite sets (added to
+  // the API in Oct 2026). A Pokémon missing from its game's set falls back to
+  // the HOME renders, never to an older generation's sprites — see
+  // HOME_FALLBACK_SETS below.
+  'lets-go-pikachu':  ['generation-vii',  'lets-go-pikachu-lets-go-eevee'],
+  'lets-go-eevee':    ['generation-vii',  'lets-go-pikachu-lets-go-eevee'],
+  'sword':            ['generation-viii', 'sword-shield'],
+  'shield':           ['generation-viii', 'sword-shield'],
   'brilliant-diamond':['generation-viii',  'brilliant-diamond-shining-pearl'],
   'shining-pearl':    ['generation-viii',  'brilliant-diamond-shining-pearl'],
   'legends-arceus':   ['home', null],
@@ -48,6 +50,9 @@ const versionSpriteMap = {
   'violet':           ['generation-ix',   'scarlet-violet'],
   'legends-za':       ['generation-ix',   null],
 }
+
+// Sprite sets whose only fallback is the HOME renders (Switch-era games).
+const HOME_FALLBACK_SETS = new Set(['sword-shield', 'lets-go-pikachu-lets-go-eevee'])
 
 // Ordered from newest to oldest for fallback
 const generationFallback = [
@@ -119,104 +124,89 @@ function findAnyFemaleSprite(versions, genKey) {
   return null
 }
 
-export function useVersionSprite(displayPokemon, selectedVersion) {
-  const [versionSprite, setVersionSprite] = useState(null)
-  const [versionShinySprite, setVersionShinySprite] = useState(null)
-  const [versionFemaleSprite, setVersionFemaleSprite] = useState(null)
-  const [versionAnimSprite, setVersionAnimSprite] = useState(null)
-  const [versionAnimShiny, setVersionAnimShiny] = useState(null)
-  const [versionAnimFemale, setVersionAnimFemale] = useState(null)
+const NO_SPRITES = {
+  versionSprite: null,
+  versionShinySprite: null,
+  versionFemaleSprite: null,
+  versionAnimSprite: null,
+  versionAnimShiny: null,
+  versionAnimFemale: null,
+}
 
-  useEffect(() => {
-    if (!displayPokemon?.sprites?.versions || !selectedVersion) {
-      setVersionSprite(null)
-      setVersionShinySprite(null)
-      setVersionFemaleSprite(null)
-      setVersionAnimSprite(null)
-      setVersionAnimShiny(null)
-      setVersionAnimFemale(null)
-      return
+// The sprites a Pokémon uses in one game version, read from its sprite data.
+function resolveVersionSprites(sprites, selectedVersion) {
+  const versions = sprites?.versions
+  const mapping = versionSpriteMap[selectedVersion]
+  if (!versions || !mapping) return NO_SPRITES
+
+  const [genKey, spriteKey] = mapping
+
+  // Switch-era versions: the game's own sprite set when this Pokémon has
+  // one, otherwise the HOME renders — no cross-gen fallback, so a SWSH page
+  // never shows a 3DS-era sprite. Normal and shiny always come from the same
+  // set so the carousel doesn't mix art styles. If both are missing,
+  // everything stays null and the consumer falls back to official artwork.
+  if (genKey === 'home' || HOME_FALLBACK_SETS.has(spriteKey)) {
+    const home = sprites.other?.home
+    const inGame = genKey === 'home' ? null : versions[genKey]?.[spriteKey]
+    const set = inGame?.front_default ? inGame : home
+    return {
+      ...NO_SPRITES,
+      versionSprite: set?.front_default || null,
+      versionShinySprite: set?.front_shiny || null,
+      versionFemaleSprite: set?.front_female || home?.front_female || null,
     }
+  }
 
-    const versions = displayPokemon.sprites.versions
-    const mapping = versionSpriteMap[selectedVersion]
+  // Only use Gen 5 BW animated sprites when the selected version IS Gen 5
+  const bwAnimated = versions['generation-v']?.['black-white']?.animated
+  const useAnimated = genKey === 'generation-v' && bwAnimated
+  const resolved = {
+    ...NO_SPRITES,
+    versionAnimSprite: useAnimated ? (bwAnimated.front_default || null) : null,
+    versionAnimShiny: useAnimated ? (bwAnimated.front_shiny || null) : null,
+    versionAnimFemale: useAnimated ? (bwAnimated.front_female || null) : null,
+  }
+  const withStills = (sprite, shiny, female) => ({
+    ...resolved,
+    versionSprite: sprite,
+    versionShinySprite: shiny,
+    versionFemaleSprite: female,
+  })
 
-    if (!mapping) {
-      setVersionSprite(null)
-      setVersionShinySprite(null)
-      setVersionFemaleSprite(null)
-      setVersionAnimSprite(null)
-      setVersionAnimShiny(null)
-      setVersionAnimFemale(null)
-      return
-    }
+  // 1. Try the exact sprite key for this version
+  let sprite = findSprite(versions, genKey, spriteKey)
+  if (sprite) {
+    return withStills(sprite, findShinySprite(versions, genKey, spriteKey), findFemaleSprite(versions, genKey, spriteKey))
+  }
 
-    const [genKey, spriteKey] = mapping
+  // 2. Try any sprite in the same generation
+  sprite = findAnySprite(versions, genKey)
+  if (sprite) {
+    return withStills(sprite, findAnyShinySprite(versions, genKey), findAnyFemaleSprite(versions, genKey))
+  }
 
-    // Switch-era versions use the HOME renders exclusively — no cross-gen
-    // fallback, so a SWSH page never shows a 3DS-era sprite. If HOME art is
-    // missing, everything stays null and the consumer's official-artwork
-    // fallback keeps the art style consistent across the whole carousel.
-    if (genKey === 'home') {
-      const home = displayPokemon.sprites.other?.home
-      setVersionSprite(home?.front_default || null)
-      setVersionShinySprite(home?.front_shiny || null)
-      setVersionFemaleSprite(home?.front_female || null)
-      setVersionAnimSprite(null)
-      setVersionAnimShiny(null)
-      setVersionAnimFemale(null)
-      return
-    }
-
-    // Only use Gen 5 BW animated sprites when the selected version IS Gen 5
-    const bwAnimated = versions['generation-v']?.['black-white']?.animated
-    const useAnimated = genKey === 'generation-v' && bwAnimated
-    setVersionAnimSprite(useAnimated ? (bwAnimated.front_default || null) : null)
-    setVersionAnimShiny(useAnimated ? (bwAnimated.front_shiny || null) : null)
-    setVersionAnimFemale(useAnimated ? (bwAnimated.front_female || null) : null)
-
-    // 1. Try the exact sprite key for this version
-    let sprite = findSprite(versions, genKey, spriteKey)
-    let shiny = findShinySprite(versions, genKey, spriteKey)
-    let female = findFemaleSprite(versions, genKey, spriteKey)
-    if (sprite) {
-      setVersionSprite(sprite)
-      setVersionShinySprite(shiny)
-      setVersionFemaleSprite(female)
-      return
-    }
-
-    // 2. Try any sprite in the same generation
-    sprite = findAnySprite(versions, genKey)
-    shiny = findAnyShinySprite(versions, genKey)
-    female = findAnyFemaleSprite(versions, genKey)
-    if (sprite) {
-      setVersionSprite(sprite)
-      setVersionShinySprite(shiny)
-      setVersionFemaleSprite(female)
-      return
-    }
-
-    // 3. Fall back through earlier generations
-    const startIdx = generationFallback.indexOf(genKey)
-    if (startIdx !== -1) {
-      for (let i = startIdx + 1; i < generationFallback.length; i++) {
-        sprite = findAnySprite(versions, generationFallback[i])
-        shiny = findAnyShinySprite(versions, generationFallback[i])
-        female = findAnyFemaleSprite(versions, generationFallback[i])
-        if (sprite) {
-          setVersionSprite(sprite)
-          setVersionShinySprite(shiny)
-          setVersionFemaleSprite(female)
-          return
-        }
+  // 3. Fall back through earlier generations
+  const startIdx = generationFallback.indexOf(genKey)
+  if (startIdx !== -1) {
+    for (let i = startIdx + 1; i < generationFallback.length; i++) {
+      sprite = findAnySprite(versions, generationFallback[i])
+      if (sprite) {
+        return withStills(sprite, findAnyShinySprite(versions, generationFallback[i]), findAnyFemaleSprite(versions, generationFallback[i]))
       }
     }
+  }
 
-    setVersionSprite(null)
-    setVersionShinySprite(null)
-    setVersionFemaleSprite(null)
-  }, [displayPokemon?.sprites?.versions, selectedVersion])
+  return resolved
+}
 
-  return { versionSprite, versionShinySprite, versionFemaleSprite, versionAnimSprite, versionAnimShiny, versionAnimFemale }
+export function useVersionSprite(displayPokemon, selectedVersion) {
+  const sprites = displayPokemon?.sprites
+  // Derived during render, so the sprites always belong to the Pokémon and
+  // version on screen — never to the previous page for a frame.
+  const resolved = useMemo(() => resolveVersionSprites(sprites, selectedVersion), [sprites, selectedVersion])
+
+  // False only until a version has been selected; until then the consumer has
+  // nothing but its artwork fallbacks to show.
+  return { ...resolved, spritesReady: !!selectedVersion }
 }

@@ -422,7 +422,7 @@ body {
 }
 
 .pokedex-dexnum {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-muted);
   margin-top: 1px;
 }
@@ -775,6 +775,14 @@ body {
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
+}
+
+/* Switch-era sprites are high-resolution 3D renders, not pixel art — scale
+   them smoothly instead of nearest-neighbour. */
+.pokemon-main-image[src*="/sword-shield/"],
+.pokemon-main-image[src*="/lets-go-pikachu-lets-go-eevee/"],
+.pokemon-main-image[src*="/other/home/"] {
+  image-rendering: auto;
 }
 
 .image-box {
@@ -1235,6 +1243,14 @@ body {
     grid-column: 1;
     grid-row: 1;
     min-height: 160px;
+    container-type: inline-size;
+  }
+
+  /* This row's height follows the image, so cap a lone sprite at the size
+     each sprite has in the side-by-side view (48% of the box). Otherwise
+     cycling between the two views resizes the box and shifts the page. */
+  .image-box > .pokemon-main-image {
+    max-height: 48cqw;
   }
 
   .evolution-box {

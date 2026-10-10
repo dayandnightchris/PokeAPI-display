@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { versionDisplayNames, versionGeneration, versionGroupToVersions, isSupportedVersion, compareVersions } from '../utils/versionInfo'
+import { versionDisplayNames, versionGeneration, versionGroupToVersions, isSupportedVersion, compareVersions, gameIndexMeansAvailable } from '../utils/versionInfo'
 
 export default function VersionSelector({ pokemon, selectedVersion, onVersionChange, allEncounters, pokedexVersions, formVersionFilter }) {
   const [versions, setVersions] = useState([])
@@ -16,7 +16,8 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
       if (pokemon.game_indices && pokemon.game_indices.length > 0) {
         pokemon.game_indices.forEach(gameIndex => {
           const versionName = gameIndex.version.name
-          versionSet.add(versionName)
+          // Let's Go's index lists Pokémon the game doesn't have
+          if (gameIndexMeansAvailable(versionName)) versionSet.add(versionName)
         })
       }
 

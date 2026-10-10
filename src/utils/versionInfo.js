@@ -371,6 +371,55 @@ export function getTransferSourceVersionGroups(selectedVersion, versionGroup) {
   return null
 }
 
+// The region(s) each game takes place in. Location-based evolutions (Mt.
+// Coronet, Moss Rock…) and region-specific ones (Pikachu → Alolan Raichu)
+// only happen in a game set in that region.
+export const versionRegions = {
+  'red': ['kanto'], 'blue': ['kanto'], 'yellow': ['kanto'],
+  'gold': ['johto', 'kanto'], 'silver': ['johto', 'kanto'], 'crystal': ['johto', 'kanto'],
+  'ruby': ['hoenn'], 'sapphire': ['hoenn'], 'emerald': ['hoenn'],
+  'firered': ['kanto'], 'leafgreen': ['kanto'],
+  'colosseum': ['orre'], 'xd': ['orre'],
+  'diamond': ['sinnoh'], 'pearl': ['sinnoh'], 'platinum': ['sinnoh'],
+  'heartgold': ['johto', 'kanto'], 'soulsilver': ['johto', 'kanto'],
+  'black': ['unova'], 'white': ['unova'], 'black-2': ['unova'], 'white-2': ['unova'],
+  'x': ['kalos'], 'y': ['kalos'],
+  'omega-ruby': ['hoenn'], 'alpha-sapphire': ['hoenn'],
+  'sun': ['alola'], 'moon': ['alola'], 'ultra-sun': ['alola'], 'ultra-moon': ['alola'],
+  'lets-go-pikachu': ['kanto'], 'lets-go-eevee': ['kanto'],
+  'sword': ['galar'], 'shield': ['galar'],
+}
+
+// Whether a Pokémon's game index for this version means it is in the game.
+// Let's Go's index table still lists every Pokémon from Ultra Sun and Ultra
+// Moon (802 of them) though only 153 are in the game, so there a learnset or
+// encounter is the only real evidence.
+const GAME_INDEX_UNRELIABLE = new Set(['lets-go-pikachu', 'lets-go-eevee'])
+export function gameIndexMeansAvailable(version) {
+  return !GAME_INDEX_UNRELIABLE.has(version)
+}
+
+// Let's Go Pikachu/Eevee only has the original 151 plus Meltan and Melmetal.
+export function inLetsGoDex(nationalDexId) {
+  return nationalDexId <= 151 || nationalDexId === 808 || nationalDexId === 809
+}
+
+// Regions of the games in a version group (e.g. 'diamond-pearl' → ['sinnoh']).
+export function versionGroupRegions(versionGroup) {
+  return versionRegions[versionGroupToVersions[versionGroup]?.[0]] || []
+}
+
+// Where a version sits in the version-group order, counting its DLC — Sword
+// resolves to The Crown Tundra, so content added by either DLC is included.
+export function latestVersionGroupOrder(version) {
+  let latest = null
+  for (const [vg, versions] of Object.entries(versionGroupToVersions)) {
+    const order = versionGroupOrder[vg]
+    if (order != null && versions.includes(version) && (latest == null || order > latest)) latest = order
+  }
+  return latest
+}
+
 // Time-of-day (day/night) evolution requires a day/night cycle, which exists
 // from Gen 2 onward EXCEPT FireRed/LeafGreen, Colosseum, and XD (and not Gen 1).
 const NO_DAY_NIGHT_VERSIONS = new Set(['red', 'blue', 'yellow', 'firered', 'leafgreen', 'colosseum', 'xd'])

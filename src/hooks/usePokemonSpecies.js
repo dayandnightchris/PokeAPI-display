@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { versionGeneration, versionGroupToVersions, isSupportedVersion, normalizeVersionDetails } from '../utils/versionInfo'
+import { versionGeneration, versionGroupToVersions, isSupportedVersion, normalizeVersionDetails, gameIndexMeansAvailable } from '../utils/versionInfo'
 
 // Pokedex names that map to specific game versions.
 // Used to detect game availability when the API hasn't populated moves/game_indices yet.
@@ -10,10 +10,10 @@ const pokedexToVersions = {
 
 function getAllAvailableVersions(pokemon) {
   const available = new Set()
-  // From game_indices (Gen 1-5)
+  // From game_indices (not for Let's Go, whose index lists Pokémon it doesn't have)
   if (pokemon.game_indices) {
     pokemon.game_indices.forEach(gi => {
-      if (gi.version?.name) available.add(gi.version.name)
+      if (gi.version?.name && gameIndexMeansAvailable(gi.version.name)) available.add(gi.version.name)
     })
   }
   // From moves version_group_details (all gens)

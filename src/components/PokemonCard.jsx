@@ -5,6 +5,7 @@ import UnifiedSearch from './UnifiedSearch'
 import { renderEvolutionForest } from './EvolutionTree'
 import { getVersionInfo, generationOrder, versionGeneration, normalizeVersionName } from '../utils/versionInfo'
 import { spriteUrlForId, MAX_DEX_ID } from '../utils/pokedexList'
+import { evolutionStepsTo, NOT_POSSIBLE_HERE } from '../utils/evolutionTree'
 import { titleCase, formatHeight, formatWeight } from '../utils/format'
 import MoveTable from './MoveTable'
 import TypeMatchupDisplay from './TypeMatchupDisplay'
@@ -47,15 +48,20 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   const { forms, selectedForm, setSelectedForm, formPokemon, formSuggestedVersion, formVersionFilter } = usePokemonForms({ species, pokemon, selectedVersion, initialForm })
   const abilityDescriptionsBase = useAbilityDescriptions(formPokemon || pokemon)
   const [extraAbilityDescs, setExtraAbilityDescs] = useState({})
-  const evolutions = useEvolutionChain({ species, selectedVersion, selectedForm })
-  const { canEvolveFrom, canEvolveFromChain, evolveSteps, canTradeAndEvolveFrom, evoFamilyVersions } = usePreEvolutionCheck({ species, selectedVersion })
+  const { tree: evolutions, ready: evolutionsReady } = useEvolutionChain({ species, selectedVersion, selectedForm })
+  const { canEvolveFrom, canEvolveFromChain, canTradeAndEvolveFrom, evoFamilyVersions } = usePreEvolutionCheck({ species, selectedVersion })
+  // How the catchable pre-evolution reaches this Pokémon, read off the same
+  // tree the Evolution Line shows so the two can't disagree.
+  const evolveSteps = (evolutionsReady && canEvolveFrom && evolutionStepsTo(evolutions, canEvolveFrom)) || []
+  const evolutionBlocked = evolveSteps.some(step => step.method === NOT_POSSIBLE_HERE)
   // For forms with empty moves (e.g. PLZA megas), fall back to base pokemon's moves
   const movesSource = (formPokemon && formPokemon.moves?.length > 0) ? formPokemon : pokemon
   const { moves, loading: movesLoading } = useGroupedMoves(movesSource, selectedVersion, species)
-  const { versionSprite, versionShinySprite, versionFemaleSprite, versionAnimSprite, versionAnimShiny, versionAnimFemale } = useVersionSprite(formPokemon || pokemon, selectedVersion)
+  const { versionSprite, versionShinySprite, versionFemaleSprite, versionAnimSprite, versionAnimShiny, versionAnimFemale, spritesReady } = useVersionSprite(formPokemon || pokemon, selectedVersion)
 
-  // Sprite mode: 0 = normal, 1 = shiny, 2 = female
-  const [spriteMode, setSpriteMode] = useState(0)
+  // Sprite view: the key of the view picked from those built below (null = the
+  // default view)
+  const [spriteView, setSpriteView] = useState(null)
 
   // Mobile move tab state
   const [activeMoveTab, setActiveMoveTab] = useState(0)
@@ -425,34 +431,45 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
               const hasFemaleVariety = (species?.varieties || []).some(v => v.pokemon?.name?.endsWith('-female'))
               // Some species carry a front_female sprite in the API that no game
               // actually uses (erroneous/identical). Omit those explicitly.
-              const NO_FEMALE_SPRITE = new Set(['eevee'])
+              // Mega Venusaur's "female" file is a misfiled ordinary Venusaur sprite
+              // (it has no gender difference, and no sprite set has a female).
+              const NO_FEMALE_SPRITE = new Set(['eevee', 'venusaur-mega'])
               const baseName = displayPokemon?.name?.split('-')[0]
               // Only offer a female view when the Pokémon actually HAS a distinct
               // female sprite. front_female is the canonical indicator — it's null
               // for Pokémon without gender differences (e.g. Charmander), so they
               // don't get a spurious female mode.
-              const hasFemaleSprite = !!displayPokemon?.sprites?.front_female && !NO_FEMALE_SPRITE.has(baseName)
+              const hasFemaleSprite = !!displayPokemon?.sprites?.front_female
+                && !NO_FEMALE_SPRITE.has(baseName) && !NO_FEMALE_SPRITE.has(displayPokemon?.name)
               const femaleSrc = (hasFemaleSprites && !hasFemaleVariety && hasFemaleSprite)
                 ? (versionAnimFemale || versionAnimSprite || versionFemaleSprite || displayPokemon.sprites.front_female)
                 : null
 
-              // Build available modes. Each variant (shiny / female) is followed
-              // by a side-by-side "normal + variant" step in the cycle.
-              const modes = [{ key: 'normal', src: normalSrc, label: '' }]
-              if (shinySrc) {
-                modes.push({ key: 'shiny', src: shinySrc, label: '✨ Shiny' })
-                modes.push({ key: 'both-shiny', dual: 'shiny', label: '✨ Normal + Shiny' })
-              }
+              // Build available modes. The default view is normal + shiny side
+              // by side wherever a shiny exists (Gens 2+); Gen 1 has no shinies
+              // and starts on the normal sprite. The female variant is
+              // followed by its own side-by-side step.
+              const normalMode = { key: 'normal', src: normalSrc, label: '' }
+              const modes = []
+              if (shinySrc) modes.push({ key: 'both-shiny', dual: 'shiny', label: '✨ Normal + Shiny' })
+              modes.push(normalMode)
+              if (shinySrc) modes.push({ key: 'shiny', src: shinySrc, label: '✨ Shiny' })
               if (femaleSrc) {
                 modes.push({ key: 'female', src: femaleSrc, label: 'Female' })
                 modes.push({ key: 'both-female', dual: 'female', label: 'Male + Female' })
               }
 
-              const safeMode = spriteMode % modes.length
-              const current = modes[safeMode]
+              // The pick is kept by name, so it carries over to the next
+              // Pokémon or game; where that view doesn't exist, the default shows.
+              const picked = modes.findIndex(m => m.key === spriteView)
+              const safeMode = picked === -1 ? 0 : picked
+              // Before a version is selected there is only fallback artwork:
+              // show the plain image rather than fetch a shiny the settled
+              // view won't use.
+              const current = spritesReady ? modes[safeMode] : normalMode
               const canCycle = modes.length > 1
-              const nextLabel = modes[(safeMode + 1) % modes.length]?.key
-              const cycle = () => canCycle && setSpriteMode(prev => prev + 1)
+              const nextLabel = modes[(safeMode + 1) % modes.length].key
+              const cycle = () => canCycle && setSpriteView(nextLabel)
 
               return (
                 <>
@@ -629,6 +646,8 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
             canEvolveFrom={canEvolveFrom}
             canEvolveFromChain={canEvolveFromChain}
             evolveSteps={evolveSteps}
+            evolutionBlocked={evolutionBlocked}
+            evolutionPending={!evolutionsReady}
             canTradeAndEvolveFrom={canTradeAndEvolveFrom}
             evoFamilyVersions={evoFamilyVersions}
           />

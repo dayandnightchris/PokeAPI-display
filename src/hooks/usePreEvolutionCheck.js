@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { versionGeneration, generationVersions, versionDisplayNames, versionHasDayNight, normalizeVersionDetails } from '../utils/versionInfo'
-import { formatEvolutionDetails } from './useEvolutionChain'
+import { versionGeneration, generationVersions, versionDisplayNames, normalizeVersionDetails } from '../utils/versionInfo'
 
 /**
  * Checks if the current Pokémon can be obtained via evolution in the selected version.
@@ -122,35 +121,6 @@ function getPreEvolutions(chainNode, targetName, path = []) {
   return null
 }
 
-// Find the chain of nodes from the root to the target species (inclusive).
-function findChainPath(node, targetName, path = []) {
-  if (!node?.species?.name) return null
-  const newPath = [...path, node]
-  if (node.species.name === targetName) return newPath
-  for (const evo of node.evolves_to || []) {
-    const result = findChainPath(evo, targetName, newPath)
-    if (result) return result
-  }
-  return null
-}
-
-// Build the evolution steps needed to get from a catchable pre-evo to the
-// target, e.g. [{ to: 'jolteon', method: 'Use thunder stone' }].
-function buildEvolveSteps(chainRoot, fromName, targetName, hasDayNight) {
-  const fullPath = findChainPath(chainRoot, targetName)
-  if (!fullPath) return []
-  const startIdx = fullPath.findIndex(n => n.species.name === fromName)
-  if (startIdx === -1) return []
-  const steps = []
-  for (let i = startIdx + 1; i < fullPath.length; i++) {
-    steps.push({
-      to: fullPath[i].species.name,
-      method: formatEvolutionDetails(fullPath[i].evolution_details, hasDayNight),
-    })
-  }
-  return steps
-}
-
 // Collect every species name in the evolution chain (all members)
 function getAllChainMembers(chainNode) {
   if (!chainNode?.species?.name) return []
@@ -172,7 +142,6 @@ function hasEncountersInGen(encounters, genVersions) {
 export function usePreEvolutionCheck({ species, selectedVersion }) {
   const [canEvolveFrom, setCanEvolveFrom] = useState(null)
   const [canEvolveFromChain, setCanEvolveFromChain] = useState([])
-  const [evolveSteps, setEvolveSteps] = useState([])
   const [canTradeAndEvolveFrom, setCanTradeAndEvolveFrom] = useState(null)
   const [evoFamilyVersions, setEvoFamilyVersions] = useState([])
   const [loading, setLoading] = useState(false)
@@ -181,7 +150,6 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
     if (!species?.evolution_chain?.url || !selectedVersion || !species?.name) {
       setCanEvolveFrom(null)
       setCanEvolveFromChain([])
-      setEvolveSteps([])
       setCanTradeAndEvolveFrom(null)
       setEvoFamilyVersions([])
       return
@@ -194,7 +162,7 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
       try {
         const chainRes = await fetch(species.evolution_chain.url)
         if (!chainRes.ok) {
-          if (active) { setCanEvolveFrom(null); setCanEvolveFromChain([]); setEvolveSteps([]); setCanTradeAndEvolveFrom(null); setEvoFamilyVersions([]); setLoading(false) }
+          if (active) { setCanEvolveFrom(null); setCanEvolveFromChain([]); setCanTradeAndEvolveFrom(null); setEvoFamilyVersions([]); setLoading(false) }
           return
         }
         const chainData = await chainRes.json()
@@ -215,7 +183,7 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
 
         const preEvos = getPreEvolutions(chainData.chain, species.name)
         if (!preEvos || preEvos.length === 0) {
-          if (active) { setCanEvolveFrom(null); setCanEvolveFromChain([]); setEvolveSteps([]); setCanTradeAndEvolveFrom(null); setLoading(false) }
+          if (active) { setCanEvolveFrom(null); setCanEvolveFromChain([]); setCanTradeAndEvolveFrom(null); setLoading(false) }
           return
         }
 
@@ -236,7 +204,6 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
           if (active) {
             setCanEvolveFrom(ordered[0])
             setCanEvolveFromChain(ordered)
-            setEvolveSteps(buildEvolveSteps(chainData.chain, ordered[0], species.name, versionHasDayNight(selectedVersion)))
             setCanTradeAndEvolveFrom(null)
             setLoading(false)
           }
@@ -262,10 +229,10 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
           }
         }
 
-        if (active) { setCanEvolveFrom(null); setCanEvolveFromChain([]); setEvolveSteps([]); setCanTradeAndEvolveFrom(null); setLoading(false) }
+        if (active) { setCanEvolveFrom(null); setCanEvolveFromChain([]); setCanTradeAndEvolveFrom(null); setLoading(false) }
       } catch (err) {
         console.error('Pre-evolution check failed:', err)
-        if (active) { setCanEvolveFrom(null); setCanEvolveFromChain([]); setEvolveSteps([]); setCanTradeAndEvolveFrom(null); setEvoFamilyVersions([]); setLoading(false) }
+        if (active) { setCanEvolveFrom(null); setCanEvolveFromChain([]); setCanTradeAndEvolveFrom(null); setEvoFamilyVersions([]); setLoading(false) }
       }
     }
 
@@ -273,5 +240,5 @@ export function usePreEvolutionCheck({ species, selectedVersion }) {
     return () => { active = false }
   }, [species?.evolution_chain?.url, species?.name, selectedVersion])
 
-  return { canEvolveFrom, canEvolveFromChain, evolveSteps, canTradeAndEvolveFrom, evoFamilyVersions, loading }
+  return { canEvolveFrom, canEvolveFromChain, canTradeAndEvolveFrom, evoFamilyVersions, loading }
 }
