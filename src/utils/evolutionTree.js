@@ -400,14 +400,13 @@ export async function buildEvolutionTree({ chain, selectedVersion, viewedSpecies
       }
 
       // On the page of one particular form (Rapid Strike Urshifu, Female
-      // Meowstic), show how that form is reached, not its siblings — unless
-      // it can't be reached in this game while the species still evolves
-      // here, where the working methods are the useful answer.
+      // Meowstic), show how that form is reached, not its siblings. A form
+      // this game can't produce (Midnight Lycanroc in Sun) reads as not
+      // possible; a sibling's method would make a different Pokémon.
       const lineForm = lineForms.get(evoSpecies)
       for (const group of groups.values()) {
         const pick = (own) => {
           if (!own.length) return false
-          if (!own.some(m => m.works) && group.methods.some(m => m.works)) return false
           group.methods = own
           return true
         }
