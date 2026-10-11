@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { fetchPokemonCached } from '../utils/pokeCache'
-import { buildEvolutionTree } from '../utils/evolutionTree'
+import { buildEvolutionTree, evolvableElsewhere } from '../utils/evolutionTree'
 
 const speciesCache = new Map()
 
@@ -54,4 +54,48 @@ export function useEvolutionChain({ species, selectedVersion, selectedForm }) {
   }, [species?.evolution_chain?.url, species?.name, selectedVersion, selectedForm]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return { tree: state.tree, ready: state.builtFor === wanted }
+}
+
+const NOWHERE = { versions: [], steps: [] }
+
+// When the evolution from `fromSpecies` can't be done in the selected game
+// (`enabled`): the games it can trade with where it can, and how it works
+// there. `ready` is false while that is being worked out.
+export function useEvolvableElsewhere({ species, selectedVersion, selectedForm, fromSpecies, enabled }) {
+  const [state, setState] = useState({ ...NOWHERE, builtFor: null })
+  const wanted = enabled && fromSpecies
+    ? `${species?.name}|${selectedVersion}|${selectedForm || ''}|${fromSpecies}`
+    : null
+
+  useEffect(() => {
+    if (!wanted || !species?.evolution_chain?.url) return
+    let active = true
+
+    const run = async () => {
+      try {
+        const res = await fetch(species.evolution_chain.url)
+        const data = await res.json()
+        const found = await evolvableElsewhere({
+          chain: data.chain,
+          selectedVersion,
+          fromSpecies,
+          viewedSpecies: species.name,
+          viewedPokemon: selectedForm,
+          getSpecies: fetchSpeciesByName,
+          getPokemon: fetchPokemonCached,
+        })
+        if (active) setState({ ...found, builtFor: wanted })
+      } catch (e) {
+        console.error('Failed to check where the evolution works:', e)
+        if (active) setState({ ...NOWHERE, builtFor: wanted })
+      }
+    }
+
+    run()
+    return () => { active = false }
+  }, [wanted, species?.evolution_chain?.url]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!wanted) return { ...NOWHERE, ready: true }
+  if (state.builtFor !== wanted) return { ...NOWHERE, ready: false }
+  return { versions: state.versions, steps: state.steps, ready: true }
 }

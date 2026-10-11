@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { versionGeneration, versionGroupToVersions, isSupportedVersion, normalizeVersionDetails, gameIndexMeansAvailable } from '../utils/versionInfo'
 
 // Pokedex names that map to specific game versions.
@@ -59,6 +59,9 @@ export function usePokemonSpecies(pokemon, initialVersion) {
   const [species, setSpecies] = useState(null)
   const [selectedVersion, setSelectedVersion] = useState(null)
   const [allEncounters, setAllEncounters] = useState([])
+  // The Pokémon id allEncounters was loaded for. Encounters arrive after a
+  // change of Pokémon, and until then they are still the previous one's.
+  const [encountersFor, setEncountersFor] = useState(null)
   const [availableVersions, setAvailableVersions] = useState(new Set())
   // Versions detected solely from species pokedex membership (e.g. legends-za from lumiose-city).
   // Kept separate so VersionSelector can add these without inflating with all base-pokemon versions.
@@ -102,14 +105,18 @@ export function usePokemonSpecies(pokemon, initialVersion) {
     fetch(`https://pokeapi.co/api/v2/pokemon/${pokemon.id}/encounters`)
       .then(res => res.json())
       .then(data => {
-        if (active) setAllEncounters((Array.isArray(data) ? data : []).map(enc => ({
+        if (!active) return
+        setAllEncounters((Array.isArray(data) ? data : []).map(enc => ({
           ...enc,
           version_details: normalizeVersionDetails(enc.version_details),
         })))
+        setEncountersFor(pokemon.id)
       })
       .catch(err => {
         console.error('Failed to fetch location areas:', err)
-        if (active) setAllEncounters([])
+        if (!active) return
+        setAllEncounters([])
+        setEncountersFor(pokemon.id)
       })
 
     // Reset pokedex versions until species loads for the new pokemon
@@ -184,5 +191,15 @@ export function usePokemonSpecies(pokemon, initialVersion) {
     setSelectedVersion(versionList[0])
   }, [pokemon, selectedVersion, allEncounters])
 
-  return { species, selectedVersion, setSelectedVersion, allEncounters, availableVersions, pokedexVersions }
+  // A version the user picked themselves. It also retires a starting version
+  // that hasn't applied yet because the Pokémon on screen lacks it — otherwise
+  // that one would take over as soon as a later Pokémon has it.
+  const chooseVersion = useCallback((version) => {
+    initialVersionAppliedRef.current = true
+    setSelectedVersion(version)
+  }, [])
+
+  const encountersReady = !!pokemon && encountersFor === pokemon.id
+
+  return { species, selectedVersion, setSelectedVersion, chooseVersion, allEncounters, encountersReady, availableVersions, pokedexVersions }
 }

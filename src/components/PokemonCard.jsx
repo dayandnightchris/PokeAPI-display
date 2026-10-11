@@ -19,6 +19,7 @@ import {
   useAbilityDescriptions,
   usePokemonForms,
   useEvolutionChain,
+  useEvolvableElsewhere,
   useGroupedMoves,
   useVersionSprite,
   usePreEvolutionCheck
@@ -44,7 +45,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   const statsCalcRef = useRef(null)
 
   // Data fetching hooks
-  const { species, selectedVersion, setSelectedVersion, allEncounters, availableVersions, pokedexVersions } = usePokemonSpecies(pokemon, initialVersion)
+  const { species, selectedVersion, setSelectedVersion, chooseVersion, allEncounters, encountersReady, availableVersions, pokedexVersions } = usePokemonSpecies(pokemon, initialVersion)
   const { forms, selectedForm, setSelectedForm, formPokemon, formSuggestedVersion, formVersionFilter } = usePokemonForms({ species, pokemon, selectedVersion, initialForm })
   const abilityDescriptionsBase = useAbilityDescriptions(formPokemon || pokemon)
   const [extraAbilityDescs, setExtraAbilityDescs] = useState({})
@@ -54,6 +55,8 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   // tree the Evolution Line shows so the two can't disagree.
   const evolveSteps = (evolutionsReady && canEvolveFrom && evolutionStepsTo(evolutions, canEvolveFrom)) || []
   const evolutionBlocked = evolveSteps.some(step => step.method === NOT_POSSIBLE_HERE)
+  // An evolution this game can't do may work in one it trades with
+  const evolveElsewhere = useEvolvableElsewhere({ species, selectedVersion, selectedForm, fromSpecies: canEvolveFrom, enabled: evolutionBlocked })
   // For forms with empty moves (e.g. PLZA megas), fall back to base pokemon's moves
   const movesSource = (formPokemon && formPokemon.moves?.length > 0) ? formPokemon : pokemon
   const { moves, loading: movesLoading } = useGroupedMoves(movesSource, selectedVersion, species)
@@ -370,6 +373,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
           pokemon={displayPokemon}
           selectedVersion={selectedVersion}
           onVersionChange={setSelectedVersion}
+          onVersionPick={chooseVersion}
           allEncounters={formPokemon ? [] : allEncounters}
           pokedexVersions={formPokemon ? null : pokedexVersions}
           formVersionFilter={formVersionFilter}
@@ -639,6 +643,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
           <LocationBox
             selectedVersion={selectedVersion}
             allEncounters={allEncounters}
+            encountersPending={!encountersReady}
             expandedLocations={expandedLocations}
             setExpandedLocations={setExpandedLocations}
             onLocationClick={onLocationClick}
@@ -648,6 +653,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
             evolveSteps={evolveSteps}
             evolutionBlocked={evolutionBlocked}
             evolutionPending={!evolutionsReady}
+            evolveElsewhere={evolveElsewhere}
             canTradeAndEvolveFrom={canTradeAndEvolveFrom}
             evoFamilyVersions={evoFamilyVersions}
           />

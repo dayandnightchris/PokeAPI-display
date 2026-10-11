@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import { versionDisplayNames, versionGeneration, versionGroupToVersions, isSupportedVersion, compareVersions, gameIndexMeansAvailable } from '../utils/versionInfo'
 
-export default function VersionSelector({ pokemon, selectedVersion, onVersionChange, allEncounters, pokedexVersions, formVersionFilter }) {
+// onVersionChange receives the automatic fallback when the current version
+// isn't offered for this Pokémon; onVersionPick receives the user's own choice
+// from the dropdown (defaults to onVersionChange).
+export default function VersionSelector({ pokemon, selectedVersion, onVersionChange, onVersionPick, allEncounters, pokedexVersions, formVersionFilter }) {
   const [versions, setVersions] = useState([])
   const [loading, setLoading] = useState(false)
 
@@ -117,7 +120,8 @@ export default function VersionSelector({ pokemon, selectedVersion, onVersionCha
 
   const handleVersionChange = (e) => {
     const version = e.target.value
-    onVersionChange(version)
+    const pick = onVersionPick || onVersionChange
+    pick(version)
   }
 
   if (loading) {

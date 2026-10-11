@@ -7,6 +7,7 @@
 import {
   versionGroupOrder, versionGroupToVersions, versionGeneration, versionHasDayNight,
   versionRegions, versionGroupRegions, latestVersionGroupOrder, gameIndexMeansAvailable,
+  generationVersions, isSupportedVersion, canTradeBetween,
 } from './versionInfo'
 
 // Shown for an evolution that exists in the selected game's Pokédex but
@@ -473,4 +474,24 @@ export function evolutionStepsTo(roots, fromSpecies) {
     if (found) return found
   }
   return null
+}
+
+// For an evolution that can't be done in the selected game: the games of its
+// generation it can trade with in which the Pokémon being viewed can be
+// evolved from `fromSpecies` (Magnezone in HeartGold → Diamond, Pearl,
+// Platinum), with the steps as they work in the first of them.
+export async function evolvableElsewhere({ chain, selectedVersion, fromSpecies, viewedSpecies, viewedPokemon, getSpecies, getPokemon }) {
+  const siblings = (generationVersions[versionGeneration[selectedVersion]] || [])
+    .filter(v => v !== selectedVersion && isSupportedVersion(v) && canTradeBetween(selectedVersion, v))
+
+  const versions = []
+  let steps = []
+  for (const version of siblings) {
+    const roots = await buildEvolutionTree({ chain, selectedVersion: version, viewedSpecies, viewedPokemon, getSpecies, getPokemon })
+    const path = evolutionStepsTo(roots, fromSpecies)
+    if (!path?.length || path.some(step => step.method === NOT_POSSIBLE_HERE)) continue
+    if (!versions.length) steps = path
+    versions.push(version)
+  }
+  return { versions, steps }
 }

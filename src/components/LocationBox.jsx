@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { versionDisplayNames, versionGeneration, generationVersions, canTradeBetween, versionGroupForVersion, getTransferSourceVersionGroups } from '../utils/versionInfo'
 import { titleCase, formatLocationName } from '../utils/format'
@@ -11,12 +11,23 @@ import { formatEncounterCondition } from '../utils/encounterConditions'
 function PortalTooltip({ label, className, children }) {
   const [coords, setCoords] = useState(null)
   const triggerRef = useRef(null)
+  const tipRef = useRef(null)
 
   const open = () => {
     const r = triggerRef.current?.getBoundingClientRect()
     if (r) setCoords({ top: r.bottom + 6, left: r.left + r.width / 2 })
   }
   const close = () => setCoords(null)
+
+  // The tooltip is centred under its trigger; one whose trigger sits near the
+  // edge of the window is nudged back inside rather than cut off.
+  useLayoutEffect(() => {
+    const tip = tipRef.current
+    if (!coords || !tip) return
+    const min = tip.offsetWidth / 2 + 8
+    const left = Math.min(Math.max(coords.left, min), Math.max(min, window.innerWidth - min))
+    if (left !== coords.left) setCoords({ ...coords, left })
+  }, [coords])
 
   // A fixed-positioned tooltip would detach from the trigger on scroll/resize.
   useEffect(() => {
@@ -39,7 +50,7 @@ function PortalTooltip({ label, className, children }) {
     >
       {label}
       {coords && createPortal(
-        <span className={`portal-tooltip ${className || ''}`} style={{ top: coords.top, left: coords.left }}>
+        <span ref={tipRef} className={`portal-tooltip ${className || ''}`} style={{ top: coords.top, left: coords.left }}>
           {children}
         </span>,
         document.body
@@ -51,6 +62,7 @@ function PortalTooltip({ label, className, children }) {
 export default function LocationBox({
   selectedVersion,
   allEncounters,
+  encountersPending,
   expandedLocations,
   setExpandedLocations,
   onLocationClick,
@@ -60,43 +72,42 @@ export default function LocationBox({
   evolveSteps,
   evolutionBlocked,
   evolutionPending,
+  evolveElsewhere,
   canTradeAndEvolveFrom,
   evoFamilyVersions,
 }) {
-  // A pre-evolution can be caught here, but the evolution itself can't be
-  // done in this game (Magnezone in HeartGold, ordinary Raichu in Sun).
-  const renderEvolutionBlocked = () => (
+  // The pre-evolution(s) that can be caught in this game
+  const catchableNames = () => (canEvolveFromChain.length > 1
+    ? canEvolveFromChain.map(titleCase).join(' or ')
+    : titleCase(canEvolveFrom))
+
+  // An evolution verb with the method(s) shown on hover (reusing the
+  // evolution-line details), e.g. "Jolteon: Use thunder stone".
+  const renderEvolveWord = (word, steps) => (steps && steps.length > 0 ? (
+    <PortalTooltip label={word} className="evolve-method-tooltip">
+      {steps.map((s, i) => (
+        <span key={i} className="evolve-method-row">
+          <strong>{titleCase(s.to)}</strong>: {s.method}
+        </span>
+      ))}
+    </PortalTooltip>
+  ) : word)
+
+  // "Catch X and evolve"
+  const renderCatchAndEvolve = () => (
     <p style={{ margin: '0' }}>
-      Can't be evolved in this game. Trade or transfer it in.
+      Catch {catchableNames()} and {renderEvolveWord('evolve', evolveSteps)}.
     </p>
   )
 
-  // A pre-evolution can be caught here. Whether it can then be evolved here
-  // isn't known until the evolution line for this page has been built.
-  const renderEvolveFallback = () => {
-    if (evolutionPending) return null
-    return evolutionBlocked ? renderEvolutionBlocked() : renderCatchAndEvolve()
-  }
-
-  // "Catch X and evolve" — with the evolution method(s) shown on hover over
-  // "evolve" (reusing the evolution-line details), e.g. "Jolteon: Use thunder stone".
-  const renderCatchAndEvolve = () => {
-    const catchText = canEvolveFromChain.length > 1
-      ? canEvolveFromChain.map(titleCase).join(' or ')
-      : titleCase(canEvolveFrom)
-    const hasSteps = evolveSteps && evolveSteps.length > 0
+  // A pre-evolution can be caught here, but the evolution itself can't be done
+  // in this game — only in one it trades with (Magnezone in HeartGold: Diamond,
+  // Pearl, Platinum; ordinary Raichu in Sun: Ultra Sun, Ultra Moon).
+  const renderEvolveElsewhere = () => {
+    const tradeNames = evolveElsewhere.versions.map(v => versionDisplayNames[v] || v).join(', ')
     return (
       <p style={{ margin: '0' }}>
-        Catch {catchText} and{' '}
-        {hasSteps ? (
-          <PortalTooltip label="evolve" className="evolve-method-tooltip">
-            {evolveSteps.map((s, i) => (
-              <span key={i} className="evolve-method-row">
-                <strong>{titleCase(s.to)}</strong>: {s.method}
-              </span>
-            ))}
-          </PortalTooltip>
-        ) : 'evolve'}.
+        {renderEvolveWord('Evolve', evolveElsewhere.steps)} {catchableNames()} in {tradeNames} and trade it over.
       </p>
     )
   }
@@ -284,8 +295,16 @@ export default function LocationBox({
                   // --- No wild encounters for this version: priority fallback ---
                   // Priority 1: Can it evolve from a pre-evolution available in this game?
                   if (canEvolveFrom) {
-                    return renderEvolveFallback()
+                    // Not known until the evolution line for this page has been built
+                    if (evolutionPending) return null
+                    if (!evolutionBlocked) return renderCatchAndEvolve()
+                    // The rules below read this Pokémon's own encounters
+                    if (encountersPending) return null
                   }
+                  // A pre-evolution is here but this game can't do the evolution
+                  // (Magnezone in HeartGold): carry on down the order, skipping
+                  // the rules that end in evolving it here.
+                  const cantEvolveHere = !!canEvolveFrom
 
                   // Priority 1b: Breeding (available in all games except RBY, Colosseum, XD, LGPE, Legends Arceus, Legends Z-A)
                   // Only suggest breeding if some member of the evo family has encounters in this version
@@ -294,13 +313,13 @@ export default function LocationBox({
                   const hasEvoFamilyInVersion = evoFamilyVersions.includes(selectedVersion)
                   const isBreedable = !species?.egg_groups?.every(g => g.name === 'no-eggs') || species?.is_baby
                   const canBreed = breedingAvailable && hasEvoFamilyInVersion && isBreedable
-                  if (canBreed) {
+                  if (canBreed && !cantEvolveHere) {
                     return <p style={{ margin: '0' }}>Obtain through breeding.</p>
                   }
 
                   // Priority 1c: Trade for a bred Pokémon — evo family exists in other same-gen games
                   // (that can actually trade with this one — LGPE is isolated)
-                  if (breedingAvailable && isBreedable && evoFamilyVersions.length > 0) {
+                  if (!cantEvolveHere && breedingAvailable && isBreedable && evoFamilyVersions.length > 0) {
                     const tradeBreedVersions = evoFamilyVersions.filter(v => v !== selectedVersion && canTradeBetween(selectedVersion, v))
                     if (tradeBreedVersions.length > 0) {
                       const tradeNames = tradeBreedVersions.map(v => versionDisplayNames[v] || v).join(', ')
@@ -330,6 +349,13 @@ export default function LocationBox({
                     }
                   }
 
+                  // Priority 2a: The evolution this game can't do works in another
+                  // game of this gen — evolve it there and trade it over.
+                  if (cantEvolveHere) {
+                    if (!evolveElsewhere.ready) return null
+                    if (evolveElsewhere.versions.length > 0) return renderEvolveElsewhere()
+                  }
+
                   // Priority 2b: Can a pre-evolution be traded from another game and then evolved?
                   if (canTradeAndEvolveFrom) {
                     const tradableFrom = canTradeAndEvolveFrom.tradeVersions.filter(v => canTradeBetween(selectedVersion, v))
@@ -353,8 +379,13 @@ export default function LocationBox({
                 (() => {
                   // No encounter data at all from the API — same priority fallback
                   if (canEvolveFrom) {
-                    return renderEvolveFallback()
+                    if (evolutionPending) return null
+                    if (!evolutionBlocked) return renderCatchAndEvolve()
+                    if (encountersPending) return null
                   }
+                  // As above: this game can't do the evolution, so the rules
+                  // that end in evolving it here are skipped.
+                  const cantEvolveHere2 = !!canEvolveFrom
 
                   // Priority 1b: Breeding — even though this Pokémon has no encounters,
                   // an evo-family member might exist in this version (e.g. Magby via Magmar in LeafGreen)
@@ -363,18 +394,25 @@ export default function LocationBox({
                   const hasEvoFamilyInVersion2 = evoFamilyVersions.includes(selectedVersion)
                   const isBreedable2 = !species?.egg_groups?.every(g => g.name === 'no-eggs') || species?.is_baby
                   const canBreed2 = breedingAvailable2 && hasEvoFamilyInVersion2 && isBreedable2
-                  if (canBreed2) {
+                  if (canBreed2 && !cantEvolveHere2) {
                     return <p style={{ margin: '0' }}>Obtain through breeding.</p>
                   }
 
                   // Priority 1c: Trade for a bred Pokémon — evo family exists in other same-gen games
                   // (that can actually trade with this one — LGPE is isolated)
-                  if (breedingAvailable2 && isBreedable2 && evoFamilyVersions.length > 0) {
+                  if (!cantEvolveHere2 && breedingAvailable2 && isBreedable2 && evoFamilyVersions.length > 0) {
                     const tradeBreedVersions = evoFamilyVersions.filter(v => v !== selectedVersion && canTradeBetween(selectedVersion, v))
                     if (tradeBreedVersions.length > 0) {
                       const tradeNames = tradeBreedVersions.map(v => versionDisplayNames[v] || v).join(', ')
                       return <p style={{ margin: '0' }}>Trade from {tradeNames}.</p>
                     }
+                  }
+
+                  // The evolution this game can't do works in another game of
+                  // this gen — evolve it there and trade it over.
+                  if (cantEvolveHere2) {
+                    if (!evolveElsewhere.ready) return null
+                    if (evolveElsewhere.versions.length > 0) return renderEvolveElsewhere()
                   }
 
                   // Check if a pre-evo can be traded from another same-gen game and evolved

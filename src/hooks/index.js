@@ -1,7 +1,7 @@
 export { usePokemonSpecies } from './usePokemonSpecies'
 export { useAbilityDescriptions } from './useAbilityDescriptions'
 export { usePokemonForms } from './usePokemonForms'
-export { useEvolutionChain } from './useEvolutionChain'
+export { useEvolutionChain, useEvolvableElsewhere } from './useEvolutionChain'
 export { useGroupedMoves } from './useGroupedMoves'
 export { useVersionSprite } from './useVersionSprite'
 export { usePreEvolutionCheck } from './usePreEvolutionCheck'

@@ -431,7 +431,9 @@ function App() {
 
   // Navigate from MovePage → PokemonCard
   const navigateToPokemon = useCallback((pokemonName, version) => {
-    urlStateRef.current = { version: version || null, name: pokemonName }
+    // A search names no version: keep the one in use, so the URL and the
+    // other tabs still know it.
+    urlStateRef.current = { version: version || urlStateRef.current.version || null, name: pokemonName }
     updateUrl('pokemon', urlStateRef.current, true)
     if (version) setInitialVersion(version)
     setPokemonPageInit(prev => ({ name: pokemonName, version: version || null, key: prev.key + 1 }))
