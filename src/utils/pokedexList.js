@@ -31,8 +31,14 @@ export const ALL_TYPES = [
 ]
 
 // Gen 8 box icon URL straight from the id — no extra fetch needed.
+// PokeAPI/sprites deleted generation-viii/icons on 2026-10-16 (PR #295) in
+// favour of per-game folders, but no folder left covers all of 1–898 in one
+// style (sword-shield/icons lacks the 234 not in Sword/Shield; the Gen 7
+// icons are smaller and shaded differently). So this reads the set from the
+// last commit that had it.
+const ICON_COMMIT = 'ba403973fdf9d0ac59175813861e6a1f8ed5020c'
 export const spriteUrlForId = (id) =>
-  `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-viii/icons/${id}.png`
+  `https://raw.githubusercontent.com/PokeAPI/sprites/${ICON_COMMIT}/sprites/pokemon/versions/generation-viii/icons/${id}.png`
 
 const QUERY = `{
   pokemon(where: {id: {_lte: ${MAX_DEX_ID}}}, order_by: {name: asc}) {
