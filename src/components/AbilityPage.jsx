@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import UnifiedSearch from './UnifiedSearch'
 import { versionDisplayNames, versionGeneration, generationVersionGroups, generationOrder, generationVersions, defaultVersionGroups, isSupportedVersion, compareVersions } from '../utils/versionInfo'
 import { fetchAbilityCached, fetchPokemonCached } from '../utils/pokeCache'
+import { abilityEffectForVersion } from '../utils/abilityRules'
 
 function formatAbilityName(name) {
   return name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
@@ -431,12 +432,8 @@ export default function AbilityPage({ initialAbility, initialVersion, onStateCha
     return null
   }
 
-  // Get detailed effect text
-  const getEffect = () => {
-    if (!abilityData) return null
-    const effect = abilityData.effect_entries?.find(e => e.language?.name === 'en')
-    return effect?.effect || effect?.short_effect || null
-  }
+  // Get detailed effect text, as it was in the selected version
+  const getEffect = () => abilityEffectForVersion(abilityData, selectedVersion)
 
   const getShortEffect = () => {
     if (!abilityData) return null

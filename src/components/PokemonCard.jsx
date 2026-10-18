@@ -47,7 +47,7 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
   // Data fetching hooks
   const { species, selectedVersion, setSelectedVersion, chooseVersion, allEncounters, encountersReady, availableVersions, pokedexVersions } = usePokemonSpecies(pokemon, initialVersion)
   const { forms, selectedForm, setSelectedForm, formPokemon, formSuggestedVersion, formVersionFilter } = usePokemonForms({ species, pokemon, selectedVersion, initialForm })
-  const abilityDescriptionsBase = useAbilityDescriptions(formPokemon || pokemon)
+  const abilityDescriptionsBase = useAbilityDescriptions(formPokemon || pokemon, selectedVersion)
   const [extraAbilityDescs, setExtraAbilityDescs] = useState({})
   const { tree: evolutions, ready: evolutionsReady } = useEvolutionChain({ species, selectedVersion, selectedForm })
   const { canEvolveFrom, canEvolveFromChain, canTradeAndEvolveFrom, evoFamilyVersions } = usePreEvolutionCheck({ species, selectedVersion })
