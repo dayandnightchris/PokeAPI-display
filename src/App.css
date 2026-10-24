@@ -1425,37 +1425,49 @@
 }
 
 @media (max-width: 768px) {
-  /* Stacked layout: both dex buttons share one row above the version
-     selector (prev left, next right), and the selector and search each
-     take a full row below them. */
+  /* Stacked layout: the dex buttons flank the version selector on one row
+     (prev, version, next) and the search takes the full row below. The
+     buttons shrink to arrow + icon to make room; their title/aria-label
+     still name the Pokémon. */
   .pokemon-card-container > .page-search-row {
     flex-direction: row;
-    column-gap: 8px;
+    gap: 6px;
   }
 
-  .pokemon-card-container > .page-search-row > .version-selector,
+  .pokemon-card-container > .page-search-row > .version-selector {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    margin-bottom: 0;
+  }
+
   .pokemon-card-container > .page-search-row > .page-search-inline {
+    order: 1;
     flex-basis: 100%;
   }
 
-  .dex-nav-btn {
-    order: -1;
-    min-width: 0;
-    margin: 0 0 8px;
+  /* The dropdown already reads as the game name; keep the label for
+     screen readers only so the dropdown gets the width */
+  .pokemon-card-container > .page-search-row > .version-selector label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
-  .dex-nav-btn--next {
-    margin-left: auto;
+  .pokemon-card-container > .page-search-row .version-dropdown {
+    min-width: 0;
+  }
+
+  .dex-nav-btn {
+    align-self: stretch;
+    padding: 4px 6px;
   }
 
   .dex-nav-label {
-    min-width: 0;
-  }
-
-  .dex-nav-name {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: none;
   }
 }
 
