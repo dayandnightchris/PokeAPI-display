@@ -146,6 +146,7 @@ body {
   padding: 2rem;
   max-width: 1400px;
   margin: 0 auto;
+  position: relative; /* anchors the desktop ad rail (App.css) */
 }
 
 .app-header {

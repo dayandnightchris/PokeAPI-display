@@ -10,6 +10,7 @@ import LocationPage from './components/LocationPage'
 import { defaultVersionGroups } from './utils/versionInfo'
 import EggMoveTab from './components/EggMoveTab'
 import PokemonListLanding from './components/PokemonListLanding'
+import AdSlot, { AD_UNITS, RAIL_QUERY, useMediaQuery } from './components/AdSlot'
 
 /**
  * Read URL path parameters on load.
@@ -94,6 +95,7 @@ function App() {
   const [requestedForm, setRequestedForm] = useState(null)
   const [initialVersion, setInitialVersion] = useState(urlParams.version || 'sword')
   const [searchQuery, setSearchQuery] = useState('')
+  const adRailFits = useMediaQuery(RAIL_QUERY)
 
   // Apply theme to document. Only an explicit toggle is persisted — the
   // OS-derived default stays unsaved so the app keeps following the OS
@@ -148,17 +150,6 @@ function App() {
   // Track the latest in-flight request
   const abortRef = useRef(null)
   const requestIdRef = useRef(0)
-
-  // Inject AdSense only after first search result — keeps the landing page ad-free
-  useEffect(() => {
-    if (!pokemon) return
-    if (document.querySelector('script[src*="adsbygoogle"]')) return
-    const script = document.createElement('script')
-    script.async = true
-    script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3943102684396180'
-    script.crossOrigin = 'anonymous'
-    document.head.appendChild(script)
-  }, [pokemon])
 
   // Fetch all Pokemon names for autocomplete on mount
   useEffect(() => {
@@ -822,6 +813,15 @@ function App() {
           searchLists={searchLists}
           onUnifiedNavigate={handleUnifiedNavigate}
         />
+      )}
+
+      {/* Desktop's only ad: a sticky rail in the right margin of Pokémon pages,
+          on screens wide enough to keep it clear of the content. A new
+          Pokémon gets a fresh ad. */}
+      {activeTab === 'pokemon' && pokemon && adRailFits && (
+        <div className="ad-rail-track">
+          <AdSlot key={pokemon.name} slot={AD_UNITS.vertical} size={{ width: 160, height: 600 }} className="ad-rail" />
+        </div>
       )}
 
       <footer className="app-footer">

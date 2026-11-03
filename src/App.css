@@ -1730,6 +1730,40 @@
 }
 
 /* =========================
+   Ad slots (placed by us; Auto ads in-page placement is off)
+   ========================= */
+
+.ad-slot {
+  margin-top: 10px;
+  text-align: center;
+}
+
+/* Desktop rail: sits in the right margin outside the content column, scrolls
+   in with the page, sticks while you read, and scrolls out at the bottom
+   (AdSense's sticky-ad rules). Only mounted when RAIL_QUERY in AdSlot.jsx
+   says the margin is wide enough. */
+.ad-rail-track {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* Centre the 160px ad in the right margin */
+  left: calc(100% + (100vw - 100%) / 4 - 80px);
+  width: 160px;
+  padding-top: 2rem;
+}
+
+.ad-slot.ad-rail {
+  position: sticky;
+  top: 24px;
+  margin-top: 0;
+}
+
+/* Take no space when AdSense has no ad to fill it with */
+.ad-slot:has(ins.adsbygoogle[data-ad-status="unfilled"]) {
+  display: none;
+}
+
+/* =========================
    Footer
    ========================= */
 
