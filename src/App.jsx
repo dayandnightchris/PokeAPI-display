@@ -10,7 +10,7 @@ import LocationPage from './components/LocationPage'
 import { defaultVersionGroups } from './utils/versionInfo'
 import EggMoveTab from './components/EggMoveTab'
 import PokemonListLanding from './components/PokemonListLanding'
-import AdSlot, { AD_UNITS, RAIL_QUERY, useMediaQuery } from './components/AdSlot'
+import { loadAdSenseScript } from './components/AdSlot'
 
 /**
  * Read URL path parameters on load.
@@ -95,7 +95,6 @@ function App() {
   const [requestedForm, setRequestedForm] = useState(null)
   const [initialVersion, setInitialVersion] = useState(urlParams.version || 'sword')
   const [searchQuery, setSearchQuery] = useState('')
-  const adRailFits = useMediaQuery(RAIL_QUERY)
 
   // Apply theme to document. Only an explicit toggle is persisted — the
   // OS-derived default stays unsaved so the app keeps following the OS
@@ -150,6 +149,13 @@ function App() {
   // Track the latest in-flight request
   const abortRef = useRef(null)
   const requestIdRef = useRef(0)
+
+  // Desktop ads are AdSense's own side rails (Auto ads), which only appear
+  // once the script is on the page. Load it on Pokémon pages so the landing
+  // page stays ad-free.
+  useEffect(() => {
+    if (activeTab === 'pokemon' && pokemon) loadAdSenseScript()
+  }, [activeTab, pokemon])
 
   // Fetch all Pokemon names for autocomplete on mount
   useEffect(() => {
@@ -813,15 +819,6 @@ function App() {
           searchLists={searchLists}
           onUnifiedNavigate={handleUnifiedNavigate}
         />
-      )}
-
-      {/* Desktop's only ad: a sticky rail in the right margin of Pokémon pages,
-          on screens wide enough to keep it clear of the content. A new
-          Pokémon gets a fresh ad. */}
-      {activeTab === 'pokemon' && pokemon && adRailFits && (
-        <div className="ad-rail-track">
-          <AdSlot key={pokemon.name} slot={AD_UNITS.vertical} size={{ width: 160, height: 600 }} className="ad-rail" />
-        </div>
       )}
 
       <footer className="app-footer">
