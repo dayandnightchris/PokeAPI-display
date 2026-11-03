@@ -1738,6 +1738,12 @@
   text-align: center;
 }
 
+/* Mobile ad under the Back to Top button: keep a clear gap so a tap meant
+   for the button can't land on the ad */
+.ad-slot--bottom {
+  margin-top: 32px;
+}
+
 /* Desktop rail: sits in the right margin outside the content column, scrolls
    in with the page, sticks while you read, and scrolls out at the bottom
    (AdSense's sticky-ad rules). Only mounted when RAIL_QUERY in AdSlot.jsx

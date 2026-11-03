@@ -681,10 +681,6 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
 
       </div>
 
-      {/* Mobile's only ad: between the info boxes and the moves. A new
-          Pokémon gets a fresh ad. */}
-      {isMobile && <AdSlot key={pokemon.name} slot={AD_UNITS.horizontal} />}
-
       {/* Moves — Desktop: stacked, Mobile: tabbed */}
       {(movesLoading || moves.levelUp.length > 0 || moves.tm.length > 0 || moves.tutor.length > 0 || moves.special.length > 0 || moves.egg.length > 0 || moves.transfer.length > 0) && (() => {
         const moveTabs = [
@@ -794,6 +790,10 @@ export default function PokemonCard({ pokemon, onEvolutionClick, onMoveClick, on
         </svg>
         Back to Top
       </button>
+
+      {/* Mobile's only ad: at the very bottom, under all the content. A new
+          Pokémon gets a fresh ad. */}
+      {isMobile && <AdSlot key={pokemon.name} slot={AD_UNITS.horizontal} className="ad-slot--bottom" />}
     </div>
   )
 }
